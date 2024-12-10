@@ -1,8 +1,3 @@
-<p align="center">
-  <img src="https://s7.gifyu.com/images/GifCroppedTran.gif"/>
-</p>
-
-
 # Tdarr_Plugins
 
 Visit the docs for more info:
@@ -27,7 +22,7 @@ Check plugins using some extra custom rules:
 
 Run tests:
 
-`npm run test`
+`npm run test` 
 
 
 # Steps to write a Tdarr Flow plugin:
@@ -38,5 +33,6 @@ Run tests:
 4. Make sure typescript is intalled with `npm i -g typescript` then run `tsc` to compile the changes.
 5. Refresh the browser and Tdarr will pick up the changes
 
-
-
+# This Fork
+I forked this repo to develop several custom plugins for managing my media. I started by just placing them into the 
+Local directories but found a need for developing new FlowHelpers as well so I moved on to forking the whole repo. 

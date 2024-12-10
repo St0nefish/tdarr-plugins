@@ -10,8 +10,10 @@ export interface IstatSync { // tlint-disable-line statSync
 export interface Itags {
   language?: string,
   title?: string,
-  [key:string]: string | undefined,
+
+  [key: string]: string | undefined,
 }
+
 export interface Istreams {
   codec_name: string;
   codec_type: string,
@@ -24,27 +26,29 @@ export interface Istreams {
   duration?: number;
   width?: number,
   height?: number,
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/explicit-module-boundary-types
   [index: string]: any
 }
 
 export interface Iformat {
-    'filename'?: string,
-    'nb_streams'?: number,
-    'nb_programs'?: number,
-    'format_name'?: string,
-    'format_long_name'?: string,
-    'start_time'?: string,
-    'duration'?: string,
-    'size'?: string,
-    'bit_rate'?: string,
-    'probe_score'?: number,
-    [key:string]: string | number | undefined
-  }
+  'filename'?: string,
+  'nb_streams'?: number,
+  'nb_programs'?: number,
+  'format_name'?: string,
+  'format_long_name'?: string,
+  'start_time'?: string,
+  'duration'?: string,
+  'size'?: string,
+  'bit_rate'?: string,
+  'probe_score'?: number,
+
+  [key: string]: string | number | undefined
+}
 
 export interface IffProbeData {
-  streams?: Istreams[]
-  format?: Iformat
+  streams?: Istreams[];
+  format?: Iformat;
 }
 
 export interface Imeta {
@@ -118,27 +122,35 @@ export interface Imeta {
   'Megapixels'?: number,
 }
 
+export interface ImediaInfoTrack {
+  '@type': string,
+  'UniqueID': string,
+  'StreamOrder'?: number,
+  'VideoCount': string,
+  'AudioCount': string,
+  'Format': string,
+  'Format_Version': string,
+  'FileSize': string,
+  'Duration': string,
+  'OverallBitRate': string,
+  'FrameRate': string,
+  'FrameCount': string,
+  'IsStreamable': string,
+  'Encoded_Application': string,
+  'Encoded_Library': string,
+  'BitRate': number,
+  'Format_Commercial_IfAny'?: string,
+  'Encoded_Library_Name'?: string,
+  'Compression_Mode'?: string,
+  'SamplingRate'?: string,
+  'BitDepth'?: number,
+  'extra': {
+    'ErrorDetectionType': string,
+  }
+}
+
 export interface ImediaInfo {
-  track?: [{
-    '@type': string,
-    'UniqueID': string,
-    'VideoCount': string,
-    'AudioCount': string,
-    'Format': string,
-    'Format_Version': string,
-    'FileSize': string,
-    'Duration': string,
-    'OverallBitRate': string,
-    'FrameRate': string,
-    'FrameCount': string,
-    'IsStreamable': string,
-    'Encoded_Application': string,
-    'Encoded_Library': string,
-     BitRate: number,
-    'extra': {
-      'ErrorDetectionType': string,
-    }
-  }],
+  track?: ImediaInfoTrack[],
 }
 
 export interface IFileObjectMin {
@@ -180,6 +192,7 @@ export interface IFileObjectStripped extends IFileObjectMin {
   oldSize: number,
   newSize: number,
   videoStreamIndex: number;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/explicit-module-boundary-types
   [index: string]: any,
 }
@@ -193,6 +206,7 @@ export interface IFileObject extends IFileObjectStripped {
   }
   meta?: Imeta,
   mediaInfo?: ImediaInfo,
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/explicit-module-boundary-types
   [index: string]: any,
 }

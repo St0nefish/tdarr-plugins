@@ -1,3 +1,4 @@
+### node ###
 /node_modules
 
 ### IntelliJ IDEA ###
@@ -9,6 +10,9 @@
 ### VS Code ###
 .vscode/
 
+### local plugin support ###
 /Local
 /FlowPluginsTs/LocalFlowPlugins
 /FlowPlugins/LocalFlowPlugins
+/FlowPluginsTs/FlowHelpers/Local
+/FlowPlugins/FlowHelpers/Local

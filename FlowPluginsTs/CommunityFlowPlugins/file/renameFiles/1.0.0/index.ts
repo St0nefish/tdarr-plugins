@@ -1,5 +1,5 @@
-/* eslint-disable max-len */
-/* eslint-disable dot-notation */
+/* eslint-disable max-len */ // links and regexes go beyond allowed length
+/* eslint-disable prefer-destructuring */ // I vastly prefer the explicit var = arr[0] notation
 
 import path, { ParsedPath } from 'path';
 import fs from 'fs';
@@ -156,26 +156,63 @@ const details = (): IpluginDetails => ({
         `,
     },
     {
-      label: 'Metadata Delimiter',
-      name: 'metadataDelimiter',
-      type: 'string',
-      defaultValue: ' - ',
+      label: 'Enable Metadata Regex',
+      name: 'enableMetadataRegex',
+      type: 'boolean',
+      defaultValue: 'true',
       inputUI: {
-        type: 'text',
+        type: 'switch',
       },
       tooltip:
         `
-        Enter a string which is used as a delimiter between the name of the movie/show and the string containing any
-        metadata about the video and audio streams. This can help prevent any (rare) accidental issues with replacing
-        something that happened to be part of the actual file name.  
+        Toggle whether to enable a regex for isolating the metadata portion of the file name to be replaced
+        \n\n
+        This can be useful if your file naming pattern allows for relatively easily isolating the portion to be renamed 
+        with a regex and can help prevent accidental alterations to other parts of the file name.
+        `,
+    },
+    {
+      label: 'Metadata Regex',
+      name: 'metadataRegex',
+      type: 'string',
+      defaultValue: '(?<= - )(\\[[^]]+\\])+(?=(-[a-z0-9_-]+)?(\\.[a-z0-9]+)+)',
+      inputUI: {
+        type: 'text',
+        displayConditions: {
+          logic: 'AND',
+          sets: [
+            {
+              logic: 'AND',
+              inputs: [
+                {
+                  name: 'enableMetadataRegex',
+                  value: 'true',
+                  condition: '===',
+                },
+              ],
+            },
+          ],
+        },
+      },
+      tooltip:
+        `
+        Enter a string which is used as a regex to locate the relevant portion of the file name that contains the video 
+        and audio metadata to be updated. This can help prevent accidentally mutilating a file name that happens to 
+        contain some bit of text that might match one of the pieces being replaced. Do not include the '/' delimiters 
+        or the trailing flags. This will be converted to a proper RegExp via the constructor and always uses the 'gi' 
+        flags for global/case-insensitive. 
         \\n\\n
         For example, my standard naming scheme is:
         \n\n
-        '{title stripped of special characters} - {file metadata}'
+        '{title stripped of special characters} - [{video_metadata}][{audio_metadata}]-release.mkv'
         \n\n
-        'The Lord of the Rings The Return of the King (2003) - [x264 Remux-1080p][AAC 2.0]-FraMeSToR.mkv'
-        To avoid any accidents breaking the title I enter ' - ' and the rename operation will apply only to the portion 
-        after that delimiter. This works best if the delimiter is the first instance of that string in the file name.
+        'The Lord of the Rings The Return of the King (2003) - [x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'
+        \n\n
+        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [AMZN WEBDL-1080p][EAC3 5.1][x265]-Telly.mkv
+        \n\n
+        To best isolate the metadata I use the default regex above to isolate the '[x264 Remux-1080p][TrueHD 6.1]' and 
+        only replace data in that block. The same regex is then used to replace the old metadata block in the file 
+        name(s) with the new one. 
         `,
     },
   ],
@@ -202,58 +239,58 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const replaceAudioCodec = Boolean(args.inputs.replaceAudioCodec);
   const replaceAudioChannels = Boolean(args.inputs.replaceAudioChannels);
   const renameOtherFiles = Boolean(args.inputs.renameOtherFiles);
-  const supportedExtensions: string[] = String(args.inputs.fileExtensions)
+  const extensions: string[] = String(args.inputs.fileExtensions)
     .split(',')
     .map((item) => item?.trim())
     .filter((item) => item && item.length > 0)
     .filter((item, index, items) => items.indexOf(item) === index);
-  const metadataDelimiter = String(args.inputs.metadataDelimiter);
-  // grab a handle to streams
+  const enableMetadataRegex = Boolean(args.inputs.enableMetadataRegex);
+  const metadataRegex = enableMetadataRegex ? RegExp(String(args.inputs.metadataRegex), 'gi') : null;
+  // grab handles to streams and media info
   const { streams } = args.inputFileObj.ffProbeData;
-  // grab media info
   const { mediaInfo } = args.inputFileObj;
-  // regexes for replacing
+  // regexes for replacing video & audio metadata
   const videoCodecRegex = /(h264|h265|x264|x265|avc|hevc|mpeg2|av1|vc1)/gi;
   const videoResRegex = /(480p|576p|720p|1080p|1440p|2160p|4320p)/gi;
   const audioCodecRegex = /(aac|ac3|eac3|flac|mp2|mp3|truehd|dts[-. ]hd[-. ]ma|dts[-. ]hd[-. ]es|dts[-. ]hd[-. ]hra|dts[-. ]express|dts)/gi;
   const audioChannelsRegex = /(1\.0|2\.0|2\.1|3\.0|3\.1|5\.1|6\.1|7\.1)/gi;
   // get file name and path from input object
-  const filePath: ParsedPath = path.parse(args.inputFileObj._id);
-  const fileFullName: string = filePath.base;
-  const fileBaseName: string = filePath.name;
-  const fileDir: string = filePath.dir;
-  args.jobLog(`looking for files in [${fileDir}] with name like [${fileBaseName}] and extensions ${JSON.stringify(supportedExtensions)}`);
-  // build a list of other files in the directory - start with our video file
-  let files: string[] = [fileFullName];
+  const inputFilePath: ParsedPath = path.parse(args.inputFileObj._id);
+  const inputFileName: string = inputFilePath.name;
+  const inputFileDir: string = inputFilePath.dir;
+  args.jobLog(
+    `finding files in [${inputFileDir}] with name like [${inputFileName}] and extensions ${JSON.stringify(extensions)}`,
+  );
+  // build a list of other files in the directory - start with our video file with extension
+  const files: ParsedPath[] = [inputFilePath];
   // if enabled add other files in the directory
   if (renameOtherFiles) {
-    fs.readdirSync(fileDir)
+    fs.readdirSync(inputFileDir)
       .forEach((item: string) => {
-        const otherPath: ParsedPath = path.parse(`${fileDir}/${item}`);
-        if (otherPath // able to parse the path
-          && otherPath.base !== fileFullName // not our original video file
-          && otherPath.name.startsWith(fileBaseName) // matches input file pattern
-          && (supportedExtensions.length === 0 || supportedExtensions.includes(otherPath.ext)) // passes extension filter
+        // parse path for this item
+        const filePath: ParsedPath = path.parse(`${inputFileDir}/${item}`);
+        // check if it's valid for rename
+        if (filePath?.base?.length > 0 // valid file name
+          && filePath.name.startsWith(inputFileName) // matches input file pattern
+          && (extensions.length === 0 || extensions.includes(filePath.ext)) // passes extension filter
+          && !files.includes(filePath) // not already in our list
         ) {
-          files.push(otherPath.base);
+          files.push(filePath);
         }
       });
   }
-  // trim entries, remove empty, and ensure unique
-  files = files.map((item) => item?.trim())
-    .filter((item) => item)
-    .filter((item, index, items) => items.indexOf(item) === index);
   // iterate files
-  files.forEach((originalName) => {
-    let newName: string = originalName;
-    let originalSuffix: string | undefined;
+  files.forEach((filePath) => {
+    let newName: string = filePath.base;
     // if using the metadata delimiter parse only the end of the file
-    args.jobLog(`checking if [${originalName}] contains delimiter [${metadataDelimiter}]`);
-    // ToDo - regex for format specifiers instead of delimiter
-    if (metadataDelimiter && originalName.includes(metadataDelimiter)) {
-      newName = originalName.substring(originalName.indexOf(metadataDelimiter) + metadataDelimiter.length);
-      originalSuffix = newName;
-      args.jobLog(`executing rename on [${newName}], original suffix: [${originalSuffix}]`);
+    if (enableMetadataRegex && metadataRegex) {
+      args.jobLog(`checking if file [${filePath.base}] matches regex [${metadataRegex.source}]`);
+      const matches: RegExpExecArray | null = metadataRegex.exec(filePath.base);
+      if (matches) {
+        newName = matches[0];
+        args.jobLog(`found match for regex: [${newName}]`);
+      }
+      args.jobLog(`executing rename on [${newName}]`);
     }
     // if any video-based rename is enabled
     if (replaceVideoCodec || replaceVideoRes) {
@@ -288,19 +325,19 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       }
     }
     // if using the metadata delimiter now replace the entire original suffix with the new one
-    if (metadataDelimiter && originalSuffix) {
-      args.jobLog(`replacing original suffix [${originalSuffix}] with [${newName}]`);
-      newName = originalName.replace(originalSuffix, newName);
+    if (enableMetadataRegex && metadataRegex) {
+      args.jobLog(`replacing regex format mask with [${newName}]`);
+      newName = filePath.base.replace(metadataRegex, newName);
     }
-    args.jobLog(`renaming [${originalName}] to [${newName}]`);
+    args.jobLog(`renaming [${filePath.base}] to [${newName}]`);
     // ToDo - actually rename
   });
 
-  if (fileBaseName === 'aaaa') {
+  if (inputFileName === 'aaaa') {
     await fileMoveOrCopy({
       operation: 'move',
       sourcePath: args.inputFileObj._id,
-      destinationPath: `${fileDir}/${fileBaseName}`,
+      destinationPath: args.inputFileObj._id,
       args,
     });
   }

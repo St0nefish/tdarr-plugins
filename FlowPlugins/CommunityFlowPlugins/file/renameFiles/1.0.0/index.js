@@ -1,6 +1,6 @@
 "use strict";
-/* eslint-disable max-len */
-/* eslint-disable dot-notation */
+/* eslint-disable max-len */ // links and regexes go beyond allowed length
+/* eslint-disable prefer-destructuring */ // I vastly prefer the explicit var = arr[0] notation
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -136,14 +136,39 @@ var details = function () { return ({
             tooltip: "\n        Enter a comma-separated list of extensions for files you wish to be renamed. If left blank this will default to\n        all files matching the same naming pattern. \n        \\n\\n\n        This will treat srt files as a special case and support files like '{name}.en.srt' or '{name}.en.forced.srt'\n        ",
         },
         {
-            label: 'Metadata Delimiter',
-            name: 'metadataDelimiter',
+            label: 'Enable Metadata Regex',
+            name: 'enableMetadataRegex',
+            type: 'boolean',
+            defaultValue: 'true',
+            inputUI: {
+                type: 'switch',
+            },
+            tooltip: "\n        Toggle whether to enable a regex for isolating the metadata portion of the file name to be replaced\n        \n\n\n        This can be useful if your file naming pattern allows for relatively easily isolating the portion to be renamed \n        with a regex and can help prevent accidental alterations to other parts of the file name.\n        ",
+        },
+        {
+            label: 'Metadata Regex',
+            name: 'metadataRegex',
             type: 'string',
-            defaultValue: ' - ',
+            defaultValue: '(?<= - )(\\[[^]]+\\])+(?=(-[a-z0-9_-]+)?(\\.[a-z0-9]+)+)',
             inputUI: {
                 type: 'text',
+                displayConditions: {
+                    logic: 'AND',
+                    sets: [
+                        {
+                            logic: 'AND',
+                            inputs: [
+                                {
+                                    name: 'enableMetadataRegex',
+                                    value: 'true',
+                                    condition: '===',
+                                },
+                            ],
+                        },
+                    ],
+                },
             },
-            tooltip: "\n        Enter a string which is used as a delimiter between the name of the movie/show and the string containing any\n        metadata about the video and audio streams. This can help prevent any (rare) accidental issues with replacing\n        something that happened to be part of the actual file name.  \n        \\n\\n\n        For example, my standard naming scheme is:\n        \n\n\n        '{title stripped of special characters} - {file metadata}'\n        \n\n\n        'The Lord of the Rings The Return of the King (2003) - [x264 Remux-1080p][AAC 2.0]-FraMeSToR.mkv'\n        To avoid any accidents breaking the title I enter ' - ' and the rename operation will apply only to the portion \n        after that delimiter. This works best if the delimiter is the first instance of that string in the file name.\n        ",
+            tooltip: "\n        Enter a string which is used as a regex to locate the relevant portion of the file name that contains the video \n        and audio metadata to be updated. This can help prevent accidentally mutilating a file name that happens to \n        contain some bit of text that might match one of the pieces being replaced. Do not include the '/' delimiters \n        or the trailing flags. This will be converted to a proper RegExp via the constructor and always uses the 'gi' \n        flags for global/case-insensitive. \n        \\n\\n\n        For example, my standard naming scheme is:\n        \n\n\n        '{title stripped of special characters} - [{video_metadata}][{audio_metadata}]-release.mkv'\n        \n\n\n        'The Lord of the Rings The Return of the King (2003) - [x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'\n        \n\n\n        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [AMZN WEBDL-1080p][EAC3 5.1][x265]-Telly.mkv\n        \n\n\n        To best isolate the metadata I use the default regex above to isolate the '[x264 Remux-1080p][TrueHD 6.1]' and \n        only replace data in that block. The same regex is then used to replace the old metadata block in the file \n        name(s) with the new one. \n        ",
         },
     ],
     outputs: [
@@ -160,7 +185,7 @@ var details = function () { return ({
 exports.details = details;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, replaceVideoCodec, replaceVideoRes, replaceAudioCodec, replaceAudioChannels, renameOtherFiles, supportedExtensions, metadataDelimiter, streams, mediaInfo, videoCodecRegex, videoResRegex, audioCodecRegex, audioChannelsRegex, filePath, fileFullName, fileBaseName, fileDir, files;
+    var lib, replaceVideoCodec, replaceVideoRes, replaceAudioCodec, replaceAudioChannels, renameOtherFiles, extensions, enableMetadataRegex, metadataRegex, streams, mediaInfo, videoCodecRegex, videoResRegex, audioCodecRegex, audioChannelsRegex, inputFilePath, inputFileName, inputFileDir, files;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -172,53 +197,53 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 replaceAudioCodec = Boolean(args.inputs.replaceAudioCodec);
                 replaceAudioChannels = Boolean(args.inputs.replaceAudioChannels);
                 renameOtherFiles = Boolean(args.inputs.renameOtherFiles);
-                supportedExtensions = String(args.inputs.fileExtensions)
+                extensions = String(args.inputs.fileExtensions)
                     .split(',')
                     .map(function (item) { return item === null || item === void 0 ? void 0 : item.trim(); })
                     .filter(function (item) { return item && item.length > 0; })
                     .filter(function (item, index, items) { return items.indexOf(item) === index; });
-                metadataDelimiter = String(args.inputs.metadataDelimiter);
+                enableMetadataRegex = Boolean(args.inputs.enableMetadataRegex);
+                metadataRegex = enableMetadataRegex ? RegExp(String(args.inputs.metadataRegex), 'gi') : null;
                 streams = args.inputFileObj.ffProbeData.streams;
                 mediaInfo = args.inputFileObj.mediaInfo;
                 videoCodecRegex = /(h264|h265|x264|x265|avc|hevc|mpeg2|av1|vc1)/gi;
                 videoResRegex = /(480p|576p|720p|1080p|1440p|2160p|4320p)/gi;
                 audioCodecRegex = /(aac|ac3|eac3|flac|mp2|mp3|truehd|dts[-. ]hd[-. ]ma|dts[-. ]hd[-. ]es|dts[-. ]hd[-. ]hra|dts[-. ]express|dts)/gi;
                 audioChannelsRegex = /(1\.0|2\.0|2\.1|3\.0|3\.1|5\.1|6\.1|7\.1)/gi;
-                filePath = path_1.default.parse(args.inputFileObj._id);
-                fileFullName = filePath.base;
-                fileBaseName = filePath.name;
-                fileDir = filePath.dir;
-                args.jobLog("looking for files in [".concat(fileDir, "] with name like [").concat(fileBaseName, "] and extensions ").concat(JSON.stringify(supportedExtensions)));
-                files = [fileFullName];
+                inputFilePath = path_1.default.parse(args.inputFileObj._id);
+                inputFileName = inputFilePath.name;
+                inputFileDir = inputFilePath.dir;
+                args.jobLog("finding files in [".concat(inputFileDir, "] with name like [").concat(inputFileName, "] and extensions ").concat(JSON.stringify(extensions)));
+                files = [inputFilePath];
                 // if enabled add other files in the directory
                 if (renameOtherFiles) {
-                    fs_1.default.readdirSync(fileDir)
+                    fs_1.default.readdirSync(inputFileDir)
                         .forEach(function (item) {
-                        var otherPath = path_1.default.parse("".concat(fileDir, "/").concat(item));
-                        if (otherPath // able to parse the path
-                            && otherPath.base !== fileFullName // not our original video file
-                            && otherPath.name.startsWith(fileBaseName) // matches input file pattern
-                            && (supportedExtensions.length === 0 || supportedExtensions.includes(otherPath.ext)) // passes extension filter
+                        var _a;
+                        // parse path for this item
+                        var filePath = path_1.default.parse("".concat(inputFileDir, "/").concat(item));
+                        // check if it's valid for rename
+                        if (((_a = filePath === null || filePath === void 0 ? void 0 : filePath.base) === null || _a === void 0 ? void 0 : _a.length) > 0 // valid file name
+                            && filePath.name.startsWith(inputFileName) // matches input file pattern
+                            && (extensions.length === 0 || extensions.includes(filePath.ext)) // passes extension filter
+                            && !files.includes(filePath) // not already in our list
                         ) {
-                            files.push(otherPath.base);
+                            files.push(filePath);
                         }
                     });
                 }
-                // trim entries, remove empty, and ensure unique
-                files = files.map(function (item) { return item === null || item === void 0 ? void 0 : item.trim(); })
-                    .filter(function (item) { return item; })
-                    .filter(function (item, index, items) { return items.indexOf(item) === index; });
                 // iterate files
-                files.forEach(function (originalName) {
-                    var newName = originalName;
-                    var originalSuffix;
+                files.forEach(function (filePath) {
+                    var newName = filePath.base;
                     // if using the metadata delimiter parse only the end of the file
-                    args.jobLog("checking if [".concat(originalName, "] contains delimiter [").concat(metadataDelimiter, "]"));
-                    // ToDo - regex for format specifiers instead of delimiter
-                    if (metadataDelimiter && originalName.includes(metadataDelimiter)) {
-                        newName = originalName.substring(originalName.indexOf(metadataDelimiter) + metadataDelimiter.length);
-                        originalSuffix = newName;
-                        args.jobLog("executing rename on [".concat(newName, "], original suffix: [").concat(originalSuffix, "]"));
+                    if (enableMetadataRegex && metadataRegex) {
+                        args.jobLog("checking if file [".concat(filePath.base, "] matches regex [").concat(metadataRegex.source, "]"));
+                        var matches = metadataRegex.exec(filePath.base);
+                        if (matches) {
+                            newName = matches[0];
+                            args.jobLog("found match for regex: [".concat(newName, "]"));
+                        }
+                        args.jobLog("executing rename on [".concat(newName, "]"));
                     }
                     // if any video-based rename is enabled
                     if (replaceVideoCodec || replaceVideoRes) {
@@ -253,18 +278,18 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         }
                     }
                     // if using the metadata delimiter now replace the entire original suffix with the new one
-                    if (metadataDelimiter && originalSuffix) {
-                        args.jobLog("replacing original suffix [".concat(originalSuffix, "] with [").concat(newName, "]"));
-                        newName = originalName.replace(originalSuffix, newName);
+                    if (enableMetadataRegex && metadataRegex) {
+                        args.jobLog("replacing regex format mask with [".concat(newName, "]"));
+                        newName = filePath.base.replace(metadataRegex, newName);
                     }
-                    args.jobLog("renaming [".concat(originalName, "] to [").concat(newName, "]"));
+                    args.jobLog("renaming [".concat(filePath.base, "] to [").concat(newName, "]"));
                     // ToDo - actually rename
                 });
-                if (!(fileBaseName === 'aaaa')) return [3 /*break*/, 2];
+                if (!(inputFileName === 'aaaa')) return [3 /*break*/, 2];
                 return [4 /*yield*/, (0, fileMoveOrCopy_1.default)({
                         operation: 'move',
                         sourcePath: args.inputFileObj._id,
-                        destinationPath: "".concat(fileDir, "/").concat(fileBaseName),
+                        destinationPath: args.inputFileObj._id,
                         args: args,
                     })];
             case 1:

@@ -1,6 +1,7 @@
-/* eslint-disable max-len */ // links and regexes go beyond allowed length
-/* eslint-disable prefer-destructuring */ // I vastly prefer the explicit var = arr[0] notation
-
+/* eslint-disable max-len
+   ----------------------
+   Links and regexes go beyond allowed length and become awkward when forced multiline
+*/
 import path, { ParsedPath } from 'path';
 import fs from 'fs';
 import fileMoveOrCopy from '../../../../FlowHelpers/1.0.0/fileMoveOrCopy';
@@ -151,7 +152,7 @@ const details = (): IpluginDetails => ({
         `
         Enter a comma-separated list of extensions for files you wish to be renamed. If left blank this will default to
         all files matching the same naming pattern. 
-        \\n\\n
+        \n\n
         This will treat srt files as a special case and support files like '{name}.en.srt' or '{name}.en.forced.srt'
         `,
     },
@@ -201,7 +202,7 @@ const details = (): IpluginDetails => ({
         contain some bit of text that might match one of the pieces being replaced. Do not include the '/' delimiters 
         or the trailing flags. This will be converted to a proper RegExp via the constructor and always uses the 'gi' 
         flags for global/case-insensitive. 
-        \\n\\n
+        \n\n
         For example, my standard naming scheme is:
         \n\n
         '{title stripped of special characters} - [{video_metadata}][{audio_metadata}]-release.mkv'

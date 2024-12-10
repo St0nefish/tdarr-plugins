@@ -54,34 +54,34 @@ var details = function () { return ({
     icon: '',
     inputs: [
         {
-            label: 'Remove Video',
+            label: 'Remove Unwanted Video',
             name: 'removeVideo',
             type: 'boolean',
             defaultValue: 'true',
             inputUI: {
                 type: 'switch',
             },
-            tooltip: "\n         Toggle whether to remove video streams. \n         \\n\\n\n         This will remove streams which are flagged as an unwanted language. \n         \\n\\n\n         If doing so would remove all present video streams then the plugin will fail.\n         ",
+            tooltip: "\n         Toggle whether to remove video streams. \n         \n\n\n         This will remove streams which are flagged as an unwanted language. \n         \n\n\n         If doing so would remove all present video streams then the plugin will fail.\n         ",
         },
         {
-            label: 'Remove Audio',
+            label: 'Remove Unwanted Audio',
             name: 'removeAudio',
             type: 'boolean',
             defaultValue: 'true',
             inputUI: {
                 type: 'switch',
             },
-            tooltip: "\n        Toggle whether to remove audio streams. \n        \\n\\n\n        This will remove a stream if the it is an unwanted language, a duplicate combo of language+channels, or flagged \n        as unwanted commentary or descriptions. \n        \\n\\n\n        If the configured criteria would cause this plugin to remove all present audio streams then it will fail. \n        ",
+            tooltip: "\n        Toggle whether to remove audio streams. \n        \n\n\n        This will remove a stream if the it is an unwanted language, a duplicate combo of language+channels, or flagged \n        as unwanted commentary or descriptions. \n        \n\n\n        If the configured criteria would cause this plugin to remove all present audio streams then it will fail. \n        ",
         },
         {
-            label: 'Remove Subtitles',
+            label: 'Remove Unwanted Subtitles',
             name: 'removeSubtitles',
             type: 'boolean',
             defaultValue: 'true',
             inputUI: {
                 type: 'switch',
             },
-            tooltip: "\n        Toggle whether to remove subtitle streams. \n        \\n\\n\n        This will remove a stream if it is an unwanted language, is a duplicate combo of language+default+forced, or is \n        flagged as unwanted commentary or descriptions. \n        \\n\\n\n        This will *not* fail if it is going to remove all present subtitle streams. Unlike video and audio I consider \n        the subtitles to be nice-to-have and often manage them as external srt files anyway. \n        ",
+            tooltip: "\n        Toggle whether to remove subtitle streams. \n        \n\n\n        This will remove a stream if it is an unwanted language, is a duplicate combo of language+default+forced, or is \n        flagged as unwanted commentary or descriptions. \n        \n\n\n        This will *not* fail if it is going to remove all present subtitle streams. Unlike video and audio I consider \n        the subtitles to be nice-to-have and often manage them as external srt files anyway. \n        ",
         },
         {
             label: 'Languages to Keep',
@@ -116,7 +116,7 @@ var details = function () { return ({
                     ],
                 },
             },
-            tooltip: "\n        Enter a comma-separated list of language tags to keep. \n        \\n\\n\n        This will only apply to stream types with their remove flags enabled. \n        \\n\\n\n        Any video, audio, or subtitle stream tagged as a language not in this list will be flagged for removal. \n        \\n\\n\n        Any stream without a language tag present will be treated as matching the first entry in this list. \n        ",
+            tooltip: "\n        Enter a comma-separated list of language tags to keep. \n        \n\n\n        This will only apply to stream types with their remove flags enabled. \n        \n\n\n        Any video, audio, or subtitle stream tagged as a language not in this list will be flagged for removal. \n        \n\n\n        Any stream without a language tag present will be treated as matching the first entry in this list. \n        ",
         },
         {
             label: 'Remove Duplicates',
@@ -151,7 +151,7 @@ var details = function () { return ({
                     ],
                 },
             },
-            tooltip: "\n        Toggle whether to remove streams which appear to be duplicates of others. \n        \\n\\n\n        For video streams it will keep the highest resolution+bitrate grouped by language. \n        \\n\\n\n        For audio it will keep the one with the highest bitrate grouped by language+channels+commentary+descriptive. \n        \\n\\n\n        For subtitles it will keep the first entry grouped by language+default+forced flags. \n        \\n\\n\n        All streams which appear to be commentary will be kept if the relevant \"Remove Commentary\" setting is disabled. \n        ",
+            tooltip: "\n        Toggle whether to remove streams which appear to be duplicates of others. \n        \n\n\n        For video streams it will keep the highest resolution+bitrate grouped by language. \n        \n\n\n        For audio it will keep the one with the highest bitrate grouped by language+channels+commentary+descriptive. \n        \n\n\n        For subtitles it will keep the first entry grouped by language+default+forced flags. \n        \n\n\n        All streams which appear to be commentary will be kept if the relevant \"Remove Commentary\" setting is disabled. \n        ",
         },
         {
             label: 'Remove Other Streams',
@@ -186,7 +186,7 @@ var details = function () { return ({
                     ],
                 },
             },
-            tooltip: "\n        Toggle whether to remove audio streams tagged as commentary. \n        \\n\\n\n        This is detected by checking if the 'comment' disposition flag is set or if the title contains 'commentary' \n        (case insensitive). \n        ",
+            tooltip: "\n        Toggle whether to remove audio streams tagged as commentary. \n        \n\n\n        This is detected by checking if the 'comment' disposition flag is set or if the title contains 'commentary' \n        (case insensitive). \n        ",
         },
         {
             label: 'Remove Audio Descriptions',
@@ -211,7 +211,7 @@ var details = function () { return ({
                     ],
                 },
             },
-            tooltip: "\n        Toggle whether to remove audio streams tagged as descriptive. \n        \\n\\n\n        This is detected by checking if the 'descriptions' disposition flag is set or if the title contains \n        'description', 'descriptive', or 'sdh' (case insensitive). \n        ",
+            tooltip: "\n        Toggle whether to remove audio streams tagged as descriptive. \n        \n\n\n        This is detected by checking if the 'descriptions' disposition flag is set or if the title contains \n        'description', 'descriptive', or 'sdh' (case insensitive). \n        ",
         },
         {
             label: 'Remove Subtitle Commentary',
@@ -236,7 +236,7 @@ var details = function () { return ({
                     ],
                 },
             },
-            tooltip: "\n        Toggle whether to remove subtitle streams tagged as commentary. \n        \\n\\n\n        This is detected by checking if the 'comment' disposition flag is set or if the title contains 'commentary' \n        (case insensitive). \n        ",
+            tooltip: "\n        Toggle whether to remove subtitle streams tagged as commentary. \n        \n\n\n        This is detected by checking if the 'comment' disposition flag is set or if the title contains 'commentary' \n        (case insensitive). \n        ",
         },
         {
             label: 'Remove Subtitle Descriptions',
@@ -261,7 +261,7 @@ var details = function () { return ({
                     ],
                 },
             },
-            tooltip: "\n        Toggle whether to remove subtitle streams tagged as descriptive. \n        \\n\\n\n        This is detected by checking if the 'descriptions' disposition flag is set or if the title contains \n        'description', 'descriptive', or 'sdh' (case insensitive). \n        ",
+            tooltip: "\n        Toggle whether to remove subtitle streams tagged as descriptive. \n        \n\n\n        This is detected by checking if the 'descriptions' disposition flag is set or if the title contains \n        'description', 'descriptive', or 'sdh' (case insensitive). \n        ",
         },
     ],
     outputs: [

@@ -1,6 +1,4 @@
 "use strict";
-/* eslint-disable max-len */ // links and regexes go beyond allowed length
-/* eslint-disable prefer-destructuring */ // I vastly prefer the explicit var = arr[0] notation
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -42,6 +40,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.plugin = exports.details = void 0;
+/* eslint-disable max-len
+   ----------------------
+   Links and regexes go beyond allowed length and become awkward when forced multiline
+*/
 var path_1 = __importDefault(require("path"));
 var fs_1 = __importDefault(require("fs"));
 var fileMoveOrCopy_1 = __importDefault(require("../../../../FlowHelpers/1.0.0/fileMoveOrCopy"));
@@ -133,7 +135,7 @@ var details = function () { return ({
                     ],
                 },
             },
-            tooltip: "\n        Enter a comma-separated list of extensions for files you wish to be renamed. If left blank this will default to\n        all files matching the same naming pattern. \n        \\n\\n\n        This will treat srt files as a special case and support files like '{name}.en.srt' or '{name}.en.forced.srt'\n        ",
+            tooltip: "\n        Enter a comma-separated list of extensions for files you wish to be renamed. If left blank this will default to\n        all files matching the same naming pattern. \n        \n\n\n        This will treat srt files as a special case and support files like '{name}.en.srt' or '{name}.en.forced.srt'\n        ",
         },
         {
             label: 'Enable Metadata Regex',
@@ -168,7 +170,7 @@ var details = function () { return ({
                     ],
                 },
             },
-            tooltip: "\n        Enter a string which is used as a regex to locate the relevant portion of the file name that contains the video \n        and audio metadata to be updated. This can help prevent accidentally mutilating a file name that happens to \n        contain some bit of text that might match one of the pieces being replaced. Do not include the '/' delimiters \n        or the trailing flags. This will be converted to a proper RegExp via the constructor and always uses the 'gi' \n        flags for global/case-insensitive. \n        \\n\\n\n        For example, my standard naming scheme is:\n        \n\n\n        '{title stripped of special characters} - [{video_metadata}][{audio_metadata}]-release.mkv'\n        \n\n\n        'The Lord of the Rings The Return of the King (2003) - [x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'\n        \n\n\n        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [AMZN WEBDL-1080p][EAC3 5.1][x265]-Telly.mkv\n        \n\n\n        To best isolate the metadata I use the default regex above to isolate the '[x264 Remux-1080p][TrueHD 6.1]' and \n        only replace data in that block. The same regex is then used to replace the old metadata block in the file \n        name(s) with the new one. \n        ",
+            tooltip: "\n        Enter a string which is used as a regex to locate the relevant portion of the file name that contains the video \n        and audio metadata to be updated. This can help prevent accidentally mutilating a file name that happens to \n        contain some bit of text that might match one of the pieces being replaced. Do not include the '/' delimiters \n        or the trailing flags. This will be converted to a proper RegExp via the constructor and always uses the 'gi' \n        flags for global/case-insensitive. \n        \n\n\n        For example, my standard naming scheme is:\n        \n\n\n        '{title stripped of special characters} - [{video_metadata}][{audio_metadata}]-release.mkv'\n        \n\n\n        'The Lord of the Rings The Return of the King (2003) - [x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'\n        \n\n\n        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [AMZN WEBDL-1080p][EAC3 5.1][x265]-Telly.mkv\n        \n\n\n        To best isolate the metadata I use the default regex above to isolate the '[x264 Remux-1080p][TrueHD 6.1]' and \n        only replace data in that block. The same regex is then used to replace the old metadata block in the file \n        name(s) with the new one. \n        ",
         },
     ],
     outputs: [

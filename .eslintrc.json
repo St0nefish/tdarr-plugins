@@ -48,7 +48,9 @@
         "singleReturnOnly": false
       }
     ],
-    "require-await":["error"],
+    "require-await": [
+      "error"
+    ],
     "global-require": 0,
     "no-void": 0,
     "@typescript-eslint/no-floating-promises": [
@@ -82,6 +84,8 @@
         "ts": "never",
         "tsx": "never"
       }
-   ]
+    ],
+    // I really dislike the destructuring syntax, it's much less clear imo
+    "prefer-destructuring": 0
   }
 }

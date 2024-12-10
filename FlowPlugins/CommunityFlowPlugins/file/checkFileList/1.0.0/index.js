@@ -55,7 +55,7 @@ var fileUtils_1 = require("../../../../FlowHelpers/1.0.0/fileUtils");
 /* eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }] */
 var details = function () { return ({
     name: 'Check List File',
-    description: "\n    Check the current file name against each entry in the specified list file \\n\n    \\n\n    My default media behavior is to start with the highest quality REMUX h.264 files that I can find and utilize Tdarr \n    to re-encode these to x265 using settings that meet my quality criteria while reducing file size. I use this plugin \n    to enable a 'blocklist' of files I wish to leave in the original REMUX quality. It loads a line-feed-delimited file\n    where each line will be evaluated against the current file name to fork the flow. \n    ",
+    description: "\n    Check the current file name against each entry in the specified list file. \n    \n\n\n    My default media behavior is to start with the highest quality REMUX h.264 files that I can find and utilize Tdarr \n    to re-encode these to x265 using settings that meet my quality criteria while reducing file size. I use this plugin \n    to enable a 'blocklist' of files I wish to leave in the original REMUX quality. It loads a line-feed-delimited file\n    where each line will be evaluated against the current file name to fork the flow. \n    ",
     style: {
         borderColor: 'orange',
     },
@@ -74,7 +74,7 @@ var details = function () { return ({
             inputUI: {
                 type: 'text',
             },
-            tooltip: "\n        Specify the full path to a file containing a line-feed-delimited list of strings \\n\n        \\n\n        Each entry in the file will be evaluated against the current file name using the operation specified below \\n\n        ",
+            tooltip: "\n        Specify the full path to a file containing a line-feed-delimited list of strings.  \n        \n\n\n        Each entry in the file will be evaluated against the current file name using the operation specified below. \n        ",
         },
         {
             label: 'Operation',

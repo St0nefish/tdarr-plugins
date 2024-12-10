@@ -4,7 +4,7 @@ exports.plugin = exports.details = void 0;
 /* eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }] */
 var details = function () { return ({
     name: 'Set Numeric Flow Variable',
-    description: "\n    Set a Numeric Flow Variable \\n \n    \\n\n    This supports additional operations compared to the basic 'Set Flow Variable' plugin that are helpful for dealing \n    with numeric types. This includes the ability to increment or decrement the value. If the specified variable does \n    not already have a value then it will be defaulted to 0. This makes it far easier to manage flow loops.\n    ",
+    description: "\n    Set a Numeric Flow Variable. \n    \n\n\n    This supports additional operations compared to the basic 'Set Flow Variable' plugin that are helpful for dealing \n    with numeric types. This includes the ability to increment or decrement the value. If the specified variable does \n    not already have a value then it will be defaulted to 0. This makes it far easier to manage flow loops.\n    ",
     style: {
         borderColor: 'green',
     },
@@ -23,7 +23,7 @@ var details = function () { return ({
             inputUI: {
                 type: 'text',
             },
-            tooltip: "\n        Name of the variable to set \\n\n        \\n\n        Example:\\n\n        transcode_attempts \\n\n        \\n\n        Could be referenced in a 'Check Numeric Flow Variables' plugin using reference: \\n\n        {{{args.variables.user.transcode_attempts}}}\n        ",
+            tooltip: "\n        Name of the variable to set. \n        \n\n\n        Example:\n        \n\n\n        transcode_attempts \n        \n\n\n        Could be referenced in a 'Check Numeric Flow Variables' plugin using reference: \n        \n\n\n        {{{args.variables.user.transcode_attempts}}}\n        ",
         },
         {
             label: 'Operation',
@@ -40,7 +40,7 @@ var details = function () { return ({
                     'subtract',
                 ],
             },
-            tooltip: "\n        Operation to apply \\n\n        \\n\n        - 'increment' will add one to the current value (same as operation=add and value=1) \\n\n        - 'decrement' will subtract one to the current value (same as operation=subtract and value=1) \\n\n        - 'equals' will set the variable to the input value below \\n\n        - 'add' will add the value below to the current value  \\n\n        - 'subtract' will subtract the value below from the current value  \\n\n        ",
+            tooltip: "\n        Operation to apply \n        \n\n\n        - 'increment' will add one to the current value (same as operation=add and value=1) \n        \n\n\n        - 'decrement' will subtract one to the current value (same as operation=subtract and value=1) \n        \n\n\n        - 'equals' will set the variable to the input value below \n        \n\n\n        - 'add' will add the value below to the current value  \n        \n\n\n        - 'subtract' will subtract the value below from the current value \n        ",
         },
         {
             label: 'Value',

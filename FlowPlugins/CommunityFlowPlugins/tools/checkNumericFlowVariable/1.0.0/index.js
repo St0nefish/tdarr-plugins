@@ -23,7 +23,7 @@ var details = function () { return ({
             inputUI: {
                 type: 'text',
             },
-            tooltip: "\n        Variable to check using templating\n        \\n\n        \\n\n        https://docs.tdarr.io/docs/plugins/flow-plugins/basics#plugin-variable-templating\n        \\n\n        \\n\n        Example\\n\n        {{{args.variables.user.transcode_attempts}}}\n        ",
+            tooltip: "\n        Variable to check using templating\n        \n\n\n        https://docs.tdarr.io/docs/plugins/flow-plugins/basics#plugin-variable-templating\n        \n\n\n        Example\n        \n\n\n        {{{args.variables.user.transcode_attempts}}}\n        ",
         },
         {
             label: 'Condition',
@@ -66,43 +66,13 @@ var details = function () { return ({
     ],
 }); };
 exports.details = details;
-// function to get the value of a variable reference
-var getVariableValue = function (reference, args) {
-    if (reference.startsWith('args.')) {
-        // variable could be e.g. args.librarySettings._id or args.inputFileObj._id
-        var variableParts = reference.split('.');
-        switch (variableParts.length) {
-            case 1:
-                return args;
-            case 2:
-                // @ts-expect-error index
-                return args[variableParts[1]];
-            case 3:
-                // @ts-expect-error index
-                return args[variableParts[1]][variableParts[2]];
-            case 4:
-                // @ts-expect-error index
-                return args[variableParts[1]][variableParts[2]][variableParts[3]];
-            case 5:
-                // @ts-expect-error index
-                return args[variableParts[1]][variableParts[2]][variableParts[3]][variableParts[4]];
-            default:
-                throw new Error("invalid variable: [".concat(reference, "]"));
-        }
-    }
-    else {
-        // if it's not relative to args throw an error for invalid reference
-        throw new Error("variable [".concat(reference, "] is not a valid reference. expecting 'args.{something}'"));
-    }
-};
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) {
-    var _a;
     var lib = require('../../../../../methods/lib')();
     // eslint-disable-next-line no-param-reassign
     args.inputs = lib.loadDefaultValues(args.inputs, details);
     // retrieve configuration
-    var currentValue = (_a = Number(args.inputs.variable)) !== null && _a !== void 0 ? _a : 0;
+    var currentValue = args.inputs.variable ? Number(args.inputs.variable) : 0;
     var condition = String(args.inputs.condition);
     var expectedValue = Number(args.inputs.value);
     // evaluate condition

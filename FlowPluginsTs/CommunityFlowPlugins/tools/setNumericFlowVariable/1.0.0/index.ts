@@ -9,8 +9,8 @@ const details = (): IpluginDetails => ({
   name: 'Set Numeric Flow Variable',
   description:
     `
-    Set a Numeric Flow Variable \\n 
-    \\n
+    Set a Numeric Flow Variable. 
+    \n\n
     This supports additional operations compared to the basic 'Set Flow Variable' plugin that are helpful for dealing 
     with numeric types. This includes the ability to increment or decrement the value. If the specified variable does 
     not already have a value then it will be defaulted to 0. This makes it far easier to manage flow loops.
@@ -35,12 +35,14 @@ const details = (): IpluginDetails => ({
       },
       tooltip:
         `
-        Name of the variable to set \\n
-        \\n
-        Example:\\n
-        transcode_attempts \\n
-        \\n
-        Could be referenced in a 'Check Numeric Flow Variables' plugin using reference: \\n
+        Name of the variable to set. 
+        \n\n
+        Example:
+        \n\n
+        transcode_attempts 
+        \n\n
+        Could be referenced in a 'Check Numeric Flow Variables' plugin using reference: 
+        \n\n
         {{{args.variables.user.transcode_attempts}}}
         `,
     },
@@ -61,13 +63,17 @@ const details = (): IpluginDetails => ({
       },
       tooltip:
         `
-        Operation to apply \\n
-        \\n
-        - 'increment' will add one to the current value (same as operation=add and value=1) \\n
-        - 'decrement' will subtract one to the current value (same as operation=subtract and value=1) \\n
-        - 'equals' will set the variable to the input value below \\n
-        - 'add' will add the value below to the current value  \\n
-        - 'subtract' will subtract the value below from the current value  \\n
+        Operation to apply 
+        \n\n
+        - 'increment' will add one to the current value (same as operation=add and value=1) 
+        \n\n
+        - 'decrement' will subtract one to the current value (same as operation=subtract and value=1) 
+        \n\n
+        - 'equals' will set the variable to the input value below 
+        \n\n
+        - 'add' will add the value below to the current value  
+        \n\n
+        - 'subtract' will subtract the value below from the current value 
         `,
     },
     {

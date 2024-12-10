@@ -42,7 +42,7 @@ var metadataUtils_1 = require("../../../../FlowHelpers/1.0.0/metadataUtils");
 /* eslint-disable no-param-reassign */
 var details = function () { return ({
     name: 'Tag Streams',
-    description: "\n    Add missing tags. \n    \\n\\n\n    Checks all streams for missing titles, and optionally overwrites existing ones with new ones generated from current\n    title metadata. \n    ",
+    description: "\n    Add missing tags. \n    \n\n\n    Checks all streams for missing titles, and optionally overwrites existing ones with new ones generated from current\n    title metadata. \n    ",
     style: {
         borderColor: '#6efefc',
     },
@@ -54,44 +54,34 @@ var details = function () { return ({
     icon: '',
     inputs: [
         {
-            label: 'Force New Titles',
+            label: 'Force New Titles for Standard Streams',
             name: 'forceTitles',
             type: 'boolean',
             defaultValue: 'false',
             inputUI: {
                 type: 'switch',
             },
-            tooltip: "\n        Specify whether to forcibly re-generate all video, audio, and subtitle stream titles. \n        \\n\\n\n        This may help if the existing tags include now-outdated info on codec, bitrate, etc. By default this will not be\n        applied to descriptive or commentary streams which already have a title. See the below flags to force those as \n        well. \n        ",
+            tooltip: "\n        Specify whether to forcibly re-generate all video, audio, and subtitle stream titles. \n        \n\n\n        This may help if the existing tags include now-outdated info on codec, bitrate, etc. By default this will not be\n        applied to descriptive or commentary streams which already have a title. See the below flags to force those as \n        well. \n        ",
         },
         {
             label: 'Force New Titles for Commentary Streams',
             name: 'forceTitleCommentary',
             type: 'boolean',
-            defaultValue: 'true',
+            defaultValue: 'false',
             inputUI: {
                 type: 'switch',
             },
-            tooltip: "\n        Specify whether to forcibly re-generate stream titles for streams that are commentary. \n        \\n\\n\n        Many commentary streams already have descriptive titles rather than codec/bitrate information. \n        ",
+            tooltip: "\n        Specify whether to forcibly re-generate stream titles for streams that are commentary. \n        \n\n\n        Many commentary streams already have descriptive titles rather than codec/bitrate information. \n        ",
         },
         {
             label: 'Force New Titles for Descriptive Streams',
             name: 'forceTitleDescriptive',
             type: 'boolean',
-            defaultValue: 'true',
+            defaultValue: 'false',
             inputUI: {
                 type: 'switch',
             },
-            tooltip: "\n        Specify whether to forcibly re-generate stream titles for streams that are descriptive. \n        \\n\\n\n        Many descriptive streams already have descriptive titles rather than codec/bitrate information. \n        ",
-        },
-        {
-            label: 'Set Disposition Flags',
-            name: 'setDisposition',
-            type: 'boolean',
-            defaultValue: 'true',
-            inputUI: {
-                type: 'switch',
-            },
-            tooltip: "\n        Specify whether to set missing disposition flags. \n        \\n\\n\n        If a stream has 'commentary', 'descriptive', or 'sdh' in the title but is missing the appropriate disposition \n        flag then set these flags. Additionally, if a video or audio stream is the first one but it does not have the\n        'default' flag set then enable it. \n        ",
+            tooltip: "\n        Specify whether to forcibly re-generate stream titles for streams that are descriptive. \n        \n\n\n        Many descriptive streams already have descriptive titles rather than codec/bitrate information. \n        ",
         },
         {
             label: 'Set Language Tag',
@@ -127,6 +117,16 @@ var details = function () { return ({
                 },
             },
             tooltip: 'Enter the language tag to use for untagged streams.',
+        },
+        {
+            label: 'Set Disposition Flags',
+            name: 'setDisposition',
+            type: 'boolean',
+            defaultValue: 'true',
+            inputUI: {
+                type: 'switch',
+            },
+            tooltip: "\n        Specify whether to set missing disposition flags. \n        \n\n\n        If a stream has 'commentary', 'descriptive', or 'sdh' in the title but is missing the appropriate disposition \n        flag then set these flags. Additionally, if a video or audio stream is the first one but it does not have the\n        'default' flag set then enable it. \n        ",
         },
     ],
     outputs: [

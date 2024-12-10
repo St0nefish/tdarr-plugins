@@ -43,7 +43,7 @@ var flowUtils_1 = require("../../../../FlowHelpers/1.0.0/interfaces/flowUtils");
 var metadataUtils_1 = require("../../../../FlowHelpers/1.0.0/metadataUtils");
 /* eslint-disable no-param-reassign */
 var details = function () { return ({
-    name: 'Set Video Encoder',
+    name: 'Set Video Encoder (stonefish)',
     description: "\n     Configure the video encoder settings \n     \n\n\n     See the following resources for more details on what these settings do:\n     \n\n\n     - https://trac.ffmpeg.org/wiki/Encode/H.264\n     \n\n\n     - https://trac.ffmpeg.org/wiki/Encode/H.265\n     \n\n\n     - https://trac.ffmpeg.org/wiki/Encode/AV1\n     \n\n\n     Credit to the default ffmpegCommandSetVideoEncoder plugin. I forked it to add options to control the title \n     behavior and change default values to match my personal preference.\n     ",
     style: {
         borderColor: '#6efefc',
@@ -202,7 +202,7 @@ var details = function () { return ({
             label: 'Title Behavior',
             name: 'titleMode',
             type: 'string',
-            defaultValue: 'true',
+            defaultValue: 'clear',
             inputUI: {
                 type: 'dropdown',
                 options: [
@@ -211,7 +211,7 @@ var details = function () { return ({
                     'generate',
                 ],
             },
-            tooltip: "\n        Specify how to handle the title of the resulting stream\n        \\n\\n\n        - default : defer to the default ffmpeg behavior\n        \\n\\n\n        - clear : clear the title value\n        \\n\\n\n        - generate : generate a title from {codec}\n        ",
+            tooltip: "\n        Specify how to handle the title of the resulting stream\n        \n\n\n        - default : defer to the default ffmpeg behavior\n        \n\n\n        - clear : clear the title value\n        \n\n\n        - generate : generate a title from {codec}\n        ",
         },
     ],
     outputs: [

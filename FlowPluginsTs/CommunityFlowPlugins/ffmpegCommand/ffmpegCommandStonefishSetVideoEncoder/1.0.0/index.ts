@@ -10,7 +10,7 @@ import { getCodecType } from '../../../../FlowHelpers/1.0.0/metadataUtils';
 
 /* eslint-disable no-param-reassign */
 const details = (): IpluginDetails => ({
-  name: 'Set Video Encoder',
+  name: 'Set Video Encoder (stonefish)',
   description:
     `
      Configure the video encoder settings 
@@ -183,7 +183,7 @@ const details = (): IpluginDetails => ({
       label: 'Title Behavior',
       name: 'titleMode',
       type: 'string',
-      defaultValue: 'true',
+      defaultValue: 'clear',
       inputUI: {
         type: 'dropdown',
         options: [
@@ -195,11 +195,11 @@ const details = (): IpluginDetails => ({
       tooltip:
         `
         Specify how to handle the title of the resulting stream
-        \\n\\n
+        \n\n
         - default : defer to the default ffmpeg behavior
-        \\n\\n
+        \n\n
         - clear : clear the title value
-        \\n\\n
+        \n\n
         - generate : generate a title from {codec}
         `,
     },

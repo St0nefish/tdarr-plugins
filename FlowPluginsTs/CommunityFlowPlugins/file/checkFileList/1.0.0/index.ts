@@ -16,8 +16,8 @@ const details = (): IpluginDetails => ({
   name: 'Check List File',
   description:
     `
-    Check the current file name against each entry in the specified list file \\n
-    \\n
+    Check the current file name against each entry in the specified list file. 
+    \n\n
     My default media behavior is to start with the highest quality REMUX h.264 files that I can find and utilize Tdarr 
     to re-encode these to x265 using settings that meet my quality criteria while reducing file size. I use this plugin 
     to enable a 'blocklist' of files I wish to leave in the original REMUX quality. It loads a line-feed-delimited file
@@ -43,9 +43,9 @@ const details = (): IpluginDetails => ({
       },
       tooltip:
         `
-        Specify the full path to a file containing a line-feed-delimited list of strings \\n
-        \\n
-        Each entry in the file will be evaluated against the current file name using the operation specified below \\n
+        Specify the full path to a file containing a line-feed-delimited list of strings.  
+        \n\n
+        Each entry in the file will be evaluated against the current file name using the operation specified below. 
         `,
     },
     {

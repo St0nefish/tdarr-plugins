@@ -6,8 +6,8 @@ var fileUtils_1 = require("../../../../FlowHelpers/1.0.0/fileUtils");
 var metadataUtils_1 = require("../../../../FlowHelpers/1.0.0/metadataUtils");
 /* eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }] */
 var details = function () { return ({
-    name: 'Ensure Audio Stream',
-    description: "\n    Ensure that the file has an audio stream matching the configured values. \n    \\n\\n\n    If a stream already exists matching the configured language, codec, and channel count then nothing will happen. If \n    no stream matches these then one will be created using default ffmpeg settings, or if specified the optional \n    bitrate and/or samplerate values. This can be used to ensure there is an audio stream with maximum compatibility \n    for your typical players. \n    \\n\\n\n    Credit to the standard ffmpegCommandEnsureAudioStream plugin for the starting code. I tweaked some things add a few\n    additional options to control the title of the resulting stream and ensure I never accidentally used a commentary or\n    descriptive stream as the encoding source. \n    ",
+    name: 'Create Audio Stream',
+    description: "\n    Create an audio stream matching the configured values. \n    \n\n\n    If a stream already exists matching the configured language, codec, and channel count then nothing will happen. If \n    no stream matches these then one will be created using default ffmpeg settings for that codec, or if specified the \n    optional bitrate and/or samplerate values. This can be used to ensure there is an audio stream with maximum \n    compatibility for your typical players. \n    \n\n\n    Credit to the standard ffmpegCommandEnsureAudioStream plugin for the starting code. I tweaked some things add a few\n    additional options to control the title of the resulting stream and ensure I never accidentally used a commentary or\n    descriptive stream as the encoding source. \n    ",
     style: {
         borderColor: '#6efefc',
     },
@@ -63,7 +63,7 @@ var details = function () { return ({
             inputUI: {
                 type: 'text',
             },
-            tooltip: "\n        Enter the desired audio language tag \n        \\n\\n\n        This specifies the language tag of the desired audio stream. If at least one stream is found matching this \n        language then it will be used as the source to generate a new track matching the desired codec and channels. \n        If no audio stream is found matching this language tag then this plugin will fail.\n        ",
+            tooltip: "\n        Enter the desired audio language tag \n        \n\n\n        This specifies the language tag of the desired audio stream. If at least one stream is found matching this \n        language then it will be used as the source to generate a new track matching the desired codec and channels. \n        If no audio stream is found matching this language tag then this plugin will fail.\n        ",
         },
         {
             label: 'Enable Bitrate',
@@ -148,7 +148,7 @@ var details = function () { return ({
                     'generate',
                 ],
             },
-            tooltip: "\n        Stream Title Behavior\n        \\n\\n\n        Choose how to handle the title tag for the generated stream (if required):\n        \\n\\n\n        - clear : Leave the stream title empty. This can be useful if you are using another plugin later to generate \n          titles. Tagging after the encode completes can make it easier to include some desired metadata in the \n          title. \n        \\n\\n\n        - generate : Generate a title for this stream using input encode settings. Default pattern is {codec channels \n          language}\n        ",
+            tooltip: "\n        Stream Title Behavior\n        \n\n\n        Choose how to handle the title tag for the generated stream (if required):\n        \n\n\n        - clear : Leave the stream title empty. This can be useful if you are using another plugin later to generate \n          titles. Tagging after the encode completes can make it easier to include some desired metadata in the \n          title. \n        \n\n\n        - generate : Generate a title for this stream using input encode settings. Default pattern is {codec channels \n          language}\n        ",
         },
     ],
     outputs: [

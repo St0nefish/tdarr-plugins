@@ -26,7 +26,7 @@ const details = (): IpluginDetails => ({
   description:
     `
     Add missing tags. 
-    \\n\\n
+    \n\n
     Checks all streams for missing titles, and optionally overwrites existing ones with new ones generated from current
     title metadata. 
     `,
@@ -41,7 +41,7 @@ const details = (): IpluginDetails => ({
   icon: '',
   inputs: [
     {
-      label: 'Force New Titles',
+      label: 'Force New Titles for Standard Streams',
       name: 'forceTitles',
       type: 'boolean',
       defaultValue: 'false',
@@ -51,7 +51,7 @@ const details = (): IpluginDetails => ({
       tooltip:
         `
         Specify whether to forcibly re-generate all video, audio, and subtitle stream titles. 
-        \\n\\n
+        \n\n
         This may help if the existing tags include now-outdated info on codec, bitrate, etc. By default this will not be
         applied to descriptive or commentary streams which already have a title. See the below flags to force those as 
         well. 
@@ -61,14 +61,14 @@ const details = (): IpluginDetails => ({
       label: 'Force New Titles for Commentary Streams',
       name: 'forceTitleCommentary',
       type: 'boolean',
-      defaultValue: 'true',
+      defaultValue: 'false',
       inputUI: {
         type: 'switch',
       },
       tooltip:
         `
         Specify whether to forcibly re-generate stream titles for streams that are commentary. 
-        \\n\\n
+        \n\n
         Many commentary streams already have descriptive titles rather than codec/bitrate information. 
         `,
     },
@@ -76,32 +76,15 @@ const details = (): IpluginDetails => ({
       label: 'Force New Titles for Descriptive Streams',
       name: 'forceTitleDescriptive',
       type: 'boolean',
-      defaultValue: 'true',
+      defaultValue: 'false',
       inputUI: {
         type: 'switch',
       },
       tooltip:
         `
         Specify whether to forcibly re-generate stream titles for streams that are descriptive. 
-        \\n\\n
+        \n\n
         Many descriptive streams already have descriptive titles rather than codec/bitrate information. 
-        `,
-    },
-    {
-      label: 'Set Disposition Flags',
-      name: 'setDisposition',
-      type: 'boolean',
-      defaultValue: 'true',
-      inputUI: {
-        type: 'switch',
-      },
-      tooltip:
-        `
-        Specify whether to set missing disposition flags. 
-        \\n\\n
-        If a stream has 'commentary', 'descriptive', or 'sdh' in the title but is missing the appropriate disposition 
-        flag then set these flags. Additionally, if a video or audio stream is the first one but it does not have the
-        'default' flag set then enable it. 
         `,
     },
     {
@@ -138,6 +121,23 @@ const details = (): IpluginDetails => ({
         },
       },
       tooltip: 'Enter the language tag to use for untagged streams.',
+    },
+    {
+      label: 'Set Disposition Flags',
+      name: 'setDisposition',
+      type: 'boolean',
+      defaultValue: 'true',
+      inputUI: {
+        type: 'switch',
+      },
+      tooltip:
+        `
+        Specify whether to set missing disposition flags. 
+        \n\n
+        If a stream has 'commentary', 'descriptive', or 'sdh' in the title but is missing the appropriate disposition 
+        flag then set these flags. Additionally, if a video or audio stream is the first one but it does not have the
+        'default' flag set then enable it. 
+        `,
     },
   ],
   outputs: [

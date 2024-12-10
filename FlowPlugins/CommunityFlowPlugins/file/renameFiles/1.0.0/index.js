@@ -147,7 +147,7 @@ var details = function () { return ({
             label: 'Metadata Regex',
             name: 'metadataRegex',
             type: 'string',
-            defaultValue: '/(?<= - )(\\[[^]]+\\])+(?=(-[a-z0-9_-]+)?(\\.[a-z0-9]+)+)/gi',
+            defaultValue: '/(\\[.*?\\]+)/',
             inputUI: {
                 type: 'text',
                 displayConditions: {
@@ -166,7 +166,7 @@ var details = function () { return ({
                     ],
                 },
             },
-            tooltip: "\n        Enter a string which is used as a regex to locate the relevant portion of the file name that contains the video \n        and audio metadata to be updated. This can help prevent accidentally mutilating a file name that happens to \n        contain some bit of text that might match one of the pieces being replaced. Do not include the '/' delimiters \n        or the trailing flags. This will be converted to a proper RegExp via the constructor and always uses the 'gi' \n        flags for global/case-insensitive. \n        \n\n\n        For example, my standard naming scheme is:\n        \n\n\n        '{title stripped of special characters} - [{video_metadata}][{audio_metadata}]-release.mkv'\n        \n\n\n        'The Lord of the Rings The Return of the King (2003) - [x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'\n        \n\n\n        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [AMZN WEBDL-1080p][EAC3 5.1][x265]-Telly.mkv\n        \n\n\n        To best isolate the metadata I use the default regex above to isolate the '[x264 Remux-1080p][TrueHD 6.1]' and \n        only replace data in that block. The same regex is then used to replace the old metadata block in the file \n        name(s) with the new one. \n        ",
+            tooltip: "\n        Enter a string which is used as a regex to locate the relevant portion of the file name that contains the video \n        and audio metadata to be updated. This can help prevent accidentally mutilating a file name that happens to \n        contain some bit of text that might match one of the pieces being replaced. Do not include the '/' delimiters \n        or the trailing flags. This will be converted to a proper RegExp via the constructor and always uses the 'gi' \n        flags for global/case-insensitive. \n        \n\n\n        For example, my standard naming scheme is:\n        \n\n\n        '{title stripped of special characters} - [{video_metadata}][{audio_metadata}]-release.mkv'\n        \n\n\n        'The Lord of the Rings The Return of the King (2003) - [x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'\n        \n\n\n        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [x265 AMZN WEBDL-1080p][EAC3 5.1]-Telly.mkv\n        \n\n\n        To best isolate the metadata I use the default regex above to isolate the '[x264 Remux-1080p][TrueHD 6.1]' and \n        only replace data in that block. The same regex is then used to replace the old metadata block in the file \n        name(s) with the new one. \n        ",
         },
     ],
     outputs: [
@@ -239,11 +239,14 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         args.jobLog("checking if file [".concat(filePath.base, "] matches regex [").concat(JSON.stringify(metadataRegex), "]"));
                         var matches = metadataRegex ? metadataRegex.exec(filePath.base) : null;
                         if (matches) {
-                            newName = matches[0];
-                            args.jobLog("found match for regex [".concat(JSON.stringify(metadataRegex), "]: [").concat(newName, "]"));
+                            matches.forEach(function (match, index) {
+                                args.jobLog("group ".concat(index, " = ").concat(match));
+                            });
+                            newName = matches[1];
+                            args.jobLog("found match for regex: [".concat(newName, "]"));
                         }
                         else {
-                            args.jobLog("no match for regex: [".concat(JSON.stringify(metadataRegex), "] in file [").concat(filePath.base, "]"));
+                            args.jobLog("no match for regex in file [".concat(filePath.base, "]"));
                         }
                         args.jobLog("executing rename on [".concat(newName, "]"));
                     }
@@ -281,7 +284,6 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     }
                     // if using the metadata delimiter now replace the entire original suffix with the new one
                     if (enableMetadataRegex && metadataRegex) {
-                        args.jobLog("replacing regex format mask with [".concat(newName, "]"));
                         newName = filePath.base.replace(metadataRegex, newName);
                     }
                     args.jobLog("renaming [".concat(filePath.base, "] to [").concat(newName, "]"));
@@ -297,40 +299,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
             case 1:
                 _a.sent();
                 _a.label = 2;
-            case 2: 
-            // let newName = String(args.inputs.fileRename).trim();
-            // newName = newName.replace(/\${fileName}/g, fileName);
-            // newName = newName.replace(/\${container}/g, getContainer(args.inputFileObj._id));
-            //
-            // const newPath = `${fileDir}/${newName}`;
-            //
-            // if (args.inputFileObj._id === newPath) {
-            //   args.jobLog('Input and output path are the same, skipping rename.');
-            //
-            //   return {
-            //     outputFileObj: {
-            //       _id: args.inputFileObj._id,
-            //     },
-            //     outputNumber: 1,
-            //     variables: args.variables,
-            //   };
-            // }
-            //
-            // await fileMoveOrCopy({
-            //   operation: 'move',
-            //   sourcePath: args.inputFileObj._id,
-            //   destinationPath: newPath,
-            //   args,
-            // });
-            //
-            // return {
-            //   outputFileObj: {
-            //     _id: newPath,
-            //   },
-            //   outputNumber: 1,
-            //   variables: args.variables,
-            // };
-            return [2 /*return*/, {
+            case 2: return [2 /*return*/, {
                     outputFileObj: args.inputFileObj,
                     outputNumber: 1,
                     variables: args.variables,

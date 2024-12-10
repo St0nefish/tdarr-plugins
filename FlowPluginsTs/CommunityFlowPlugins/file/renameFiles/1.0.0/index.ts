@@ -173,7 +173,7 @@ const details = (): IpluginDetails => ({
       label: 'Metadata Regex',
       name: 'metadataRegex',
       type: 'string',
-      defaultValue: '/(?<= - )(\\[[^]]+\\])+(?=(-[a-z0-9_-]+)?(\\.[a-z0-9]+)+)/gi',
+      defaultValue: '/(\\[.*?\\]+)/',
       inputUI: {
         type: 'text',
         displayConditions: {
@@ -206,7 +206,7 @@ const details = (): IpluginDetails => ({
         \n\n
         'The Lord of the Rings The Return of the King (2003) - [x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'
         \n\n
-        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [AMZN WEBDL-1080p][EAC3 5.1][x265]-Telly.mkv
+        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [x265 AMZN WEBDL-1080p][EAC3 5.1]-Telly.mkv
         \n\n
         To best isolate the metadata I use the default regex above to isolate the '[x264 Remux-1080p][TrueHD 6.1]' and 
         only replace data in that block. The same regex is then used to replace the old metadata block in the file 
@@ -287,10 +287,13 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       args.jobLog(`checking if file [${filePath.base}] matches regex [${JSON.stringify(metadataRegex)}]`);
       const matches: RegExpExecArray | null = metadataRegex ? metadataRegex.exec(filePath.base) : null;
       if (matches) {
-        newName = matches[0];
-        args.jobLog(`found match for regex [${JSON.stringify(metadataRegex)}]: [${newName}]`);
+        matches.forEach((match, index) => {
+          args.jobLog(`group ${index} = ${match}`);
+        });
+        newName = matches[1];
+        args.jobLog(`found match for regex: [${newName}]`);
       } else {
-        args.jobLog(`no match for regex: [${JSON.stringify(metadataRegex)}] in file [${filePath.base}]`);
+        args.jobLog(`no match for regex in file [${filePath.base}]`);
       }
       args.jobLog(`executing rename on [${newName}]`);
     }
@@ -328,7 +331,6 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     }
     // if using the metadata delimiter now replace the entire original suffix with the new one
     if (enableMetadataRegex && metadataRegex) {
-      args.jobLog(`replacing regex format mask with [${newName}]`);
       newName = filePath.base.replace(metadataRegex, newName);
     }
     args.jobLog(`renaming [${filePath.base}] to [${newName}]`);
@@ -343,39 +345,6 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       args,
     });
   }
-
-  // let newName = String(args.inputs.fileRename).trim();
-  // newName = newName.replace(/\${fileName}/g, fileName);
-  // newName = newName.replace(/\${container}/g, getContainer(args.inputFileObj._id));
-  //
-  // const newPath = `${fileDir}/${newName}`;
-  //
-  // if (args.inputFileObj._id === newPath) {
-  //   args.jobLog('Input and output path are the same, skipping rename.');
-  //
-  //   return {
-  //     outputFileObj: {
-  //       _id: args.inputFileObj._id,
-  //     },
-  //     outputNumber: 1,
-  //     variables: args.variables,
-  //   };
-  // }
-  //
-  // await fileMoveOrCopy({
-  //   operation: 'move',
-  //   sourcePath: args.inputFileObj._id,
-  //   destinationPath: newPath,
-  //   args,
-  // });
-  //
-  // return {
-  //   outputFileObj: {
-  //     _id: newPath,
-  //   },
-  //   outputNumber: 1,
-  //   variables: args.variables,
-  // };
 
   return {
     outputFileObj: args.inputFileObj,

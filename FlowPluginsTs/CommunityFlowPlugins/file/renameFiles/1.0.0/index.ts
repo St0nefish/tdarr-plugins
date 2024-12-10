@@ -1,7 +1,3 @@
-/* eslint-disable max-len
-   ----------------------
-   Links and regexes go beyond allowed length and become awkward when forced multiline
-*/
 import path, { ParsedPath } from 'path';
 import fs from 'fs';
 import fileMoveOrCopy from '../../../../FlowHelpers/1.0.0/fileMoveOrCopy';
@@ -28,7 +24,8 @@ const details = (): IpluginDetails => ({
     name but different extensions. This can be useful for updating your file name(s) to match codecs, resolutions, etc 
     after running through tdarr and potentially changing those values. 
     \n\n
-    Credit to [schadis's Tdarr_Plugin_rename_based_on_codec_schadi plugin](https://github.com/schadis/Tdarr_Plugins/blob/master/Community/Tdarr_Plugin_scha_rename_based_on_codec_schadi.js)
+    Credit to [schadis's Tdarr_Plugin_rename_based_on_codec_schadi plugin]
+    (https://github.com/schadis/Tdarr_Plugins/blob/master/Community/Tdarr_Plugin_scha_rename_based_on_codec_schadi.js)
     for influence and several of the regexes and maps used for renaming. I've extended it to support resolution and
     channel layouts in the rename and to convert to a flow plugin. 
     `,
@@ -254,6 +251,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // regexes for replacing video & audio metadata
   const videoCodecRegex = /(h264|h265|x264|x265|avc|hevc|mpeg2|av1|vc1)/gi;
   const videoResRegex = /(480p|576p|720p|1080p|1440p|2160p|4320p)/gi;
+  // eslint-disable-next-line max-len
   const audioCodecRegex = /(aac|ac3|eac3|flac|mp2|mp3|truehd|dts[-. ]hd[-. ]ma|dts[-. ]hd[-. ]es|dts[-. ]hd[-. ]hra|dts[-. ]express|dts)/gi;
   const audioChannelsRegex = /(1\.0|2\.0|2\.1|3\.0|3\.1|5\.1|6\.1|7\.1)/gi;
   // get file name and path from input object

@@ -151,7 +151,7 @@ var details = function () { return ({
             label: 'Metadata Regex',
             name: 'metadataRegex',
             type: 'string',
-            defaultValue: '(?<= - )(\\[[^]]+\\])+(?=(-[a-z0-9_-]+)?(\\.[a-z0-9]+)+)',
+            defaultValue: '/(?<= - )(\\[[^]]+\\])+(?=(-[a-z0-9_-]+)?(\\.[a-z0-9]+)+)/gi',
             inputUI: {
                 type: 'text',
                 displayConditions: {
@@ -187,7 +187,7 @@ var details = function () { return ({
 exports.details = details;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, replaceVideoCodec, replaceVideoRes, replaceAudioCodec, replaceAudioChannels, renameOtherFiles, extensions, enableMetadataRegex, metadataRegex, streams, mediaInfo, videoCodecRegex, videoResRegex, audioCodecRegex, audioChannelsRegex, inputFilePath, inputFileName, inputFileDir, files;
+    var lib, replaceVideoCodec, replaceVideoRes, replaceAudioCodec, replaceAudioChannels, renameOtherFiles, extensions, enableMetadataRegex, metadataRegexStr, metadataRegex, streams, mediaInfo, videoCodecRegex, videoResRegex, audioCodecRegex, audioChannelsRegex, inputFilePath, inputFileName, inputFileDir, files;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -205,7 +205,8 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     .filter(function (item) { return item && item.length > 0; })
                     .filter(function (item, index, items) { return items.indexOf(item) === index; });
                 enableMetadataRegex = Boolean(args.inputs.enableMetadataRegex);
-                metadataRegex = enableMetadataRegex ? RegExp(String(args.inputs.metadataRegex), 'gi') : null;
+                metadataRegexStr = String(args.inputs.metadataRegex);
+                metadataRegex = enableMetadataRegex ? RegExp(metadataRegexStr) : null;
                 streams = args.inputFileObj.ffProbeData.streams;
                 mediaInfo = args.inputFileObj.mediaInfo;
                 videoCodecRegex = /(h264|h265|x264|x265|avc|hevc|mpeg2|av1|vc1)/gi;
@@ -238,12 +239,15 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 files.forEach(function (filePath) {
                     var newName = filePath.base;
                     // if using the metadata delimiter parse only the end of the file
-                    if (enableMetadataRegex && metadataRegex) {
-                        args.jobLog("checking if file [".concat(filePath.base, "] matches regex [").concat(metadataRegex.source, "]"));
-                        var matches = metadataRegex.exec(filePath.base);
+                    if (enableMetadataRegex) {
+                        args.jobLog("checking if file [".concat(filePath.base, "] matches regex [").concat(JSON.stringify(metadataRegex), "]"));
+                        var matches = metadataRegex ? metadataRegex.exec(filePath.base) : null;
                         if (matches) {
                             newName = matches[0];
-                            args.jobLog("found match for regex: [".concat(newName, "]"));
+                            args.jobLog("found match for regex [".concat(JSON.stringify(metadataRegex), "]: [").concat(newName, "]"));
+                        }
+                        else {
+                            args.jobLog("no match for regex: [".concat(JSON.stringify(metadataRegex), "] in file [").concat(filePath.base, "]"));
                         }
                         args.jobLog("executing rename on [".concat(newName, "]"));
                     }

@@ -176,7 +176,7 @@ const details = (): IpluginDetails => ({
       label: 'Metadata Regex',
       name: 'metadataRegex',
       type: 'string',
-      defaultValue: '(?<= - )(\\[[^]]+\\])+(?=(-[a-z0-9_-]+)?(\\.[a-z0-9]+)+)',
+      defaultValue: '/(?<= - )(\\[[^]]+\\])+(?=(-[a-z0-9_-]+)?(\\.[a-z0-9]+)+)/gi',
       inputUI: {
         type: 'text',
         displayConditions: {
@@ -246,7 +246,8 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     .filter((item) => item && item.length > 0)
     .filter((item, index, items) => items.indexOf(item) === index);
   const enableMetadataRegex = Boolean(args.inputs.enableMetadataRegex);
-  const metadataRegex = enableMetadataRegex ? RegExp(String(args.inputs.metadataRegex), 'gi') : null;
+  const metadataRegexStr = String(args.inputs.metadataRegex);
+  const metadataRegex: RegExp | null = enableMetadataRegex ? RegExp(metadataRegexStr) : null;
   // grab handles to streams and media info
   const { streams } = args.inputFileObj.ffProbeData;
   const { mediaInfo } = args.inputFileObj;
@@ -284,12 +285,14 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   files.forEach((filePath) => {
     let newName: string = filePath.base;
     // if using the metadata delimiter parse only the end of the file
-    if (enableMetadataRegex && metadataRegex) {
-      args.jobLog(`checking if file [${filePath.base}] matches regex [${metadataRegex.source}]`);
-      const matches: RegExpExecArray | null = metadataRegex.exec(filePath.base);
+    if (enableMetadataRegex) {
+      args.jobLog(`checking if file [${filePath.base}] matches regex [${JSON.stringify(metadataRegex)}]`);
+      const matches: RegExpExecArray | null = metadataRegex ? metadataRegex.exec(filePath.base) : null;
       if (matches) {
         newName = matches[0];
-        args.jobLog(`found match for regex: [${newName}]`);
+        args.jobLog(`found match for regex [${JSON.stringify(metadataRegex)}]: [${newName}]`);
+      } else {
+        args.jobLog(`no match for regex: [${JSON.stringify(metadataRegex)}] in file [${filePath.base}]`);
       }
       args.jobLog(`executing rename on [${newName}]`);
     }

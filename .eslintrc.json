@@ -85,7 +85,6 @@
         "tsx": "never"
       }
     ],
-    // I really dislike the destructuring syntax, it's much less clear imo
-    "prefer-destructuring": 0
+    "prefer-destructuring": 0 // I find destructuring syntax less clear
   }
 }

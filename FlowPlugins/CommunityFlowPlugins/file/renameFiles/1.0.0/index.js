@@ -51,7 +51,7 @@ var metadataUtils_1 = require("../../../../FlowHelpers/1.0.0/metadataUtils");
 /* eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }] */
 var details = function () { return ({
     name: 'Rename Files',
-    description: "\n    Renames the primary video file and optionally any associated files in the same directory which use the same root \n    name but different extensions. This can be useful for updating your file name(s) to match codecs, resolutions, etc \n    after running through tdarr and potentially changing those values. \n    ",
+    description: "\n    Renames the primary video file and optionally any associated files in the same directory which use the same root \n    name but different extensions. This can be useful for updating your file name(s) to match codecs, resolutions, etc \n    after running through tdarr and potentially changing those values. \n    \n\n\n    Credit to [schadis's Tdarr_Plugin_rename_based_on_codec_schadi plugin](https://github.com/schadis/Tdarr_Plugins/blob/master/Community/Tdarr_Plugin_scha_rename_based_on_codec_schadi.js)\n    for influence and several of the regexes and maps used for renaming. I've extended it to support resolution and\n    channel layouts in the rename and to convert to a flow plugin. \n    ",
     style: {
         borderColor: 'green',
     },
@@ -70,7 +70,7 @@ var details = function () { return ({
             inputUI: {
                 type: 'switch',
             },
-            tooltip: "\n        Toggle whether to replace the video codec name in the file(s). \n        \n\n\n        For example, if you've re-encoded from h264/AVC to h265/HEVC then 'h264', 'x264', or 'AVC' in the file name(s) \n        will be replaced with 'H265' or 'x265' depending on if we can determine which encoder was used. New metadata \n        will be retrieved from the first video stream if multiple are present. \n        \n\n\n        Credit to [schadis's Tdarr_Plugin_rename_based_on_codec_schadi plugin](https://github.com/schadis/Tdarr_Plugins/blob/master/Community/Tdarr_Plugin_scha_rename_based_on_codec_schadi.js)\n        for influence and several of the regexes and maps used for renaming. I've extended it to support resolution and\n        channel layouts in the rename and to convert to a flow plugin. \n        ",
+            tooltip: "\n        Toggle whether to replace the video codec name in the file(s). \n        \n\n\n        For example, if you've re-encoded from h264/AVC to h265/HEVC then 'h264', 'x264', or 'AVC' in the file name(s) \n        will be replaced with 'H265' or 'x265' depending on if we can determine which encoder was used. New metadata \n        will be retrieved from the first video stream if multiple are present. \n        ",
         },
         {
             label: 'Replace Video Resolution',

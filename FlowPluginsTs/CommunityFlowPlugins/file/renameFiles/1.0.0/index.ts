@@ -27,6 +27,10 @@ const details = (): IpluginDetails => ({
     Renames the primary video file and optionally any associated files in the same directory which use the same root 
     name but different extensions. This can be useful for updating your file name(s) to match codecs, resolutions, etc 
     after running through tdarr and potentially changing those values. 
+    \n\n
+    Credit to [schadis's Tdarr_Plugin_rename_based_on_codec_schadi plugin](https://github.com/schadis/Tdarr_Plugins/blob/master/Community/Tdarr_Plugin_scha_rename_based_on_codec_schadi.js)
+    for influence and several of the regexes and maps used for renaming. I've extended it to support resolution and
+    channel layouts in the rename and to convert to a flow plugin. 
     `,
   style: {
     borderColor: 'green',
@@ -53,10 +57,6 @@ const details = (): IpluginDetails => ({
         For example, if you've re-encoded from h264/AVC to h265/HEVC then 'h264', 'x264', or 'AVC' in the file name(s) 
         will be replaced with 'H265' or 'x265' depending on if we can determine which encoder was used. New metadata 
         will be retrieved from the first video stream if multiple are present. 
-        \n\n
-        Credit to [schadis's Tdarr_Plugin_rename_based_on_codec_schadi plugin](https://github.com/schadis/Tdarr_Plugins/blob/master/Community/Tdarr_Plugin_scha_rename_based_on_codec_schadi.js)
-        for influence and several of the regexes and maps used for renaming. I've extended it to support resolution and
-        channel layouts in the rename and to convert to a flow plugin. 
         `,
     },
     {

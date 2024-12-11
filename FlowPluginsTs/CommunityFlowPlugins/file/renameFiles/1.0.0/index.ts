@@ -291,15 +291,14 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       args.jobLog(`checking if file [${filePath.base}] matches regex [${JSON.stringify(metadataRegex)}]`);
       const matches: RegExpExecArray | null = metadataRegex ? metadataRegex.exec(filePath.base) : null;
       if (matches) {
+        args.jobLog(`found match for regex: [${newName}] - ${JSON.stringify(matches)}`);
         matches.forEach((match, index) => {
           args.jobLog(`group ${index} = ${match}`);
         });
         newName = matches[1];
-        args.jobLog(`found match for regex: [${newName}]`);
       } else {
         args.jobLog(`no match for regex in file [${filePath.base}]`);
       }
-      args.jobLog(`executing rename on [${newName}]`);
     }
     // if any video-based rename is enabled
     if (replaceVideoCodec || replaceVideoRes) {

@@ -243,16 +243,15 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         args.jobLog("checking if file [".concat(filePath.base, "] matches regex [").concat(JSON.stringify(metadataRegex), "]"));
                         var matches = metadataRegex ? metadataRegex.exec(filePath.base) : null;
                         if (matches) {
+                            args.jobLog("found match for regex: [".concat(newName, "] - ").concat(JSON.stringify(matches)));
                             matches.forEach(function (match, index) {
                                 args.jobLog("group ".concat(index, " = ").concat(match));
                             });
                             newName = matches[1];
-                            args.jobLog("found match for regex: [".concat(newName, "]"));
                         }
                         else {
                             args.jobLog("no match for regex in file [".concat(filePath.base, "]"));
                         }
-                        args.jobLog("executing rename on [".concat(newName, "]"));
                     }
                     // if any video-based rename is enabled
                     if (replaceVideoCodec || replaceVideoRes) {

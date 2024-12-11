@@ -206,7 +206,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     .filter(function (item, index, items) { return items.indexOf(item) === index; });
                 enableMetadataRegex = Boolean(args.inputs.enableMetadataRegex);
                 metadataRegexStr = String(args.inputs.metadataRegex);
-                metadataRegex = enableMetadataRegex ? RegExp(metadataRegexStr) : null;
+                metadataRegex = enableMetadataRegex ? RegExp(metadataRegexStr, 'gi') : null;
                 streams = args.inputFileObj.ffProbeData.streams;
                 mediaInfo = args.inputFileObj.mediaInfo;
                 videoCodecRegex = /(h264|h265|x264|x265|avc|hevc|mpeg2|av1|vc1)/gi;

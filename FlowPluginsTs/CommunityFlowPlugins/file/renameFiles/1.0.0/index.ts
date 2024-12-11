@@ -249,7 +249,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     .filter((item, index, items) => items.indexOf(item) === index);
   const enableMetadataRegex = Boolean(args.inputs.enableMetadataRegex);
   const metadataRegexStr = String(args.inputs.metadataRegex);
-  const metadataRegex: RegExp | null = enableMetadataRegex ? RegExp(metadataRegexStr) : null;
+  const metadataRegex: RegExp | null = enableMetadataRegex ? RegExp(metadataRegexStr, 'gi') : null;
   // grab handles to streams and media info
   const { streams } = args.inputFileObj.ffProbeData;
   const { mediaInfo } = args.inputFileObj;

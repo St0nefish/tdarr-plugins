@@ -250,6 +250,9 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const enableMetadataRegex = Boolean(args.inputs.enableMetadataRegex);
   const metadataRegexStr = String(args.inputs.metadataRegex);
   const metadataRegex: RegExp | null = enableMetadataRegex ? RegExp(metadataRegexStr, 'gi') : null;
+  if (enableMetadataRegex) {
+    args.jobLog(`using RegEx to locate metadata: ${metadataRegexStr}`);
+  }
   // grab handles to streams and media info
   const { streams } = args.inputFileObj.ffProbeData;
   const { mediaInfo } = args.inputFileObj;
@@ -286,16 +289,14 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // iterate files
   files.forEach((filePath) => {
     let newName: string = filePath.base;
+    let originalMetadataStr: string | null = null;
     // if using the metadata delimiter parse only the end of the file
     if (enableMetadataRegex) {
-      args.jobLog(`checking if file [${filePath.base}] matches regex [${JSON.stringify(metadataRegex)}]`);
       const matches: RegExpExecArray | null = metadataRegex ? metadataRegex.exec(filePath.base) : null;
       if (matches) {
         args.jobLog(`found match for regex: [${newName}] - ${JSON.stringify(matches)}`);
-        matches.forEach((match, index) => {
-          args.jobLog(`group ${index} = ${match}`);
-        });
         newName = matches[1];
+        originalMetadataStr = newName;
       } else {
         args.jobLog(`no match for regex in file [${filePath.base}]`);
       }

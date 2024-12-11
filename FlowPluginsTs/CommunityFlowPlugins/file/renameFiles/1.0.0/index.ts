@@ -1,3 +1,8 @@
+/* eslint-disable max-len
+   ----------------------
+   some example file names and regexes are longer than the max
+*/
+
 import path, { ParsedPath } from 'path';
 import fs from 'fs';
 import fileMoveOrCopy from '../../../../FlowHelpers/1.0.0/fileMoveOrCopy';
@@ -173,7 +178,7 @@ const details = (): IpluginDetails => ({
       label: 'Metadata Regex',
       name: 'metadataRegex',
       type: 'string',
-      defaultValue: '/(\\[.*?\\]+)/',
+      defaultValue: '.* - (?:\\{edition-\\w+(?: \\w+)*\\} )?((?:\\[.*?\\])+).*',
       inputUI: {
         type: 'text',
         displayConditions: {
@@ -204,13 +209,13 @@ const details = (): IpluginDetails => ({
         \n\n
         '{title stripped of special characters} - [{video_metadata}][{audio_metadata}]-release.mkv'
         \n\n
-        'The Lord of the Rings The Return of the King (2003) - [x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'
+        'The Lord of the Rings The Return of the King (2003) - {edition-extended} [Hybrid][x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'
         \n\n
         Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [x265 AMZN WEBDL-1080p][EAC3 5.1]-Telly.mkv
         \n\n
-        To best isolate the metadata I use the default regex above to isolate the '[x264 Remux-1080p][TrueHD 6.1]' and 
-        only replace data in that block. The same regex is then used to replace the old metadata block in the file 
-        name(s) with the new one. 
+        To best isolate the metadata I use the default regex above to isolate the portions with metadata in the 
+        brackets and only replace data in that block. The same regex is then used to replace the old metadata block in 
+        the file name(s) with the new one. 
         `,
     },
   ],
@@ -251,8 +256,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // regexes for replacing video & audio metadata
   const videoCodecRegex = /(h264|h265|x264|x265|avc|hevc|mpeg2|av1|vc1)/gi;
   const videoResRegex = /(480p|576p|720p|1080p|1440p|2160p|4320p)/gi;
-  // eslint-disable-next-line max-len
-  const audioCodecRegex = /(aac|ac3|eac3|flac|mp2|mp3|truehd|dts[-. ]hd[-. ]ma|dts[-. ]hd[-. ]es|dts[-. ]hd[-. ]hra|dts[-. ]express|dts)/gi;
+  const audioCodecRegex = /(aac|ac3|eac3|flac|mp2|mp3|truehd|truehd atmos|dts[-. ]hd[-. ]ma|dts[-. ]hd[-. ]es|dts[-. ]hd[-. ]hra|dts[-. ]express|dts)/gi;
   const audioChannelsRegex = /(1\.0|2\.0|2\.1|3\.0|3\.1|5\.1|6\.1|7\.1)/gi;
   // get file name and path from input object
   const inputFilePath: ParsedPath = path.parse(args.inputFileObj._id);

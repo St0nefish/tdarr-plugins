@@ -1,4 +1,8 @@
 "use strict";
+/* eslint-disable max-len
+   ----------------------
+   some example file names and regexes are longer than the max
+*/
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -147,7 +151,7 @@ var details = function () { return ({
             label: 'Metadata Regex',
             name: 'metadataRegex',
             type: 'string',
-            defaultValue: '/(\\[.*?\\]+)/',
+            defaultValue: '.* - (?:\\{edition-\\w+(?: \\w+)*\\} )?((?:\\[.*?\\])+).*',
             inputUI: {
                 type: 'text',
                 displayConditions: {
@@ -166,7 +170,7 @@ var details = function () { return ({
                     ],
                 },
             },
-            tooltip: "\n        Enter a string which is used as a regex to locate the relevant portion of the file name that contains the video \n        and audio metadata to be updated. This can help prevent accidentally mutilating a file name that happens to \n        contain some bit of text that might match one of the pieces being replaced. Do not include the '/' delimiters \n        or the trailing flags. This will be converted to a proper RegExp via the constructor and always uses the 'gi' \n        flags for global/case-insensitive. \n        \n\n\n        For example, my standard naming scheme is:\n        \n\n\n        '{title stripped of special characters} - [{video_metadata}][{audio_metadata}]-release.mkv'\n        \n\n\n        'The Lord of the Rings The Return of the King (2003) - [x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'\n        \n\n\n        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [x265 AMZN WEBDL-1080p][EAC3 5.1]-Telly.mkv\n        \n\n\n        To best isolate the metadata I use the default regex above to isolate the '[x264 Remux-1080p][TrueHD 6.1]' and \n        only replace data in that block. The same regex is then used to replace the old metadata block in the file \n        name(s) with the new one. \n        ",
+            tooltip: "\n        Enter a string which is used as a regex to locate the relevant portion of the file name that contains the video \n        and audio metadata to be updated. This can help prevent accidentally mutilating a file name that happens to \n        contain some bit of text that might match one of the pieces being replaced. Do not include the '/' delimiters \n        or the trailing flags. This will be converted to a proper RegExp via the constructor and always uses the 'gi' \n        flags for global/case-insensitive. \n        \n\n\n        For example, my standard naming scheme is:\n        \n\n\n        '{title stripped of special characters} - [{video_metadata}][{audio_metadata}]-release.mkv'\n        \n\n\n        'The Lord of the Rings The Return of the King (2003) - {edition-extended} [Hybrid][x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'\n        \n\n\n        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [x265 AMZN WEBDL-1080p][EAC3 5.1]-Telly.mkv\n        \n\n\n        To best isolate the metadata I use the default regex above to isolate the portions with metadata in the \n        brackets and only replace data in that block. The same regex is then used to replace the old metadata block in \n        the file name(s) with the new one. \n        ",
         },
     ],
     outputs: [
@@ -207,7 +211,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 mediaInfo = args.inputFileObj.mediaInfo;
                 videoCodecRegex = /(h264|h265|x264|x265|avc|hevc|mpeg2|av1|vc1)/gi;
                 videoResRegex = /(480p|576p|720p|1080p|1440p|2160p|4320p)/gi;
-                audioCodecRegex = /(aac|ac3|eac3|flac|mp2|mp3|truehd|dts[-. ]hd[-. ]ma|dts[-. ]hd[-. ]es|dts[-. ]hd[-. ]hra|dts[-. ]express|dts)/gi;
+                audioCodecRegex = /(aac|ac3|eac3|flac|mp2|mp3|truehd|truehd atmos|dts[-. ]hd[-. ]ma|dts[-. ]hd[-. ]es|dts[-. ]hd[-. ]hra|dts[-. ]express|dts)/gi;
                 audioChannelsRegex = /(1\.0|2\.0|2\.1|3\.0|3\.1|5\.1|6\.1|7\.1)/gi;
                 inputFilePath = path_1.default.parse(args.inputFileObj._id);
                 inputFileName = inputFilePath.name;

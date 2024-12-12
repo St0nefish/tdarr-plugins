@@ -5,7 +5,6 @@
 
 import path, { ParsedPath } from 'path';
 import fs from 'fs';
-import fileMoveOrCopy from '../../../../FlowHelpers/1.0.0/fileMoveOrCopy';
 import {
   IpluginDetails,
   IpluginInputArgs,
@@ -168,7 +167,7 @@ const details = (): IpluginDetails => ({
       },
       tooltip:
         `
-        Toggle whether to enable a regex for isolating the metadata portion of the file name to be replaced
+        Toggle whether to enable a regex for isolating the metadata portion of the file name to be replaced. 
         \n\n
         This can be useful if your file naming pattern allows for relatively easily isolating the portion to be renamed 
         with a regex and can help prevent accidental alterations to other parts of the file name.
@@ -218,6 +217,21 @@ const details = (): IpluginDetails => ({
         the file name(s) with the new one. 
         `,
     },
+    {
+      label: 'Dry Run',
+      name: 'dryRun',
+      type: 'boolean',
+      defaultValue: 'true',
+      inputUI: {
+        type: 'switch',
+      },
+      tooltip:
+        `
+        Toggle whether to actually do the rename operation or just a dry run to log what would happen if enabled. 
+        \n\n
+        This can be useful for testing, especially if using the metadata regex feature.
+        `,
+    },
   ],
   outputs: [
     {
@@ -232,7 +246,7 @@ const details = (): IpluginDetails => ({
 });
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
+const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   const lib = require('../../../../../methods/lib')();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
   args.inputs = lib.loadDefaultValues(args.inputs, details);
@@ -253,6 +267,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   if (enableMetadataRegex) {
     args.jobLog(`using RegEx to locate metadata: ${metadataRegexStr}`);
   }
+  const dryRun = Boolean(args.inputs.dryRun);
   // grab handles to streams and media info
   const { streams } = args.inputFileObj.ffProbeData;
   const { mediaInfo } = args.inputFileObj;
@@ -287,20 +302,18 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       });
   }
   // iterate files
-  files.forEach((filePath) => {
-    let newName: string = filePath.base;
+  files.forEach((filePath: ParsedPath) => {
+    let stringToReplace: string = filePath.base;
     let originalMetadataStr: string | null = null;
     // if using the metadata delimiter parse only the end of the file
     if (enableMetadataRegex) {
       const matches: RegExpExecArray | null = metadataRegex ? metadataRegex.exec(filePath.base) : null;
       if (matches) {
-        args.jobLog(`found match for regex: [${newName}] - ${JSON.stringify(matches)}`);
-        newName = matches[1];
-        originalMetadataStr = newName;
-      } else {
-        args.jobLog(`no match for regex in file [${filePath.base}]`);
+        stringToReplace = matches[1];
+        originalMetadataStr = stringToReplace;
       }
     }
+    args.jobLog(`applying replace operations to string: ${stringToReplace}`);
     // if any video-based rename is enabled
     if (replaceVideoCodec || replaceVideoRes) {
       // first find the first video stream and get its media info
@@ -310,11 +323,11 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
         const videoMediaInfo = getMediaInfoTrack(videoStream, mediaInfo);
         // handle video codec replacement if enabled
         if (replaceVideoCodec) {
-          newName = newName.replace(videoCodecRegex, getFileCodecName(videoStream, videoMediaInfo));
+          stringToReplace = stringToReplace.replace(videoCodecRegex, getFileCodecName(videoStream, videoMediaInfo));
         }
         // handle video resolution replacement if enabled
         if (replaceVideoRes) {
-          newName = newName.replace(videoResRegex, getResolutionName(videoStream));
+          stringToReplace = stringToReplace.replace(videoResRegex, getResolutionName(videoStream));
         }
       }
     }
@@ -325,30 +338,25 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
         const audioMediaInfo = getMediaInfoTrack(audioStream, mediaInfo);
         // handle audio codec replacement if enabled
         if (replaceAudioCodec) {
-          newName = newName.replace(audioCodecRegex, getFileCodecName(audioStream, audioMediaInfo));
+          stringToReplace = stringToReplace.replace(audioCodecRegex, getFileCodecName(audioStream, audioMediaInfo));
         }
         // handle audio channels replacement if enabled
         if (replaceAudioChannels) {
-          newName = newName.replace(audioChannelsRegex, getChannelsName(audioStream));
+          stringToReplace = stringToReplace.replace(audioChannelsRegex, getChannelsName(audioStream));
         }
       }
     }
-    // if using the metadata delimiter now replace the entire original suffix with the new one
-    if (enableMetadataRegex && metadataRegex) {
-      newName = filePath.base.replace(metadataRegex, newName);
+    // if we extracted a metadata string replace only that, otherwise use this whole thing as our new name
+    const newName = originalMetadataStr ? filePath.base.replace(originalMetadataStr, stringToReplace) : stringToReplace;
+    const oldPath = `${filePath.dir}/${filePath.base}`;
+    const newPath = `${filePath.dir}/${newName}`;
+    if (dryRun) {
+      args.jobLog(`would rename || ${oldPath} || to || ${newPath} ||`);
+    } else {
+      args.jobLog(`renaming || ${oldPath} || to || ${newPath} ||`);
+      fs.renameSync(oldPath, newPath);
     }
-    args.jobLog(`renaming [${filePath.base}] to [${newName}]`);
-    // ToDo - actually rename
   });
-
-  if (inputFileName === 'aaaa') {
-    await fileMoveOrCopy({
-      operation: 'move',
-      sourcePath: args.inputFileObj._id,
-      destinationPath: args.inputFileObj._id,
-      args,
-    });
-  }
 
   return {
     outputFileObj: args.inputFileObj,

@@ -115,9 +115,27 @@ var audioCodecMap = {
     'dts 96/24': 'DTS',
 };
 var getFileCodecName = function (stream, mediaInfoTrack) {
+    var _a, _b;
     var codecType = (0, exports.getCodecType)(stream);
-    var codec = String(stream === null || stream === void 0 ? void 0 : stream.codec_name)
-        .toLowerCase();
+    var codec = String(stream === null || stream === void 0 ? void 0 : stream.codec_name).toLowerCase();
+    var profile = (_b = (_a = stream.profile) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== null && _b !== void 0 ? _b : '';
+    if (codecType === 'audio') {
+        // handle some special cases
+        if (codec === 'dts') {
+            if (profile === 'dts-hd ma') {
+                return 'DTS-HD MA';
+            }
+            if (profile.includes('truehd') && profile.includes('atmos')) {
+                return 'TrueHD Atmos';
+            }
+        }
+        if (codec === 'eac3') {
+            if (profile.includes('atmos')) {
+                return 'EAC3 Atmos';
+            }
+        }
+        return audioCodecMap[codec];
+    }
     if (codecType === 'video') {
         if (['hevc', 'x265', 'h265'].includes(codec)) {
             // 265
@@ -135,9 +153,6 @@ var getFileCodecName = function (stream, mediaInfoTrack) {
             }
             return 'h264';
         }
-    }
-    if (codecType === 'audio') {
-        return audioCodecMap[codec];
     }
     return codec;
 };

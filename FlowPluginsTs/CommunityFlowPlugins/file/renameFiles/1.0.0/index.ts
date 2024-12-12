@@ -293,7 +293,7 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
       originalMetadataStr = updatedMetadataStr;
     }
   }
-  args.jobLog(`applying replace operations to string: ${updatedMetadataStr}`);
+  args.jobLog(`applying replace operations to string: {{ ${updatedMetadataStr} }}`);
   // if any video-based rename is enabled
   if (replaceVideoCodec || replaceVideoRes) {
     // first find the first video stream and get its media info
@@ -326,18 +326,15 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
       }
     }
   }
-  args.jobLog(`using new metadata string: ${updatedMetadataStr}`);
+  args.jobLog(`using new metadata string: {{ ${updatedMetadataStr} }}`);
   let outputNumber = 1;
   if (originalMetadataStr === updatedMetadataStr) {
-    args.jobLog(
-      `no renaming required - old metadata - ${originalMetadataStr} - matches new - ${updatedMetadataStr}`,
-    );
+    args.jobLog('no renaming required');
   } else {
     // build a list of other files in the directory - start with our video file with extension
     const files: ParsedPath[] = [inputFilePath];
-    args.jobLog(
-      `finding files in [${inputFileDir}] with name like [${inputFileName}] and extensions ${JSON.stringify(extensions)}`,
-    );
+    args.jobLog(`finding files in {{ ${inputFileDir} }} with name like {{ ${inputFileName} }} and extensions `
+      + `${JSON.stringify(extensions)}`);
     // if enabled add other files in the directory
     if (renameOtherFiles) {
       fs.readdirSync(inputFileDir)
@@ -361,9 +358,9 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
       const oldPath = `${filePath.dir}/${filePath.base}`;
       const newPath = `${filePath.dir}/${newName}`;
       if (dryRun) {
-        args.jobLog(`would rename - ${oldPath} - to - ${newPath}`);
+        args.jobLog(`would rename {{ ${oldPath} }} to {{ ${newPath} }}`);
       } else {
-        args.jobLog(`renaming - ${oldPath} - to - ${newPath}`);
+        args.jobLog(`renaming - {{ ${oldPath} }} to {{ ${newPath} }}`);
         fs.renameSync(oldPath, newPath);
         outputNumber = 2;
       }

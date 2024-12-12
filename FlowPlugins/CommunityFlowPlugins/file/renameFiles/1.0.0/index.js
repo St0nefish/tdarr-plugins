@@ -206,7 +206,7 @@ var plugin = function (args) {
             originalMetadataStr = updatedMetadataStr;
         }
     }
-    args.jobLog("applying replace operations to string: ".concat(updatedMetadataStr));
+    args.jobLog("applying replace operations to string: {{ ".concat(updatedMetadataStr, " }}"));
     // if any video-based rename is enabled
     if (replaceVideoCodec || replaceVideoRes) {
         // first find the first video stream and get its media info
@@ -239,15 +239,16 @@ var plugin = function (args) {
             }
         }
     }
-    args.jobLog("using new metadata string: ".concat(updatedMetadataStr));
+    args.jobLog("using new metadata string: {{ ".concat(updatedMetadataStr, " }}"));
     var outputNumber = 1;
     if (originalMetadataStr === updatedMetadataStr) {
-        args.jobLog("no renaming required - old metadata || ".concat(originalMetadataStr, " || matches new || ").concat(updatedMetadataStr));
+        args.jobLog('no renaming required');
     }
     else {
         // build a list of other files in the directory - start with our video file with extension
         var files_1 = [inputFilePath];
-        args.jobLog("finding files in [".concat(inputFileDir, "] with name like [").concat(inputFileName, "] and extensions ").concat(JSON.stringify(extensions)));
+        args.jobLog("finding files in {{ ".concat(inputFileDir, " }} with name like {{ ").concat(inputFileName, " }} and extensions ")
+            + "".concat(JSON.stringify(extensions)));
         // if enabled add other files in the directory
         if (renameOtherFiles) {
             fs_1.default.readdirSync(inputFileDir)
@@ -272,10 +273,10 @@ var plugin = function (args) {
             var oldPath = "".concat(filePath.dir, "/").concat(filePath.base);
             var newPath = "".concat(filePath.dir, "/").concat(newName);
             if (dryRun) {
-                args.jobLog("would rename || ".concat(oldPath, " || to || ").concat(newPath, " ||"));
+                args.jobLog("would rename {{ ".concat(oldPath, " }} to {{ ").concat(newPath, " }}"));
             }
             else {
-                args.jobLog("renaming || ".concat(oldPath, " || to || ").concat(newPath, " ||"));
+                args.jobLog("renaming - {{ ".concat(oldPath, " }} to {{ ").concat(newPath, " }}"));
                 fs_1.default.renameSync(oldPath, newPath);
                 outputNumber = 2;
             }

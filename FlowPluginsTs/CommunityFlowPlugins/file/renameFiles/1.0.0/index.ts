@@ -236,11 +236,11 @@ const details = (): IpluginDetails => ({
   outputs: [
     {
       number: 1,
-      tooltip: 'One or more files were renamed',
+      tooltip: 'No files were renamed',
     },
     {
       number: 2,
-      tooltip: 'No files were renamed',
+      tooltip: 'Files were renamed',
     },
   ],
 });
@@ -280,87 +280,99 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   const inputFilePath: ParsedPath = path.parse(args.inputFileObj._id);
   const inputFileName: string = inputFilePath.name;
   const inputFileDir: string = inputFilePath.dir;
-  args.jobLog(
-    `finding files in [${inputFileDir}] with name like [${inputFileName}] and extensions ${JSON.stringify(extensions)}`,
-  );
-  // build a list of other files in the directory - start with our video file with extension
-  const files: ParsedPath[] = [inputFilePath];
-  // if enabled add other files in the directory
-  if (renameOtherFiles) {
-    fs.readdirSync(inputFileDir)
-      .forEach((item: string) => {
-        // parse path for this item
-        const filePath: ParsedPath = path.parse(`${inputFileDir}/${item}`);
-        // check if it's valid for rename
-        if (filePath?.base?.length > 0 // valid file name
-          && filePath.name.startsWith(inputFileName) // matches input file pattern
-          && (extensions.length === 0 || extensions.includes(filePath.ext)) // passes extension filter
-          && !files.includes(filePath) // not already in our list
-        ) {
-          files.push(filePath);
-        }
-      });
+  // apply renaming logic to the input file - if renaming others it should be a simple replace
+  let originalMetadataStr: string = inputFileName;
+  let updatedMetadataStr: string = inputFileName;
+  // if using the metadata delimiter parse only the end of the file
+  if (enableMetadataRegex) {
+    const matches: RegExpExecArray | null = metadataRegex ? metadataRegex.exec(inputFilePath.base) : null;
+    if (matches) {
+      // we found a match, extract the metadata string for updating
+      updatedMetadataStr = matches[1];
+      // and store the original so we can replace it in all files
+      originalMetadataStr = updatedMetadataStr;
+    }
   }
-  // iterate files
-  files.forEach((filePath: ParsedPath) => {
-    let stringToReplace: string = filePath.base;
-    let originalMetadataStr: string | null = null;
-    // if using the metadata delimiter parse only the end of the file
-    if (enableMetadataRegex) {
-      const matches: RegExpExecArray | null = metadataRegex ? metadataRegex.exec(filePath.base) : null;
-      if (matches) {
-        stringToReplace = matches[1];
-        originalMetadataStr = stringToReplace;
+  args.jobLog(`applying replace operations to string: ${updatedMetadataStr}`);
+  // if any video-based rename is enabled
+  if (replaceVideoCodec || replaceVideoRes) {
+    // first find the first video stream and get its media info
+    const videoStream: Istreams | undefined = streams?.filter((stream) => getCodecType(stream) === 'video')[0];
+    // can't proceed if we can't find a stream to use
+    if (videoStream) {
+      const videoMediaInfo = getMediaInfoTrack(videoStream, mediaInfo);
+      // handle video codec replacement if enabled
+      if (replaceVideoCodec) {
+        updatedMetadataStr = updatedMetadataStr.replace(videoCodecRegex, getFileCodecName(videoStream, videoMediaInfo));
+      }
+      // handle video resolution replacement if enabled
+      if (replaceVideoRes) {
+        updatedMetadataStr = updatedMetadataStr.replace(videoResRegex, getResolutionName(videoStream));
       }
     }
-    args.jobLog(`applying replace operations to string: ${stringToReplace}`);
-    // if any video-based rename is enabled
-    if (replaceVideoCodec || replaceVideoRes) {
-      // first find the first video stream and get its media info
-      const videoStream: Istreams | undefined = streams?.filter((stream) => getCodecType(stream) === 'video')[0];
-      // can't proceed if we can't find a stream to use
-      if (videoStream) {
-        const videoMediaInfo = getMediaInfoTrack(videoStream, mediaInfo);
-        // handle video codec replacement if enabled
-        if (replaceVideoCodec) {
-          stringToReplace = stringToReplace.replace(videoCodecRegex, getFileCodecName(videoStream, videoMediaInfo));
-        }
-        // handle video resolution replacement if enabled
-        if (replaceVideoRes) {
-          stringToReplace = stringToReplace.replace(videoResRegex, getResolutionName(videoStream));
-        }
+  }
+  if (replaceAudioCodec || replaceAudioChannels) {
+    const audioStream: Istreams | undefined = streams?.filter((stream) => getCodecType(stream) === 'audio')[0];
+    // can't proceed if we can't find an audio stream to use
+    if (audioStream) {
+      const audioMediaInfo = getMediaInfoTrack(audioStream, mediaInfo);
+      // handle audio codec replacement if enabled
+      if (replaceAudioCodec) {
+        updatedMetadataStr = updatedMetadataStr.replace(audioCodecRegex, getFileCodecName(audioStream, audioMediaInfo));
+      }
+      // handle audio channels replacement if enabled
+      if (replaceAudioChannels) {
+        updatedMetadataStr = updatedMetadataStr.replace(audioChannelsRegex, getChannelsName(audioStream));
       }
     }
-    if (replaceAudioCodec || replaceAudioChannels) {
-      const audioStream: Istreams | undefined = streams?.filter((stream) => getCodecType(stream) === 'audio')[0];
-      // can't proceed if we can't find an audio stream to use
-      if (audioStream) {
-        const audioMediaInfo = getMediaInfoTrack(audioStream, mediaInfo);
-        // handle audio codec replacement if enabled
-        if (replaceAudioCodec) {
-          stringToReplace = stringToReplace.replace(audioCodecRegex, getFileCodecName(audioStream, audioMediaInfo));
-        }
-        // handle audio channels replacement if enabled
-        if (replaceAudioChannels) {
-          stringToReplace = stringToReplace.replace(audioChannelsRegex, getChannelsName(audioStream));
-        }
+  }
+  args.jobLog(`using new metadata string: ${updatedMetadataStr}`);
+  let outputNumber = 1;
+  if (originalMetadataStr === updatedMetadataStr) {
+    args.jobLog(
+      `no renaming required - old metadata || ${originalMetadataStr} || matches new || ${updatedMetadataStr}`,
+    );
+  } else {
+    // build a list of other files in the directory - start with our video file with extension
+    const files: ParsedPath[] = [inputFilePath];
+    args.jobLog(
+      `finding files in [${inputFileDir}] with name like [${inputFileName}] and extensions ${JSON.stringify(extensions)}`,
+    );
+    // if enabled add other files in the directory
+    if (renameOtherFiles) {
+      fs.readdirSync(inputFileDir)
+        .forEach((item: string) => {
+          // parse path for this item
+          const filePath: ParsedPath = path.parse(`${inputFileDir}/${item}`);
+          // check if it's valid for rename
+          if (filePath?.base?.length > 0 // valid file name
+            && filePath.name.startsWith(inputFileName) // matches input file pattern
+            && (extensions.length === 0 || extensions.includes(filePath.ext)) // passes extension filter
+            && !files.includes(filePath) // not already in our list
+          ) {
+            files.push(filePath);
+          }
+        });
+    }
+    // iterate files
+    files.forEach((filePath: ParsedPath) => {
+      // replace original metadata string with our updated one
+      const newName = filePath.base.replace(originalMetadataStr, updatedMetadataStr);
+      const oldPath = `${filePath.dir}/${filePath.base}`;
+      const newPath = `${filePath.dir}/${newName}`;
+      if (dryRun) {
+        args.jobLog(`would rename || ${oldPath} || to || ${newPath} ||`);
+      } else {
+        args.jobLog(`renaming || ${oldPath} || to || ${newPath} ||`);
+        fs.renameSync(oldPath, newPath);
+        outputNumber = 2;
       }
-    }
-    // if we extracted a metadata string replace only that, otherwise use this whole thing as our new name
-    const newName = originalMetadataStr ? filePath.base.replace(originalMetadataStr, stringToReplace) : stringToReplace;
-    const oldPath = `${filePath.dir}/${filePath.base}`;
-    const newPath = `${filePath.dir}/${newName}`;
-    if (dryRun) {
-      args.jobLog(`would rename || ${oldPath} || to || ${newPath} ||`);
-    } else {
-      args.jobLog(`renaming || ${oldPath} || to || ${newPath} ||`);
-      fs.renameSync(oldPath, newPath);
-    }
-  });
+    });
+  }
 
   return {
     outputFileObj: args.inputFileObj,
-    outputNumber: 1,
+    outputNumber,
     variables: args.variables,
   };
 };

@@ -64,8 +64,25 @@ const audioCodecMap: { [key: string]: string } = {
 };
 export const getFileCodecName = (stream: Istreams, mediaInfoTrack?: ImediaInfoTrack): string => {
   const codecType: string = getCodecType(stream);
-  const codec: string = String(stream?.codec_name)
-    .toLowerCase();
+  const codec: string = String(stream?.codec_name).toLowerCase();
+  const profile: string = stream.profile?.toLowerCase() ?? '';
+  if (codecType === 'audio') {
+    // handle some special cases
+    if (codec === 'dts') {
+      if (profile === 'dts-hd ma') {
+        return 'DTS-HD MA';
+      }
+      if (profile.includes('truehd') && profile.includes('atmos')) {
+        return 'TrueHD Atmos';
+      }
+    }
+    if (codec === 'eac3') {
+      if (profile.includes('atmos')) {
+        return 'EAC3 Atmos';
+      }
+    }
+    return audioCodecMap[codec];
+  }
   if (codecType === 'video') {
     if (['hevc', 'x265', 'h265'].includes(codec)) {
       // 265
@@ -83,9 +100,6 @@ export const getFileCodecName = (stream: Istreams, mediaInfoTrack?: ImediaInfoTr
       }
       return 'h264';
     }
-  }
-  if (codecType === 'audio') {
-    return audioCodecMap[codec];
   }
   return codec;
 };

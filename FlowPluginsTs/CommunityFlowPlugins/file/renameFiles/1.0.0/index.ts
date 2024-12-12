@@ -330,7 +330,7 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   let outputNumber = 1;
   if (originalMetadataStr === updatedMetadataStr) {
     args.jobLog(
-      `no renaming required - old metadata || ${originalMetadataStr} || matches new || ${updatedMetadataStr}`,
+      `no renaming required - old metadata - ${originalMetadataStr} - matches new - ${updatedMetadataStr}`,
     );
   } else {
     // build a list of other files in the directory - start with our video file with extension
@@ -361,9 +361,9 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
       const oldPath = `${filePath.dir}/${filePath.base}`;
       const newPath = `${filePath.dir}/${newName}`;
       if (dryRun) {
-        args.jobLog(`would rename || ${oldPath} || to || ${newPath} ||`);
+        args.jobLog(`would rename - ${oldPath} - to - ${newPath}`);
       } else {
-        args.jobLog(`renaming || ${oldPath} || to || ${newPath} ||`);
+        args.jobLog(`renaming - ${oldPath} - to - ${newPath}`);
         fs.renameSync(oldPath, newPath);
         outputNumber = 2;
       }

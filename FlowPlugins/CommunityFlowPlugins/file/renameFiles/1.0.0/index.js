@@ -139,7 +139,7 @@ var details = function () { return ({
             label: 'Dry Run',
             name: 'dryRun',
             type: 'boolean',
-            defaultValue: 'false',
+            defaultValue: 'true',
             inputUI: {
                 type: 'switch',
             },
@@ -149,11 +149,11 @@ var details = function () { return ({
     outputs: [
         {
             number: 1,
-            tooltip: 'One or more files were renamed',
+            tooltip: 'No files were renamed',
         },
         {
             number: 2,
-            tooltip: 'No files were renamed',
+            tooltip: 'Files were renamed',
         },
     ],
 }); };
@@ -193,86 +193,97 @@ var plugin = function (args) {
     var inputFilePath = path_1.default.parse(args.inputFileObj._id);
     var inputFileName = inputFilePath.name;
     var inputFileDir = inputFilePath.dir;
-    args.jobLog("finding files in [".concat(inputFileDir, "] with name like [").concat(inputFileName, "] and extensions ").concat(JSON.stringify(extensions)));
-    // build a list of other files in the directory - start with our video file with extension
-    var files = [inputFilePath];
-    // if enabled add other files in the directory
-    if (renameOtherFiles) {
-        fs_1.default.readdirSync(inputFileDir)
-            .forEach(function (item) {
-            var _a;
-            // parse path for this item
-            var filePath = path_1.default.parse("".concat(inputFileDir, "/").concat(item));
-            // check if it's valid for rename
-            if (((_a = filePath === null || filePath === void 0 ? void 0 : filePath.base) === null || _a === void 0 ? void 0 : _a.length) > 0 // valid file name
-                && filePath.name.startsWith(inputFileName) // matches input file pattern
-                && (extensions.length === 0 || extensions.includes(filePath.ext)) // passes extension filter
-                && !files.includes(filePath) // not already in our list
-            ) {
-                files.push(filePath);
+    // apply renaming logic to the input file - if renaming others it should be a simple replace
+    var originalMetadataStr = inputFileName;
+    var updatedMetadataStr = inputFileName;
+    // if using the metadata delimiter parse only the end of the file
+    if (enableMetadataRegex) {
+        var matches = metadataRegex ? metadataRegex.exec(inputFilePath.base) : null;
+        if (matches) {
+            // we found a match, extract the metadata string for updating
+            updatedMetadataStr = matches[1];
+            // and store the original so we can replace it in all files
+            originalMetadataStr = updatedMetadataStr;
+        }
+    }
+    args.jobLog("applying replace operations to string: ".concat(updatedMetadataStr));
+    // if any video-based rename is enabled
+    if (replaceVideoCodec || replaceVideoRes) {
+        // first find the first video stream and get its media info
+        var videoStream = streams === null || streams === void 0 ? void 0 : streams.filter(function (stream) { return (0, metadataUtils_1.getCodecType)(stream) === 'video'; })[0];
+        // can't proceed if we can't find a stream to use
+        if (videoStream) {
+            var videoMediaInfo = (0, metadataUtils_1.getMediaInfoTrack)(videoStream, mediaInfo);
+            // handle video codec replacement if enabled
+            if (replaceVideoCodec) {
+                updatedMetadataStr = updatedMetadataStr.replace(videoCodecRegex, (0, metadataUtils_1.getFileCodecName)(videoStream, videoMediaInfo));
+            }
+            // handle video resolution replacement if enabled
+            if (replaceVideoRes) {
+                updatedMetadataStr = updatedMetadataStr.replace(videoResRegex, (0, metadataUtils_1.getResolutionName)(videoStream));
+            }
+        }
+    }
+    if (replaceAudioCodec || replaceAudioChannels) {
+        var audioStream = streams === null || streams === void 0 ? void 0 : streams.filter(function (stream) { return (0, metadataUtils_1.getCodecType)(stream) === 'audio'; })[0];
+        // can't proceed if we can't find an audio stream to use
+        if (audioStream) {
+            var audioMediaInfo = (0, metadataUtils_1.getMediaInfoTrack)(audioStream, mediaInfo);
+            // handle audio codec replacement if enabled
+            if (replaceAudioCodec) {
+                updatedMetadataStr = updatedMetadataStr.replace(audioCodecRegex, (0, metadataUtils_1.getFileCodecName)(audioStream, audioMediaInfo));
+            }
+            // handle audio channels replacement if enabled
+            if (replaceAudioChannels) {
+                updatedMetadataStr = updatedMetadataStr.replace(audioChannelsRegex, (0, metadataUtils_1.getChannelsName)(audioStream));
+            }
+        }
+    }
+    args.jobLog("using new metadata string: ".concat(updatedMetadataStr));
+    var outputNumber = 1;
+    if (originalMetadataStr === updatedMetadataStr) {
+        args.jobLog("no renaming required - old metadata || ".concat(originalMetadataStr, " || matches new || ").concat(updatedMetadataStr));
+    }
+    else {
+        // build a list of other files in the directory - start with our video file with extension
+        var files_1 = [inputFilePath];
+        args.jobLog("finding files in [".concat(inputFileDir, "] with name like [").concat(inputFileName, "] and extensions ").concat(JSON.stringify(extensions)));
+        // if enabled add other files in the directory
+        if (renameOtherFiles) {
+            fs_1.default.readdirSync(inputFileDir)
+                .forEach(function (item) {
+                var _a;
+                // parse path for this item
+                var filePath = path_1.default.parse("".concat(inputFileDir, "/").concat(item));
+                // check if it's valid for rename
+                if (((_a = filePath === null || filePath === void 0 ? void 0 : filePath.base) === null || _a === void 0 ? void 0 : _a.length) > 0 // valid file name
+                    && filePath.name.startsWith(inputFileName) // matches input file pattern
+                    && (extensions.length === 0 || extensions.includes(filePath.ext)) // passes extension filter
+                    && !files_1.includes(filePath) // not already in our list
+                ) {
+                    files_1.push(filePath);
+                }
+            });
+        }
+        // iterate files
+        files_1.forEach(function (filePath) {
+            // replace original metadata string with our updated one
+            var newName = filePath.base.replace(originalMetadataStr, updatedMetadataStr);
+            var oldPath = "".concat(filePath.dir, "/").concat(filePath.base);
+            var newPath = "".concat(filePath.dir, "/").concat(newName);
+            if (dryRun) {
+                args.jobLog("would rename || ".concat(oldPath, " || to || ").concat(newPath, " ||"));
+            }
+            else {
+                args.jobLog("renaming || ".concat(oldPath, " || to || ").concat(newPath, " ||"));
+                fs_1.default.renameSync(oldPath, newPath);
+                outputNumber = 2;
             }
         });
     }
-    // iterate files
-    files.forEach(function (filePath) {
-        var stringToReplace = filePath.base;
-        var originalMetadataStr = null;
-        // if using the metadata delimiter parse only the end of the file
-        if (enableMetadataRegex) {
-            var matches = metadataRegex ? metadataRegex.exec(filePath.base) : null;
-            if (matches) {
-                stringToReplace = matches[1];
-                originalMetadataStr = stringToReplace;
-            }
-        }
-        args.jobLog("applying replace operations to string: ".concat(stringToReplace));
-        // if any video-based rename is enabled
-        if (replaceVideoCodec || replaceVideoRes) {
-            // first find the first video stream and get its media info
-            var videoStream = streams === null || streams === void 0 ? void 0 : streams.filter(function (stream) { return (0, metadataUtils_1.getCodecType)(stream) === 'video'; })[0];
-            // can't proceed if we can't find a stream to use
-            if (videoStream) {
-                var videoMediaInfo = (0, metadataUtils_1.getMediaInfoTrack)(videoStream, mediaInfo);
-                // handle video codec replacement if enabled
-                if (replaceVideoCodec) {
-                    stringToReplace = stringToReplace.replace(videoCodecRegex, (0, metadataUtils_1.getFileCodecName)(videoStream, videoMediaInfo));
-                }
-                // handle video resolution replacement if enabled
-                if (replaceVideoRes) {
-                    stringToReplace = stringToReplace.replace(videoResRegex, (0, metadataUtils_1.getResolutionName)(videoStream));
-                }
-            }
-        }
-        if (replaceAudioCodec || replaceAudioChannels) {
-            var audioStream = streams === null || streams === void 0 ? void 0 : streams.filter(function (stream) { return (0, metadataUtils_1.getCodecType)(stream) === 'audio'; })[0];
-            // can't proceed if we can't find an audio stream to use
-            if (audioStream) {
-                var audioMediaInfo = (0, metadataUtils_1.getMediaInfoTrack)(audioStream, mediaInfo);
-                // handle audio codec replacement if enabled
-                if (replaceAudioCodec) {
-                    stringToReplace = stringToReplace.replace(audioCodecRegex, (0, metadataUtils_1.getFileCodecName)(audioStream, audioMediaInfo));
-                }
-                // handle audio channels replacement if enabled
-                if (replaceAudioChannels) {
-                    stringToReplace = stringToReplace.replace(audioChannelsRegex, (0, metadataUtils_1.getChannelsName)(audioStream));
-                }
-            }
-        }
-        // if we extracted a metadata string replace only that, otherwise use this whole thing as our new name
-        var newName = originalMetadataStr ? filePath.base.replace(originalMetadataStr, stringToReplace) : stringToReplace;
-        var oldPath = "".concat(filePath.dir, "/").concat(filePath.base);
-        var newPath = "".concat(filePath.dir, "/").concat(newName);
-        if (dryRun) {
-            args.jobLog("would rename || ".concat(oldPath, " || to || ").concat(newPath, " ||"));
-        }
-        else {
-            args.jobLog("renaming || ".concat(oldPath, " || to || ").concat(newPath, " ||"));
-            fs_1.default.renameSync(oldPath, newPath);
-        }
-    });
     return {
         outputFileObj: args.inputFileObj,
-        outputNumber: 1,
+        outputNumber: outputNumber,
         variables: args.variables,
     };
 };

@@ -287,9 +287,9 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   if (enableMetadataRegex) {
     const matches: RegExpExecArray | null = metadataRegex ? metadataRegex.exec(inputFilePath.base) : null;
     if (matches) {
-      // we found a match, extract the metadata string for updating
+      // we found a match, extract the metadata string (group 1) for updating
       updatedMetadataStr = matches[1];
-      // and store the original so we can replace it in all files
+      // and store the original so we can replace it in all file names
       originalMetadataStr = updatedMetadataStr;
     }
   }
@@ -327,51 +327,65 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
     }
   }
   args.jobLog(`using new metadata string: {{ ${updatedMetadataStr} }}`);
+  // default to the "no change" output path
   let outputNumber = 1;
+  // check if we made any changes
   if (originalMetadataStr === updatedMetadataStr) {
     args.jobLog('no renaming required');
-  } else {
-    // build a list of other files in the directory - start with our video file with extension
-    const files: ParsedPath[] = [inputFilePath];
-    args.jobLog(`finding files in {{ ${inputFileDir} }} with name like {{ ${inputFileName} }} and extensions `
-      + `${JSON.stringify(extensions)}`);
-    // if enabled add other files in the directory
-    if (renameOtherFiles) {
-      fs.readdirSync(inputFileDir)
-        .forEach((item: string) => {
-          // parse path for this item
-          const filePath: ParsedPath = path.parse(`${inputFileDir}/${item}`);
-          // check if it's valid for rename
-          if (filePath?.base?.length > 0 // valid file name
-            && filePath.name.startsWith(inputFileName) // matches input file pattern
-            && (extensions.length === 0 || extensions.includes(filePath.ext)) // passes extension filter
-            && files.filter((it: ParsedPath) => it.base !== inputFilePath.base).length === 0 // not already in our list
-          ) {
-            files.push(filePath);
-          }
-        });
-    }
-    // iterate files
-    files.forEach((filePath: ParsedPath) => {
-      // replace original metadata string with our updated one
-      const newName = filePath.base.replace(originalMetadataStr, updatedMetadataStr);
-      const oldPath = `${filePath.dir}/${filePath.base}`;
-      const newPath = `${filePath.dir}/${newName}`;
-      if (dryRun) {
-        args.jobLog(`would rename {{ ${oldPath} }} to {{ ${newPath} }}`);
-      } else {
-        args.jobLog(`renaming - {{ ${oldPath} }} to {{ ${newPath} }}`);
-        if (inputFilePath.base === filePath.base) {
-          // this is our primary file
-        }
-        fs.renameSync(oldPath, newPath);
-        outputNumber = 2;
-      }
-    });
+    return {
+      outputFileObj: args.inputFileObj,
+      outputNumber,
+      variables: args.variables,
+    };
   }
+  // build a list of other files to rename
+  const toRename: string[] = [inputFilePath.base];
+  args.jobLog(`finding files in {{ ${inputFileDir} }} with name like {{ ${inputFileName} }} and extensions `
+    + `${JSON.stringify(extensions)}`);
+  // if enabled add other files in the directory
+  if (renameOtherFiles) {
+    fs.readdirSync(inputFileDir)
+      .forEach((item: string) => {
+        // parse path for this item
+        const filePath: ParsedPath = path.parse(`${inputFileDir}/${item}`);
+        // check if it's valid for rename
+        if (filePath?.base?.length > 0 // valid file name
+          && filePath.name.startsWith(inputFileName) // matches input file pattern
+          && (extensions.length === 0 || extensions.includes(filePath.ext)) // passes extension filter
+          && !toRename.includes(filePath.base) // not already in our list
+        ) {
+          toRename.push(filePath.base);
+        }
+      });
+  }
+  args.jobLog(`will rename files: ${JSON.stringify(toRename)}`);
+  // store new primary file's path for output - default to input for dry run support
+  let newPrimaryPath = args.inputFileObj._id;
+  // iterate files
+  toRename.forEach((fileName: string) => {
+    // replace original metadata string with our updated one
+    const newName = fileName.replace(originalMetadataStr, updatedMetadataStr);
+    // build old and new paths
+    const oldPath = `${inputFilePath.dir}/${fileName}`;
+    const newPath = `${inputFilePath.dir}/${newName}`;
+    if (dryRun) {
+      args.jobLog(`would rename {{ ${oldPath} }} to {{ ${newPath} }}`);
+    } else {
+      args.jobLog(`renaming - {{ ${oldPath} }} to {{ ${newPath} }}`);
+      fs.renameSync(oldPath, newPath);
+      // set output to the "did rename" path
+      outputNumber = 2;
+      // store new path for primary file
+      if (inputFilePath.base === fileName) {
+        newPrimaryPath = newPath;
+      }
+    }
+  });
 
   return {
-    outputFileObj: args.inputFileObj,
+    outputFileObj: {
+      _id: newPrimaryPath,
+    },
     outputNumber,
     variables: args.variables,
   };

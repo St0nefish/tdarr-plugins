@@ -123,9 +123,9 @@ export interface Imeta {
 }
 
 export interface ImediaInfoTrack {
+  // always present
   '@type': string,
   'UniqueID': string,
-  'StreamOrder'?: number,
   'VideoCount': string,
   'AudioCount': string,
   'Format': string,
@@ -139,13 +139,32 @@ export interface ImediaInfoTrack {
   'Encoded_Application': string,
   'Encoded_Library': string,
   'BitRate': number,
+  // sometimes present depending on type and available metadata
+  '@typeorder'?: string,
+  'StreamOrder'?: string,
+  'ID'?: string,
+  // tags
+  'Title'?: string,
+  'Language'?: string,
+  'Default'?: string,
+  'Forced'?: string,
+  // more codec info
+  'CodecID'?: string,
   'Format_Commercial_IfAny'?: string,
   'Encoded_Library_Name'?: string,
+  // video metadata
+  'Sampled_Width'?: string,
+  'Sampled_Height'?: string,
+  // audio metadata
+  'Channels'?: string,
   'Compression_Mode'?: string,
   'SamplingRate'?: string,
-  'BitDepth'?: number,
+  'BitDepth'?: string,
+  'BitRate_Mode'?: string,
+  // extra
   'extra': {
-    'ErrorDetectionType': string,
+    'ErrorDetectionType'?: string,
+    'OriginalSourceMedium'?: string,
   }
 }
 

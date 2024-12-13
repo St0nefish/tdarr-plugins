@@ -345,7 +345,7 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
           if (filePath?.base?.length > 0 // valid file name
             && filePath.name.startsWith(inputFileName) // matches input file pattern
             && (extensions.length === 0 || extensions.includes(filePath.ext)) // passes extension filter
-            && !files.includes(filePath) // not already in our list
+            && files.filter((it: ParsedPath) => it.base !== inputFilePath.base).length === 0 // not already in our list
           ) {
             files.push(filePath);
           }
@@ -361,6 +361,9 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
         args.jobLog(`would rename {{ ${oldPath} }} to {{ ${newPath} }}`);
       } else {
         args.jobLog(`renaming - {{ ${oldPath} }} to {{ ${newPath} }}`);
+        if (inputFilePath.base === filePath.base) {
+          // this is our primary file
+        }
         fs.renameSync(oldPath, newPath);
         outputNumber = 2;
       }

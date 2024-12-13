@@ -260,7 +260,7 @@ var plugin = function (args) {
                 if (((_a = filePath === null || filePath === void 0 ? void 0 : filePath.base) === null || _a === void 0 ? void 0 : _a.length) > 0 // valid file name
                     && filePath.name.startsWith(inputFileName) // matches input file pattern
                     && (extensions.length === 0 || extensions.includes(filePath.ext)) // passes extension filter
-                    && !files_1.includes(filePath) // not already in our list
+                    && files_1.filter(function (it) { return it.base !== inputFilePath.base; }).length === 0 // not already in our list
                 ) {
                     files_1.push(filePath);
                 }
@@ -277,6 +277,9 @@ var plugin = function (args) {
             }
             else {
                 args.jobLog("renaming - {{ ".concat(oldPath, " }} to {{ ").concat(newPath, " }}"));
+                if (inputFilePath.base === filePath.base) {
+                    // this is our primary file
+                }
                 fs_1.default.renameSync(oldPath, newPath);
                 outputNumber = 2;
             }

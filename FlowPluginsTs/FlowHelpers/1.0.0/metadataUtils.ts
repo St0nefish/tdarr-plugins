@@ -1,10 +1,5 @@
 import { IffmpegCommandStream, IpluginInputArgs } from './interfaces/interfaces';
-import {
-  IFileObject,
-  ImediaInfo,
-  ImediaInfoTrack,
-  Istreams,
-} from './interfaces/synced/IFileObject';
+import { IFileObject, ImediaInfo, ImediaInfoTrack, Istreams, } from './interfaces/synced/IFileObject';
 
 // function to execute a MediaInfo scan (if possible) and return a File object with embedded mediaInfo data
 export const getMediaInfo = async (args: IpluginInputArgs): Promise<ImediaInfo | undefined> => {
@@ -84,18 +79,20 @@ export const getFileCodecName = (stream: Istreams, mediaInfoTrack?: ImediaInfoTr
     return audioCodecMap[codec];
   }
   if (codecType === 'video') {
+    // 265
     if (['hevc', 'x265', 'h265'].includes(codec)) {
-      // 265
       // check if encoder was x265
-      if (mediaInfoTrack?.Encoded_Library_Name === 'x265') {
+      if (mediaInfoTrack?.Encoded_Library_Name?.includes('x265')
+        || mediaInfoTrack?.Encoded_Library?.includes('x265')) {
         return 'x265';
       }
       return 'h265';
     }
+    // 264
     if (['avc', 'x264', 'h264'].includes(codec)) {
-      // 264
-      // check if encoder was x265
-      if (mediaInfoTrack?.Encoded_Library_Name === 'x264') {
+      // check if encoder was x264
+      if (mediaInfoTrack?.Encoded_Library_Name?.includes('x264')
+        || mediaInfoTrack?.Encoded_Library?.includes('x264')) {
         return 'x264';
       }
       return 'h264';

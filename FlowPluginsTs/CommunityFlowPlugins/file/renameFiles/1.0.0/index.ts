@@ -210,7 +210,7 @@ const details = (): IpluginDetails => ({
         \n\n
         'The Lord of the Rings The Return of the King (2003) - {edition-extended} [Hybrid][x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'
         \n\n
-        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [x265 AMZN WEBDL-1080p][EAC3 5.1]-Telly.mkv
+        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [x265][AMZN WEBDL-1080p Proper][EAC3 5.1]-Telly.mkv
         \n\n
         To best isolate the metadata I use the default regex above to isolate the portions with metadata in the 
         brackets and only replace data in that block. The same regex is then used to replace the old metadata block in 
@@ -301,6 +301,11 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
     // can't proceed if we can't find a stream to use
     if (videoStream) {
       const videoMediaInfo = getMediaInfoTrack(videoStream, mediaInfo);
+
+      // ToDo
+      args.jobLog(`using video mediaifo: ${videoMediaInfo}`);
+      // ToDo
+
       // handle video codec replacement if enabled
       if (replaceVideoCodec) {
         updatedMetadataStr = updatedMetadataStr.replace(videoCodecRegex, getFileCodecName(videoStream, videoMediaInfo));

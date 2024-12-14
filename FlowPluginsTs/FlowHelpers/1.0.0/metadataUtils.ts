@@ -27,10 +27,16 @@ export const getMediaInfo = async (args: IpluginInputArgs): Promise<ImediaInfo |
 export const getCodecType = (stream: Istreams): string => (stream.codec_type?.toLowerCase() ?? '');
 
 // function to get the correct media info track for the input stream - assumes indexes are untouched
-export const getMediaInfoTrack = (stream?: Istreams, mediaInfo?: ImediaInfo): ImediaInfoTrack | undefined => (
-  mediaInfo?.track?.filter((infoTrack: ImediaInfoTrack) => (
-    infoTrack?.StreamOrder ? Number(infoTrack?.StreamOrder) : -1) === (stream?.index ? Number(stream?.index) : -2))?.[0]
-);
+export const getMediaInfoTrack = (stream: Istreams, mediaInfo?: ImediaInfo): ImediaInfoTrack | undefined => {
+  let track: ImediaInfoTrack | undefined;
+  mediaInfo?.track?.filter((infoTrack: ImediaInfoTrack) => infoTrack['@type'] !== 'general')
+    .forEach((infoTrack: ImediaInfoTrack, index: number) => {
+      if (index === stream.index) {
+        track = infoTrack;
+      }
+    });
+  return track;
+};
 
 // function to get stream type flag for use in stream specifiers
 export const getStreamTypeFlag = (stream: IffmpegCommandStream): string => {

@@ -73,8 +73,14 @@ var getCodecType = function (stream) { var _a, _b; return ((_b = (_a = stream.co
 exports.getCodecType = getCodecType;
 // function to get the correct media info track for the input stream - assumes indexes are untouched
 var getMediaInfoTrack = function (stream, mediaInfo) {
-    var _a, _b;
-    return ((_b = (_a = mediaInfo === null || mediaInfo === void 0 ? void 0 : mediaInfo.track) === null || _a === void 0 ? void 0 : _a.filter(function (infoTrack) { return ((infoTrack === null || infoTrack === void 0 ? void 0 : infoTrack.StreamOrder) ? Number(infoTrack === null || infoTrack === void 0 ? void 0 : infoTrack.StreamOrder) : -1) === ((stream === null || stream === void 0 ? void 0 : stream.index) ? Number(stream === null || stream === void 0 ? void 0 : stream.index) : -2); })) === null || _b === void 0 ? void 0 : _b[0]);
+    var _a;
+    var track;
+    (_a = mediaInfo === null || mediaInfo === void 0 ? void 0 : mediaInfo.track) === null || _a === void 0 ? void 0 : _a.filter(function (infoTrack) { return infoTrack['@type'] !== 'general'; }).forEach(function (infoTrack, index) {
+        if (index === stream.index) {
+            track = infoTrack;
+        }
+    });
+    return track;
 };
 exports.getMediaInfoTrack = getMediaInfoTrack;
 // function to get stream type flag for use in stream specifiers

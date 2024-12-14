@@ -328,9 +328,19 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   }
   if (replaceAudioCodec || replaceAudioChannels) {
     const audioStream: Istreams | undefined = streams?.filter((stream) => getCodecType(stream) === 'audio')[0];
+
+    // ToDo
+    args.jobLog(`using audio stream: ${JSON.stringify(audioStream)}`);
+    // ToDo
+
     // can't proceed if we can't find an audio stream to use
     if (audioStream) {
       const audioMediaInfo = getMediaInfoTrack(audioStream, mediaInfo);
+
+      // ToDo
+      args.jobLog(`using audio mediaifo: ${JSON.stringify(audioMediaInfo)}`);
+      // ToDo
+
       // handle audio codec replacement if enabled
       if (replaceAudioCodec) {
         updatedMetadataStr = updatedMetadataStr.replace(audioCodecRegex, getFileCodecName(audioStream, audioMediaInfo));

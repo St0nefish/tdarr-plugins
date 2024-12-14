@@ -235,9 +235,15 @@ var plugin = function (args) {
     }
     if (replaceAudioCodec || replaceAudioChannels) {
         var audioStream = streams === null || streams === void 0 ? void 0 : streams.filter(function (stream) { return (0, metadataUtils_1.getCodecType)(stream) === 'audio'; })[0];
+        // ToDo
+        args.jobLog("using audio stream: ".concat(JSON.stringify(audioStream)));
+        // ToDo
         // can't proceed if we can't find an audio stream to use
         if (audioStream) {
             var audioMediaInfo = (0, metadataUtils_1.getMediaInfoTrack)(audioStream, mediaInfo);
+            // ToDo
+            args.jobLog("using audio mediaifo: ".concat(JSON.stringify(audioMediaInfo)));
+            // ToDo
             // handle audio codec replacement if enabled
             if (replaceAudioCodec) {
                 updatedMetadataStr = updatedMetadataStr.replace(audioCodecRegex, (0, metadataUtils_1.getFileCodecName)(audioStream, audioMediaInfo));

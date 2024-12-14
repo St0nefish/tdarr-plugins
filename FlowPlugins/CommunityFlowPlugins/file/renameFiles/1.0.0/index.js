@@ -133,7 +133,7 @@ var details = function () { return ({
                     ],
                 },
             },
-            tooltip: "\n        Enter a string which is used as a regex to locate the relevant portion of the file name that contains the video \n        and audio metadata to be updated. This can help prevent accidentally mutilating a file name that happens to \n        contain some bit of text that might match one of the pieces being replaced. Do not include the '/' delimiters \n        or the trailing flags. This will be converted to a proper RegExp via the constructor and always uses the 'gi' \n        flags for global/case-insensitive. \n        \n\n\n        For example, my standard naming scheme is:\n        \n\n\n        '{title stripped of special characters} - [{video_metadata}][{audio_metadata}]-release.mkv'\n        \n\n\n        'The Lord of the Rings The Return of the King (2003) - {edition-extended} [Hybrid][x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'\n        \n\n\n        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [x265 AMZN WEBDL-1080p][EAC3 5.1]-Telly.mkv\n        \n\n\n        To best isolate the metadata I use the default regex above to isolate the portions with metadata in the \n        brackets and only replace data in that block. The same regex is then used to replace the old metadata block in \n        the file name(s) with the new one. \n        ",
+            tooltip: "\n        Enter a string which is used as a regex to locate the relevant portion of the file name that contains the video \n        and audio metadata to be updated. This can help prevent accidentally mutilating a file name that happens to \n        contain some bit of text that might match one of the pieces being replaced. Do not include the '/' delimiters \n        or the trailing flags. This will be converted to a proper RegExp via the constructor and always uses the 'gi' \n        flags for global/case-insensitive. \n        \n\n\n        For example, my standard naming scheme is:\n        \n\n\n        '{title stripped of special characters} - [{video_metadata}][{audio_metadata}]-release.mkv'\n        \n\n\n        'The Lord of the Rings The Return of the King (2003) - {edition-extended} [Hybrid][x264 Remux-1080p][TrueHD 6.1]-FraMeSToR.mkv'\n        \n\n\n        Mr. Robot (2015) S01E01 eps1.0_hellofriend.mov - [x265][AMZN WEBDL-1080p Proper][EAC3 5.1]-Telly.mkv\n        \n\n\n        To best isolate the metadata I use the default regex above to isolate the portions with metadata in the \n        brackets and only replace data in that block. The same regex is then used to replace the old metadata block in \n        the file name(s) with the new one. \n        ",
         },
         {
             label: 'Dry Run',
@@ -211,9 +211,15 @@ var plugin = function (args) {
     if (replaceVideoCodec || replaceVideoRes) {
         // first find the first video stream and get its media info
         var videoStream = streams === null || streams === void 0 ? void 0 : streams.filter(function (stream) { return (0, metadataUtils_1.getCodecType)(stream) === 'video'; })[0];
+        // ToDo
+        args.jobLog("using video stream: ".concat(videoStream));
+        // ToDo
         // can't proceed if we can't find a stream to use
         if (videoStream) {
             var videoMediaInfo = (0, metadataUtils_1.getMediaInfoTrack)(videoStream, mediaInfo);
+            // ToDo
+            args.jobLog("using video mediaifo: ".concat(videoMediaInfo));
+            // ToDo
             // handle video codec replacement if enabled
             if (replaceVideoCodec) {
                 updatedMetadataStr = updatedMetadataStr.replace(videoCodecRegex, (0, metadataUtils_1.getFileCodecName)(videoStream, videoMediaInfo));

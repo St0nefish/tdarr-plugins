@@ -115,7 +115,7 @@ var audioCodecMap = {
     'dts 96/24': 'DTS',
 };
 var getFileCodecName = function (stream, mediaInfoTrack) {
-    var _a, _b;
+    var _a, _b, _c, _d, _e, _f;
     var codecType = (0, exports.getCodecType)(stream);
     var codec = String(stream === null || stream === void 0 ? void 0 : stream.codec_name).toLowerCase();
     var profile = (_b = (_a = stream.profile) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== null && _b !== void 0 ? _b : '';
@@ -137,18 +137,20 @@ var getFileCodecName = function (stream, mediaInfoTrack) {
         return audioCodecMap[codec];
     }
     if (codecType === 'video') {
+        // 265
         if (['hevc', 'x265', 'h265'].includes(codec)) {
-            // 265
             // check if encoder was x265
-            if ((mediaInfoTrack === null || mediaInfoTrack === void 0 ? void 0 : mediaInfoTrack.Encoded_Library_Name) === 'x265') {
+            if (((_c = mediaInfoTrack === null || mediaInfoTrack === void 0 ? void 0 : mediaInfoTrack.Encoded_Library_Name) === null || _c === void 0 ? void 0 : _c.includes('x265'))
+                || ((_d = mediaInfoTrack === null || mediaInfoTrack === void 0 ? void 0 : mediaInfoTrack.Encoded_Library) === null || _d === void 0 ? void 0 : _d.includes('x265'))) {
                 return 'x265';
             }
             return 'h265';
         }
+        // 264
         if (['avc', 'x264', 'h264'].includes(codec)) {
-            // 264
-            // check if encoder was x265
-            if ((mediaInfoTrack === null || mediaInfoTrack === void 0 ? void 0 : mediaInfoTrack.Encoded_Library_Name) === 'x264') {
+            // check if encoder was x264
+            if (((_e = mediaInfoTrack === null || mediaInfoTrack === void 0 ? void 0 : mediaInfoTrack.Encoded_Library_Name) === null || _e === void 0 ? void 0 : _e.includes('x264'))
+                || ((_f = mediaInfoTrack === null || mediaInfoTrack === void 0 ? void 0 : mediaInfoTrack.Encoded_Library) === null || _f === void 0 ? void 0 : _f.includes('x264'))) {
                 return 'x264';
             }
             return 'h264';

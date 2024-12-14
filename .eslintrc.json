@@ -85,6 +85,9 @@
         "tsx": "never"
       }
     ],
-    "prefer-destructuring": 0 // I find destructuring syntax less clear
+    // I find destructuring syntax less clear
+    "prefer-destructuring": 0,
+    // I like explicit types always
+    "@typescript-eslint/no-inferrable-types": 0
   }
 }

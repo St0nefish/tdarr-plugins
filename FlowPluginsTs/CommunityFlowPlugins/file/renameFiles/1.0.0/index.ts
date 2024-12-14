@@ -298,6 +298,11 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   if (replaceVideoCodec || replaceVideoRes) {
     // first find the first video stream and get its media info
     const videoStream: Istreams | undefined = streams?.filter((stream) => getCodecType(stream) === 'video')[0];
+
+    // ToDo
+    args.jobLog(`using video stream: ${videoStream}`);
+    // ToDo
+
     // can't proceed if we can't find a stream to use
     if (videoStream) {
       const videoMediaInfo = getMediaInfoTrack(videoStream, mediaInfo);

@@ -33,20 +33,12 @@ export const getMediaInfoTrack = (stream: Istreams, mediaInfo?: ImediaInfo): Ime
     // eslint-disable-next-line no-restricted-syntax
     for (const infoTrack of mediaInfo.track) {
       const trackIdx: number = Number(infoTrack.StreamOrder);
-      if (streamIdx === trackIdx) {
+      if (streamIdx === Number(infoTrack.StreamOrder)) {
         return infoTrack;
       }
     }
   }
   return undefined;
-  // let track: ImediaInfoTrack | undefined;
-  // mediaInfo?.track?.filter((infoTrack: ImediaInfoTrack) => infoTrack['@type']?.toLowerCase() !== 'general')
-  //   .forEach((infoTrack: ImediaInfoTrack, index: number) => {
-  //     if (index === stream.index) {
-  //       track = infoTrack;
-  //     }
-  //   });
-  // return track;
 };
 
 // function to get stream type flag for use in stream specifiers

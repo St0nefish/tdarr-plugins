@@ -79,20 +79,12 @@ var getMediaInfoTrack = function (stream, mediaInfo) {
         for (var _i = 0, _a = mediaInfo.track; _i < _a.length; _i++) {
             var infoTrack = _a[_i];
             var trackIdx = Number(infoTrack.StreamOrder);
-            if (streamIdx === trackIdx) {
+            if (streamIdx === Number(infoTrack.StreamOrder)) {
                 return infoTrack;
             }
         }
     }
     return undefined;
-    // let track: ImediaInfoTrack | undefined;
-    // mediaInfo?.track?.filter((infoTrack: ImediaInfoTrack) => infoTrack['@type']?.toLowerCase() !== 'general')
-    //   .forEach((infoTrack: ImediaInfoTrack, index: number) => {
-    //     if (index === stream.index) {
-    //       track = infoTrack;
-    //     }
-    //   });
-    // return track;
 };
 exports.getMediaInfoTrack = getMediaInfoTrack;
 // function to get stream type flag for use in stream specifiers

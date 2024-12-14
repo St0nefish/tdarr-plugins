@@ -293,29 +293,14 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
       originalMetadataStr = updatedMetadataStr;
     }
   }
-  args.jobLog(`applying replace operations to string: {{ ${updatedMetadataStr} }}`);
-
-  // ToDo
-  args.jobLog(`using media info: ${JSON.stringify(mediaInfo)}`);
-  // ToDo
-
+  args.jobLog(`original metadata string:{{ ${updatedMetadataStr} }}`);
   // if any video-based rename is enabled
   if (replaceVideoCodec || replaceVideoRes) {
     // first find the first video stream and get its media info
     const videoStream: Istreams | undefined = streams?.filter((stream) => getCodecType(stream) === 'video')[0];
-
-    // ToDo
-    args.jobLog(`using video stream: ${JSON.stringify(videoStream)}`);
-    // ToDo
-
     // can't proceed if we can't find a stream to use
     if (videoStream) {
       const videoMediaInfo = getMediaInfoTrack(videoStream, mediaInfo);
-
-      // ToDo
-      args.jobLog(`using video mediaifo: ${JSON.stringify(videoMediaInfo)}`);
-      // ToDo
-
       // handle video codec replacement if enabled
       if (replaceVideoCodec) {
         updatedMetadataStr = updatedMetadataStr.replace(videoCodecRegex, getFileCodecName(videoStream, videoMediaInfo));
@@ -328,19 +313,9 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   }
   if (replaceAudioCodec || replaceAudioChannels) {
     const audioStream: Istreams | undefined = streams?.filter((stream) => getCodecType(stream) === 'audio')[0];
-
-    // ToDo
-    args.jobLog(`using audio stream: ${JSON.stringify(audioStream)}`);
-    // ToDo
-
     // can't proceed if we can't find an audio stream to use
     if (audioStream) {
       const audioMediaInfo = getMediaInfoTrack(audioStream, mediaInfo);
-
-      // ToDo
-      args.jobLog(`using audio mediaifo: ${JSON.stringify(audioMediaInfo)}`);
-      // ToDo
-
       // handle audio codec replacement if enabled
       if (replaceAudioCodec) {
         updatedMetadataStr = updatedMetadataStr.replace(audioCodecRegex, getFileCodecName(audioStream, audioMediaInfo));
@@ -351,7 +326,7 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
       }
     }
   }
-  args.jobLog(`using new metadata string: {{ ${updatedMetadataStr} }}`);
+  args.jobLog(`new metadata string:{{ ${updatedMetadataStr} }}`);
   // default to the "no change" output path
   let outputNumber = 1;
   // check if we made any changes
@@ -365,8 +340,8 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   }
   // build a list of other files to rename
   const toRename: string[] = [inputFilePath.base];
-  args.jobLog(`finding files in {{ ${inputFileDir} }} with name like {{ ${inputFileName} }} and extensions `
-    + `${JSON.stringify(extensions)}`);
+  args.jobLog(`finding files in {{ ${inputFileDir} }} with name like {{ ${inputFileName} }}`
+    + ` and extensions ${JSON.stringify(extensions)}`);
   // if enabled add other files in the directory
   if (renameOtherFiles) {
     fs.readdirSync(inputFileDir)

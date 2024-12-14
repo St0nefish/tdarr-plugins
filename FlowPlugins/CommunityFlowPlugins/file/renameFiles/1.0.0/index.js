@@ -206,23 +206,14 @@ var plugin = function (args) {
             originalMetadataStr = updatedMetadataStr;
         }
     }
-    args.jobLog("applying replace operations to string: {{ ".concat(updatedMetadataStr, " }}"));
-    // ToDo
-    args.jobLog("using media info: ".concat(JSON.stringify(mediaInfo)));
-    // ToDo
+    args.jobLog("original metadata string:{{ ".concat(updatedMetadataStr, " }}"));
     // if any video-based rename is enabled
     if (replaceVideoCodec || replaceVideoRes) {
         // first find the first video stream and get its media info
         var videoStream = streams === null || streams === void 0 ? void 0 : streams.filter(function (stream) { return (0, metadataUtils_1.getCodecType)(stream) === 'video'; })[0];
-        // ToDo
-        args.jobLog("using video stream: ".concat(JSON.stringify(videoStream)));
-        // ToDo
         // can't proceed if we can't find a stream to use
         if (videoStream) {
             var videoMediaInfo = (0, metadataUtils_1.getMediaInfoTrack)(videoStream, mediaInfo);
-            // ToDo
-            args.jobLog("using video mediaifo: ".concat(JSON.stringify(videoMediaInfo)));
-            // ToDo
             // handle video codec replacement if enabled
             if (replaceVideoCodec) {
                 updatedMetadataStr = updatedMetadataStr.replace(videoCodecRegex, (0, metadataUtils_1.getFileCodecName)(videoStream, videoMediaInfo));
@@ -235,15 +226,9 @@ var plugin = function (args) {
     }
     if (replaceAudioCodec || replaceAudioChannels) {
         var audioStream = streams === null || streams === void 0 ? void 0 : streams.filter(function (stream) { return (0, metadataUtils_1.getCodecType)(stream) === 'audio'; })[0];
-        // ToDo
-        args.jobLog("using audio stream: ".concat(JSON.stringify(audioStream)));
-        // ToDo
         // can't proceed if we can't find an audio stream to use
         if (audioStream) {
             var audioMediaInfo = (0, metadataUtils_1.getMediaInfoTrack)(audioStream, mediaInfo);
-            // ToDo
-            args.jobLog("using audio mediaifo: ".concat(JSON.stringify(audioMediaInfo)));
-            // ToDo
             // handle audio codec replacement if enabled
             if (replaceAudioCodec) {
                 updatedMetadataStr = updatedMetadataStr.replace(audioCodecRegex, (0, metadataUtils_1.getFileCodecName)(audioStream, audioMediaInfo));
@@ -254,7 +239,7 @@ var plugin = function (args) {
             }
         }
     }
-    args.jobLog("using new metadata string: {{ ".concat(updatedMetadataStr, " }}"));
+    args.jobLog("new metadata string:{{ ".concat(updatedMetadataStr, " }}"));
     // default to the "no change" output path
     var outputNumber = 1;
     // check if we made any changes
@@ -268,8 +253,8 @@ var plugin = function (args) {
     }
     // build a list of other files to rename
     var toRename = [inputFilePath.base];
-    args.jobLog("finding files in {{ ".concat(inputFileDir, " }} with name like {{ ").concat(inputFileName, " }} and extensions ")
-        + "".concat(JSON.stringify(extensions)));
+    args.jobLog("finding files in {{ ".concat(inputFileDir, " }} with name like {{ ").concat(inputFileName, " }}")
+        + " and extensions ".concat(JSON.stringify(extensions)));
     // if enabled add other files in the directory
     if (renameOtherFiles) {
         fs_1.default.readdirSync(inputFileDir)

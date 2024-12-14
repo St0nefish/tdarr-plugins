@@ -294,6 +294,11 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
     }
   }
   args.jobLog(`applying replace operations to string: {{ ${updatedMetadataStr} }}`);
+
+  // ToDo
+  args.jobLog(`using media info: ${JSON.stringify(mediaInfo)}`);
+  // ToDo
+
   // if any video-based rename is enabled
   if (replaceVideoCodec || replaceVideoRes) {
     // first find the first video stream and get its media info

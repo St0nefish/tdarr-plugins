@@ -1,5 +1,13 @@
-import { IffmpegCommandStream, IpluginInputArgs } from './interfaces/interfaces';
-import { IFileObject, ImediaInfo, ImediaInfoTrack, Istreams, } from './interfaces/synced/IFileObject';
+import {
+  IffmpegCommandStream,
+  IpluginInputArgs,
+} from './interfaces/interfaces';
+import {
+  IFileObject,
+  ImediaInfo,
+  ImediaInfoTrack,
+  Istreams,
+} from './interfaces/synced/IFileObject';
 
 // function to execute a MediaInfo scan (if possible) and return a File object with embedded mediaInfo data
 export const getMediaInfo = async (args: IpluginInputArgs): Promise<ImediaInfo | undefined> => {

@@ -207,6 +207,9 @@ var plugin = function (args) {
         }
     }
     args.jobLog("applying replace operations to string: {{ ".concat(updatedMetadataStr, " }}"));
+    // ToDo
+    args.jobLog("using media info: ".concat(JSON.stringify(mediaInfo)));
+    // ToDo
     // if any video-based rename is enabled
     if (replaceVideoCodec || replaceVideoRes) {
         // first find the first video stream and get its media info

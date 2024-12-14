@@ -29,7 +29,7 @@ export const getCodecType = (stream: Istreams): string => (stream.codec_type?.to
 // function to get the correct media info track for the input stream - assumes indexes are untouched
 export const getMediaInfoTrack = (stream: Istreams, mediaInfo?: ImediaInfo): ImediaInfoTrack | undefined => {
   let track: ImediaInfoTrack | undefined;
-  mediaInfo?.track?.filter((infoTrack: ImediaInfoTrack) => infoTrack['@type'] !== 'general')
+  mediaInfo?.track?.filter((infoTrack: ImediaInfoTrack) => infoTrack['@type']?.toLowerCase() !== 'general')
     .forEach((infoTrack: ImediaInfoTrack, index: number) => {
       if (index === stream.index) {
         track = infoTrack;

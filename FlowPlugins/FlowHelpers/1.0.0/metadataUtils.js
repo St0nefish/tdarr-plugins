@@ -75,7 +75,7 @@ exports.getCodecType = getCodecType;
 var getMediaInfoTrack = function (stream, mediaInfo) {
     var _a;
     var track;
-    (_a = mediaInfo === null || mediaInfo === void 0 ? void 0 : mediaInfo.track) === null || _a === void 0 ? void 0 : _a.filter(function (infoTrack) { return infoTrack['@type'] !== 'general'; }).forEach(function (infoTrack, index) {
+    (_a = mediaInfo === null || mediaInfo === void 0 ? void 0 : mediaInfo.track) === null || _a === void 0 ? void 0 : _a.filter(function (infoTrack) { var _a; return ((_a = infoTrack['@type']) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== 'general'; }).forEach(function (infoTrack, index) {
         if (index === stream.index) {
             track = infoTrack;
         }

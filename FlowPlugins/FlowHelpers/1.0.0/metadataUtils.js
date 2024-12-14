@@ -78,7 +78,6 @@ var getMediaInfoTrack = function (stream, mediaInfo) {
         // eslint-disable-next-line no-restricted-syntax
         for (var _i = 0, _a = mediaInfo.track; _i < _a.length; _i++) {
             var infoTrack = _a[_i];
-            var trackIdx = Number(infoTrack.StreamOrder);
             if (streamIdx === Number(infoTrack.StreamOrder)) {
                 return infoTrack;
             }

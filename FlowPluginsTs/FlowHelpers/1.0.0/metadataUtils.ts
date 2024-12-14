@@ -32,7 +32,6 @@ export const getMediaInfoTrack = (stream: Istreams, mediaInfo?: ImediaInfo): Ime
   if (mediaInfo?.track) {
     // eslint-disable-next-line no-restricted-syntax
     for (const infoTrack of mediaInfo.track) {
-      const trackIdx: number = Number(infoTrack.StreamOrder);
       if (streamIdx === Number(infoTrack.StreamOrder)) {
         return infoTrack;
       }

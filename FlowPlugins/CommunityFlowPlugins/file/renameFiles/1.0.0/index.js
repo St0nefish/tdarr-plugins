@@ -239,7 +239,7 @@ var plugin = function (args) {
             }
         }
     }
-    args.jobLog("new metadata string:{{ ".concat(updatedMetadataStr, " }}"));
+    args.jobLog("updated metadata string:{{ ".concat(updatedMetadataStr, " }}"));
     // default to the "no change" output path
     var outputNumber = 1;
     // check if we made any changes

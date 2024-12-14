@@ -326,7 +326,7 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
       }
     }
   }
-  args.jobLog(`new metadata string:{{ ${updatedMetadataStr} }}`);
+  args.jobLog(`updated metadata string:{{ ${updatedMetadataStr} }}`);
   // default to the "no change" output path
   let outputNumber = 1;
   // check if we made any changes

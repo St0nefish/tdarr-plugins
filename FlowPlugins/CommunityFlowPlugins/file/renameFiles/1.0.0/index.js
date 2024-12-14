@@ -212,13 +212,13 @@ var plugin = function (args) {
         // first find the first video stream and get its media info
         var videoStream = streams === null || streams === void 0 ? void 0 : streams.filter(function (stream) { return (0, metadataUtils_1.getCodecType)(stream) === 'video'; })[0];
         // ToDo
-        args.jobLog("using video stream: ".concat(videoStream));
+        args.jobLog("using video stream: ".concat(JSON.stringify(videoStream)));
         // ToDo
         // can't proceed if we can't find a stream to use
         if (videoStream) {
             var videoMediaInfo = (0, metadataUtils_1.getMediaInfoTrack)(videoStream, mediaInfo);
             // ToDo
-            args.jobLog("using video mediaifo: ".concat(videoMediaInfo));
+            args.jobLog("using video mediaifo: ".concat(JSON.stringify(videoMediaInfo)));
             // ToDo
             // handle video codec replacement if enabled
             if (replaceVideoCodec) {

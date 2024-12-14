@@ -300,7 +300,7 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
     const videoStream: Istreams | undefined = streams?.filter((stream) => getCodecType(stream) === 'video')[0];
 
     // ToDo
-    args.jobLog(`using video stream: ${videoStream}`);
+    args.jobLog(`using video stream: ${JSON.stringify(videoStream)}`);
     // ToDo
 
     // can't proceed if we can't find a stream to use
@@ -308,7 +308,7 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
       const videoMediaInfo = getMediaInfoTrack(videoStream, mediaInfo);
 
       // ToDo
-      args.jobLog(`using video mediaifo: ${videoMediaInfo}`);
+      args.jobLog(`using video mediaifo: ${JSON.stringify(videoMediaInfo)}`);
       // ToDo
 
       // handle video codec replacement if enabled

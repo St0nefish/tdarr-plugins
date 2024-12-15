@@ -231,54 +231,53 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const hardwareEncoding: boolean = Boolean(args.inputs.hardwareEncoding);
   const hardwareType: string = String(args.inputs.hardwareType);
   const titleMode: string = String(args.inputs.titleMode);
-  // iterate streams
-  for (let i = 0; i < args.variables.ffmpegCommand.streams.length; i += 1) {
-    const stream: IffmpegCommandStream = args.variables.ffmpegCommand.streams[i];
-    // only process video streams
-    if (isVideo(stream)) {
-      // only encode if forced or codec isn't already correct
-      if (forceEncoding || stream.codec_name !== targetCodec) {
-        // enable processing and set hardware decoding
-        args.variables.ffmpegCommand.shouldProcess = true;
-        args.variables.ffmpegCommand.hardwareDecoding = hardwareDecoding;
-        // get encoder options
-        // eslint-disable-next-line no-await-in-loop
-        const encoderProperties = await getEncoder({
-          targetCodec,
-          hardwareEncoding,
-          hardwareType,
-          args,
-        });
-        // set output stream option
-        stream.outputArgs.push('-c:{outputIndex}', encoderProperties.encoder);
-        // handle quality settings
-        if (ffmpegQualityEnabled) {
-          if (encoderProperties.isGpu) {
-            stream.outputArgs.push('-qp', ffmpegQuality);
-          } else {
-            stream.outputArgs.push('-crf', ffmpegQuality);
-          }
+  // iterate streams, filter to video, and encode
+  const videoStreams: IffmpegCommandStream[] = args.variables.ffmpegCommand.streams.filter(isVideo);
+  // setup to encode all video streams
+  for (let i = 0; i < videoStreams.length; i += 1) {
+    const stream: IffmpegCommandStream = videoStreams[i];
+    // only encode if forced or codec isn't already correct
+    if (forceEncoding || stream.codec_name !== targetCodec) {
+      // enable processing and set hardware decoding
+      args.variables.ffmpegCommand.shouldProcess = true;
+      args.variables.ffmpegCommand.hardwareDecoding = hardwareDecoding;
+      // get encoder options
+      // eslint-disable-next-line no-await-in-loop
+      const encoderProperties = await getEncoder({
+        targetCodec,
+        hardwareEncoding,
+        hardwareType,
+        args,
+      });
+      // set output stream option
+      stream.outputArgs.push('-c:{outputIndex}', encoderProperties.encoder);
+      // handle quality settings
+      if (ffmpegQualityEnabled) {
+        if (encoderProperties.isGpu) {
+          stream.outputArgs.push('-qp', ffmpegQuality);
+        } else {
+          stream.outputArgs.push('-crf', ffmpegQuality);
         }
-        // handle presets
-        if (ffmpegPresetEnabled) {
-          if (targetCodec !== 'av1' && ffmpegPreset) {
-            stream.outputArgs.push('-preset', ffmpegPreset);
-          }
+      }
+      // handle presets
+      if (ffmpegPresetEnabled) {
+        if (targetCodec !== 'av1' && ffmpegPreset) {
+          stream.outputArgs.push('-preset', ffmpegPreset);
         }
-        // handle hardware decoding options
-        if (hardwareDecoding) {
-          stream.inputArgs.push(...encoderProperties.inputArgs);
-        }
-        // push remaining encoder output args
-        if (encoderProperties.outputArgs) {
-          stream.outputArgs.push(...encoderProperties.outputArgs);
-        }
-        // handle title removal
-        if (titleMode === 'clear') {
-          stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', 'title=');
-        } else if (titleMode === 'generate') {
-          stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', `title=${targetCodec}`);
-        }
+      }
+      // handle hardware decoding options
+      if (hardwareDecoding) {
+        stream.inputArgs.push(...encoderProperties.inputArgs);
+      }
+      // push remaining encoder output args
+      if (encoderProperties.outputArgs) {
+        stream.outputArgs.push(...encoderProperties.outputArgs);
+      }
+      // handle title removal
+      if (titleMode === 'clear') {
+        stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', 'title=');
+      } else if (titleMode === 'generate') {
+        stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', `title=${targetCodec}`);
       }
     }
   }

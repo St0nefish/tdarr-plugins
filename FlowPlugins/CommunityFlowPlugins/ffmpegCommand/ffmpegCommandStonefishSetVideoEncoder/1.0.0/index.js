@@ -224,7 +224,7 @@ var details = function () { return ({
 exports.details = details;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, hardwareDecoding, targetCodec, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, i, stream, encoderProperties;
+    var lib, hardwareDecoding, targetCodec, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, videoStreams, i, stream, encoderProperties;
     var _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
@@ -244,12 +244,12 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 hardwareEncoding = Boolean(args.inputs.hardwareEncoding);
                 hardwareType = String(args.inputs.hardwareType);
                 titleMode = String(args.inputs.titleMode);
+                videoStreams = args.variables.ffmpegCommand.streams.filter(metadataUtils_1.isVideo);
                 i = 0;
                 _c.label = 1;
             case 1:
-                if (!(i < args.variables.ffmpegCommand.streams.length)) return [3 /*break*/, 4];
-                stream = args.variables.ffmpegCommand.streams[i];
-                if (!(0, metadataUtils_1.isVideo)(stream)) return [3 /*break*/, 3];
+                if (!(i < videoStreams.length)) return [3 /*break*/, 4];
+                stream = videoStreams[i];
                 if (!(forceEncoding || stream.codec_name !== targetCodec)) return [3 /*break*/, 3];
                 // enable processing and set hardware decoding
                 args.variables.ffmpegCommand.shouldProcess = true;

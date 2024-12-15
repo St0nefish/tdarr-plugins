@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.plugin = exports.details = void 0;
 var flowUtils_1 = require("../../../../FlowHelpers/1.0.0/interfaces/flowUtils");
 var metadataUtils_1 = require("../../../../FlowHelpers/1.0.0/metadataUtils");
+var IFileObject_1 = require("../../../../FlowHelpers/1.0.0/interfaces/synced/IFileObject");
 /* eslint-disable no-param-reassign */
 var details = function () { return ({
     name: 'Cleanup Streams',
@@ -274,7 +275,7 @@ var details = function () { return ({
 exports.details = details;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, removeVideo, removeAudio, removeSubtitles, removeDuplicates, removeOther, removeCommentaryAudio, removeCommentarySubs, removeDescriptiveAudio, removeDescriptiveSubs, keepLanguages, defaultLanguage, streams, mediaInfo, inputStreamCounts, streamRemovedMap, countRemoved, getDedupeGroupKey, getSortInfo, dedupeMap, addToDedupeMap;
+    var lib, removeVideo, removeAudio, removeSubs, removeOther, removeDuplicates, removeCommentaryAudio, removeCommentarySubs, removeDescriptiveAudio, removeDescriptiveSubs, keepLanguages, defaultLanguage, streams, mediaInfo, inputStreamCounts, streamRemovedMap, countRemoved, getDedupeGroupKey, getSortInfo, dedupeMap, addToDedupeMap;
     var _a;
     return __generator(this, function (_b) {
         switch (_b.label) {
@@ -286,9 +287,9 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 (0, flowUtils_1.checkFfmpegCommandInit)(args);
                 removeVideo = Boolean(args.inputs.removeVideo);
                 removeAudio = Boolean(args.inputs.removeAudio);
-                removeSubtitles = Boolean(args.inputs.removeSubtitles);
-                removeDuplicates = Boolean(args.inputs.removeDuplicates);
+                removeSubs = Boolean(args.inputs.removeSubtitles);
                 removeOther = Boolean(args.inputs.removeOther);
+                removeDuplicates = Boolean(args.inputs.removeDuplicates);
                 removeCommentaryAudio = Boolean(args.inputs.removeCommentaryAudio);
                 removeCommentarySubs = Boolean(args.inputs.removeCommentarySubs);
                 removeDescriptiveAudio = Boolean(args.inputs.removeDescriptiveAudio);
@@ -299,75 +300,69 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     .map(function (langTag) { return langTag.trim(); });
                 defaultLanguage = (_a = keepLanguages[0]) !== null && _a !== void 0 ? _a : 'eng';
                 streams = args.variables.ffmpegCommand.streams;
-                // generate type indexes
                 (0, metadataUtils_1.setTypeIndexes)(streams);
                 return [4 /*yield*/, (0, metadataUtils_1.getMediaInfo)(args)];
             case 1:
                 mediaInfo = _b.sent();
                 inputStreamCounts = (0, metadataUtils_1.getTypeCountsMap)(streams);
                 args.jobLog("input stream counts: ".concat(JSON.stringify(inputStreamCounts)));
-                streamRemovedMap = {
-                    video: 0,
-                    audio: 0,
-                    subtitle: 0,
-                };
+                streamRemovedMap = {};
                 countRemoved = function (stream) {
                     var _a;
                     var codecType = (0, metadataUtils_1.getCodecType)(stream);
                     streamRemovedMap[codecType] = ((_a = streamRemovedMap[codecType]) !== null && _a !== void 0 ? _a : 0) + 1;
                 };
                 getDedupeGroupKey = function (stream) {
-                    var codecType = (0, metadataUtils_1.getCodecType)(stream);
                     // build array of group-by keys - always start with codec type
-                    var groupBy = [codecType];
-                    if (codecType === 'video') {
+                    var groupBy = [(0, metadataUtils_1.getCodecType)(stream)];
+                    if ((0, metadataUtils_1.isVideo)(stream)) {
                         groupBy.push((0, metadataUtils_1.getLanguageTag)(stream, defaultLanguage));
                     }
-                    else if (codecType === 'audio') {
+                    else if ((0, metadataUtils_1.isAudio)(stream)) {
                         // audio always groups by language
                         groupBy.push((0, metadataUtils_1.getLanguageTag)(stream, defaultLanguage));
-                        if ((0, metadataUtils_1.streamIsStandard)(stream)) {
+                        if ((0, metadataUtils_1.isStandardStream)(stream)) {
                             // standard streams also group by channels
                             groupBy.push((0, metadataUtils_1.getChannelsName)(stream));
                         }
                         else {
                             // commentary & descriptive streams also group by title
-                            groupBy.push("[".concat((0, metadataUtils_1.getTitleForStream)(stream), "]"));
+                            groupBy.push("[".concat((0, metadataUtils_1.getOrGenerateTitle)(stream), "]"));
                         }
                     }
-                    else if (codecType === 'subtitle') {
+                    else if ((0, metadataUtils_1.isSubtitle)(stream)) {
                         // subs always group by language
                         groupBy.push((0, metadataUtils_1.getLanguageTag)(stream, defaultLanguage));
-                        if ((0, metadataUtils_1.streamIsStandard)(stream)) {
+                        if ((0, metadataUtils_1.isStandardStream)(stream)) {
                             // standard streams subgroup by the default + forced flags
                             groupBy.push(stream.disposition.default ? 'default' : undefined);
                             groupBy.push(stream.disposition.forced ? 'forced' : undefined);
                         }
                         else {
                             // commentary/descriptive streams subgroup by flags and title
-                            groupBy.push((0, metadataUtils_1.streamIsCommentary)(stream) ? 'commentary' : undefined);
-                            groupBy.push((0, metadataUtils_1.streamIsDescriptive)(stream) ? 'descriptive' : undefined);
-                            groupBy.push("[".concat((0, metadataUtils_1.getTitleForStream)(stream), "]"));
+                            groupBy.push((0, metadataUtils_1.isCommentaryStream)(stream) ? 'commentary' : undefined);
+                            groupBy.push((0, metadataUtils_1.isDescriptiveStream)(stream) ? 'descriptive' : undefined);
+                            groupBy.push("[".concat((0, metadataUtils_1.getOrGenerateTitle)(stream), "]"));
                         }
                     }
                     else {
                         // all other types subgroup by type index
-                        groupBy.push("index=".concat(stream.typeIndex));
+                        groupBy.push("typeIndex=".concat(stream.typeIndex));
                     }
                     // filter out any undefined keys and join with ':' to build group by key
                     return groupBy.filter(function (item) { return item; }).join(':');
                 };
                 getSortInfo = function (stream) {
-                    switch ((0, metadataUtils_1.getCodecType)(stream)) {
-                        case 'video':
-                            return "".concat((0, metadataUtils_1.getResolutionName)(stream), " ").concat((0, metadataUtils_1.getBitrateText)(stream, (0, metadataUtils_1.getMediaInfoTrack)(stream, mediaInfo)));
-                        case 'audio':
-                            return "".concat((0, metadataUtils_1.getBitrateText)(stream));
-                        case 'subtitle':
-                            return "index:".concat(stream.typeIndex);
-                        default:
-                            return '';
+                    if ((0, metadataUtils_1.isVideo)(stream)) {
+                        return "".concat((0, metadataUtils_1.getResolutionName)(stream), " ").concat((0, metadataUtils_1.getBitrateText)(stream, (0, metadataUtils_1.getMediaInfoTrack)(stream, mediaInfo)));
                     }
+                    if ((0, metadataUtils_1.isAudio)(stream)) {
+                        return "".concat((0, metadataUtils_1.getBitrateText)(stream));
+                    }
+                    if ((0, metadataUtils_1.isSubtitle)(stream)) {
+                        return "index:".concat(stream.typeIndex);
+                    }
+                    return '';
                 };
                 dedupeMap = {
                     video: {},
@@ -387,7 +382,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     var _a, _b, _c, _d;
                     var codecType = (0, metadataUtils_1.getCodecType)(stream);
                     switch (codecType) {
-                        case 'video':
+                        case IFileObject_1.StreamType.video:
                             if (removeVideo) {
                                 if (!(0, metadataUtils_1.streamMatchesLanguages)(stream, keepLanguages, defaultLanguage)) {
                                     // language is unwanted
@@ -396,7 +391,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                                 }
                             }
                             break;
-                        case 'audio':
+                        case IFileObject_1.StreamType.audio:
                             // determine if we should remove this audio stream
                             if (removeAudio) {
                                 // audio cleanup is enabled
@@ -405,32 +400,32 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                                     stream.removed = true;
                                     stream.removeReason = "language [".concat((_b = stream.tags) === null || _b === void 0 ? void 0 : _b.language, "] is unwanted");
                                 }
-                                else if (removeCommentaryAudio && (0, metadataUtils_1.streamIsCommentary)(stream)) {
+                                else if (removeCommentaryAudio && (0, metadataUtils_1.isCommentaryStream)(stream)) {
                                     // unwanted commentary
                                     stream.removed = true;
                                     stream.removeReason = 'detected as unwanted commentary';
                                 }
-                                else if (removeDescriptiveAudio && (0, metadataUtils_1.streamIsDescriptive)(stream)) {
+                                else if (removeDescriptiveAudio && (0, metadataUtils_1.isDescriptiveStream)(stream)) {
                                     // unwanted descriptive
                                     stream.removed = true;
                                     stream.removeReason = 'detected as unwanted description';
                                 }
                             }
                             break;
-                        case 'subtitle':
-                            if (removeSubtitles) {
+                        case IFileObject_1.StreamType.subtitle:
+                            if (removeSubs) {
                                 // subtitle cleanup is enabled
                                 if (!(0, metadataUtils_1.streamMatchesLanguages)(stream, keepLanguages, defaultLanguage)) {
                                     // language is unwanted
                                     stream.removed = true;
                                     stream.removeReason = "language [".concat((_c = stream.tags) === null || _c === void 0 ? void 0 : _c.language, "] is unwanted");
                                 }
-                                else if (removeCommentarySubs && (0, metadataUtils_1.streamIsCommentary)(stream)) {
+                                else if (removeCommentarySubs && (0, metadataUtils_1.isCommentaryStream)(stream)) {
                                     // unwanted commentary
                                     stream.removed = true;
                                     stream.removeReason = 'detected as unwanted commentary';
                                 }
-                                else if (removeDescriptiveSubs && (0, metadataUtils_1.streamIsDescriptive)(stream)) {
+                                else if (removeDescriptiveSubs && (0, metadataUtils_1.isDescriptiveStream)(stream)) {
                                     // unwanted descriptive
                                     stream.removed = true;
                                     stream.removeReason = 'detected as unwanted description';
@@ -449,7 +444,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     if (stream.removed) {
                         countRemoved(stream);
                         args.jobLog("removing [".concat(codecType, "] stream [s:").concat(stream.index, ":a:").concat(stream.typeIndex, "] ")
-                            + "[".concat((0, metadataUtils_1.getTitleForStream)(stream, (_d = mediaInfo === null || mediaInfo === void 0 ? void 0 : mediaInfo.track) === null || _d === void 0 ? void 0 : _d[stream.index]), "] - ").concat(stream.removeReason));
+                            + "[".concat((0, metadataUtils_1.getOrGenerateTitle)(stream, (_d = mediaInfo === null || mediaInfo === void 0 ? void 0 : mediaInfo.track) === null || _d === void 0 ? void 0 : _d[stream.index]), "] - ").concat(stream.removeReason));
                     }
                     else {
                         // add to map for subsequent de-duplication
@@ -472,7 +467,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                                     // keep the first entry, discard the rest
                                     if (index > 0) {
                                         args.jobLog("removing [".concat(codecType, "] stream [s:").concat(stream.index, ":a:").concat(stream.typeIndex, "] ")
-                                            + "[".concat((0, metadataUtils_1.getTitleForStream)(stream, (_a = mediaInfo === null || mediaInfo === void 0 ? void 0 : mediaInfo.track) === null || _a === void 0 ? void 0 : _a[stream.index]), "] - stream is not best option ")
+                                            + "[".concat((0, metadataUtils_1.getOrGenerateTitle)(stream, (_a = mediaInfo === null || mediaInfo === void 0 ? void 0 : mediaInfo.track) === null || _a === void 0 ? void 0 : _a[stream.index]), "] - stream is not best option ")
                                             + "for group-by-key:[".concat(groupByKey, "] and sort info:[").concat(getSortInfo(stream), "]"));
                                         stream.removed = true;
                                         countRemoved(stream);

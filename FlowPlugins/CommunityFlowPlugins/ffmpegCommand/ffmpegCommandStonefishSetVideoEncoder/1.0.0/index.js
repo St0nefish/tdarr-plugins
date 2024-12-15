@@ -249,7 +249,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
             case 1:
                 if (!(i < args.variables.ffmpegCommand.streams.length)) return [3 /*break*/, 4];
                 stream = args.variables.ffmpegCommand.streams[i];
-                if (!((0, metadataUtils_1.getCodecType)(stream) === 'video')) return [3 /*break*/, 3];
+                if (!(0, metadataUtils_1.isVideo)(stream)) return [3 /*break*/, 3];
                 if (!(forceEncoding || stream.codec_name !== targetCodec)) return [3 /*break*/, 3];
                 // enable processing and set hardware decoding
                 args.variables.ffmpegCommand.shouldProcess = true;
@@ -298,9 +298,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
             case 3:
                 i += 1;
                 return [3 /*break*/, 1];
-            case 4: 
-            // standard return
-            return [2 /*return*/, {
+            case 4: return [2 /*return*/, {
                     outputFileObj: args.inputFileObj,
                     outputNumber: 1,
                     variables: args.variables,

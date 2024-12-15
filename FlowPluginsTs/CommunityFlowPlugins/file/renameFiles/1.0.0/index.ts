@@ -12,12 +12,17 @@ import {
 } from '../../../../FlowHelpers/1.0.0/interfaces/interfaces';
 import {
   getChannelsName,
-  getCodecType,
   getFileCodecName,
   getMediaInfoTrack,
   getResolutionName,
+  isAudio,
+  isVideo,
 } from '../../../../FlowHelpers/1.0.0/metadataUtils';
-import { Istreams } from '../../../../FlowHelpers/1.0.0/interfaces/synced/IFileObject';
+import {
+  ImediaInfo,
+  ImediaInfoTrack,
+  Istreams,
+} from '../../../../FlowHelpers/1.0.0/interfaces/synced/IFileObject';
 
 /* eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }] */
 const details = (): IpluginDetails => ({
@@ -251,31 +256,31 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
   args.inputs = lib.loadDefaultValues(args.inputs, details);
   // get input config
-  const replaceVideoCodec = Boolean(args.inputs.replaceVideoCodec);
-  const replaceVideoRes = Boolean(args.inputs.replaceVideoRes);
-  const replaceAudioCodec = Boolean(args.inputs.replaceAudioCodec);
-  const replaceAudioChannels = Boolean(args.inputs.replaceAudioChannels);
-  const renameOtherFiles = Boolean(args.inputs.renameOtherFiles);
+  const replaceVideoCodec: boolean = Boolean(args.inputs.replaceVideoCodec);
+  const replaceVideoRes: boolean = Boolean(args.inputs.replaceVideoRes);
+  const replaceAudioCodec: boolean = Boolean(args.inputs.replaceAudioCodec);
+  const replaceAudioChannels: boolean = Boolean(args.inputs.replaceAudioChannels);
+  const renameOtherFiles: boolean = Boolean(args.inputs.renameOtherFiles);
   const extensions: string[] = String(args.inputs.fileExtensions)
     .split(',')
     .map((item) => item?.trim())
     .filter((item) => item && item.length > 0)
     .filter((item, index, items) => items.indexOf(item) === index);
-  const enableMetadataRegex = Boolean(args.inputs.enableMetadataRegex);
-  const metadataRegexStr = String(args.inputs.metadataRegex);
+  const enableMetadataRegex: boolean = Boolean(args.inputs.enableMetadataRegex);
+  const metadataRegexStr: string = String(args.inputs.metadataRegex);
   const metadataRegex: RegExp | null = enableMetadataRegex ? RegExp(metadataRegexStr, 'gi') : null;
   if (enableMetadataRegex) {
     args.jobLog(`using RegEx to locate metadata: ${metadataRegexStr}`);
   }
-  const dryRun = Boolean(args.inputs.dryRun);
+  const dryRun: boolean = Boolean(args.inputs.dryRun);
   // grab handles to streams and media info
-  const { streams } = args.inputFileObj.ffProbeData;
-  const { mediaInfo } = args.inputFileObj;
+  const streams: Istreams[] | undefined = args.inputFileObj.ffProbeData.streams;
+  const mediaInfo: ImediaInfo | undefined = args.inputFileObj.mediaInfo;
   // regexes for replacing video & audio metadata
-  const videoCodecRegex = /(h264|h265|x264|x265|avc|hevc|mpeg2|av1|vc1)/gi;
-  const videoResRegex = /(480p|576p|720p|1080p|1440p|2160p|4320p)/gi;
-  const audioCodecRegex = /(aac|ac3|eac3|flac|mp2|mp3|truehd|truehd atmos|dts[-. ]hd[-. ]ma|dts[-. ]hd[-. ]es|dts[-. ]hd[-. ]hra|dts[-. ]express|dts)/gi;
-  const audioChannelsRegex = /(1\.0|2\.0|2\.1|3\.0|3\.1|5\.1|6\.1|7\.1)/gi;
+  const videoCodecRegex: RegExp = /(h264|h265|x264|x265|avc|hevc|mpeg2|av1|vc1)/gi;
+  const videoResRegex: RegExp = /(480p|576p|720p|1080p|1440p|2160p|4320p)/gi;
+  const audioCodecRegex: RegExp = /(aac|ac3|eac3|flac|mp2|mp3|truehd|truehd atmos|dts[-. ]hd[-. ]ma|dts[-. ]hd[-. ]es|dts[-. ]hd[-. ]hra|dts[-. ]express|dts)/gi;
+  const audioChannelsRegex: RegExp = /(1\.0|2\.0|2\.1|3\.0|3\.1|5\.1|6\.1|7\.1)/gi;
   // get file name and path from input object
   const inputFilePath: ParsedPath = path.parse(args.inputFileObj._id);
   const inputFileName: string = inputFilePath.name;
@@ -297,10 +302,10 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   // if any video-based rename is enabled
   if (replaceVideoCodec || replaceVideoRes) {
     // first find the first video stream and get its media info
-    const videoStream: Istreams | undefined = streams?.filter((stream) => getCodecType(stream) === 'video')[0];
+    const videoStream: Istreams | undefined = streams?.filter(isVideo)[0];
     // can't proceed if we can't find a stream to use
     if (videoStream) {
-      const videoMediaInfo = getMediaInfoTrack(videoStream, mediaInfo);
+      const videoMediaInfo: ImediaInfoTrack | undefined = getMediaInfoTrack(videoStream, mediaInfo);
       // handle video codec replacement if enabled
       if (replaceVideoCodec) {
         updatedMetadataStr = updatedMetadataStr.replace(videoCodecRegex, getFileCodecName(videoStream, videoMediaInfo));
@@ -312,10 +317,10 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
     }
   }
   if (replaceAudioCodec || replaceAudioChannels) {
-    const audioStream: Istreams | undefined = streams?.filter((stream) => getCodecType(stream) === 'audio')[0];
+    const audioStream: Istreams | undefined = streams?.filter(isAudio)[0];
     // can't proceed if we can't find an audio stream to use
     if (audioStream) {
-      const audioMediaInfo = getMediaInfoTrack(audioStream, mediaInfo);
+      const audioMediaInfo: ImediaInfoTrack | undefined = getMediaInfoTrack(audioStream, mediaInfo);
       // handle audio codec replacement if enabled
       if (replaceAudioCodec) {
         updatedMetadataStr = updatedMetadataStr.replace(audioCodecRegex, getFileCodecName(audioStream, audioMediaInfo));
@@ -328,7 +333,7 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   }
   args.jobLog(`updated metadata string:{{ ${updatedMetadataStr} }}`);
   // default to the "no change" output path
-  let outputNumber = 1;
+  let outputNumber: number = 1;
   // check if we made any changes
   if (originalMetadataStr === updatedMetadataStr) {
     args.jobLog('no renaming required');
@@ -360,14 +365,14 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   }
   args.jobLog(`will rename files: ${JSON.stringify(toRename)}`);
   // store new primary file's path for output - default to input for dry run support
-  let newPrimaryPath = args.inputFileObj._id;
+  let newPrimaryPath: string = args.inputFileObj._id;
   // iterate files
   toRename.forEach((fileName: string) => {
     // replace original metadata string with our updated one
-    const newName = fileName.replace(originalMetadataStr, updatedMetadataStr);
+    const newName: string = fileName.replace(originalMetadataStr, updatedMetadataStr);
     // build old and new paths
-    const oldPath = `${inputFilePath.dir}/${fileName}`;
-    const newPath = `${inputFilePath.dir}/${newName}`;
+    const oldPath: string = `${inputFilePath.dir}/${fileName}`;
+    const newPath: string = `${inputFilePath.dir}/${newName}`;
     if (dryRun) {
       args.jobLog(`would rename {{ ${oldPath} }} to {{ ${newPath} }}`);
     } else {

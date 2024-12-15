@@ -94,8 +94,7 @@ var plugin = function (args) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
     args.inputs = lib.loadDefaultValues(args.inputs, details);
     // retrieve configuration
-    var variable = String(args.inputs.variable)
-        .trim();
+    var variable = String(args.inputs.variable).trim();
     var operation = String(args.inputs.operation);
     var inputVal = args.inputs.value ? Number(args.inputs.value) : 1;
     // ensure user variable object is initialized
@@ -128,7 +127,6 @@ var plugin = function (args) {
     args.jobLog("Setting variable ".concat(variable, " to ").concat(newVal));
     // eslint-disable-next-line no-param-reassign
     args.variables.user[variable] = String(currentVal + 1);
-    // standard return
     return {
         outputFileObj: args.inputFileObj,
         outputNumber: 1,

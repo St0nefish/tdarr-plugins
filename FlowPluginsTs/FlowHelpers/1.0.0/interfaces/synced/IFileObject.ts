@@ -14,6 +14,13 @@ export interface Itags {
   [key: string]: string | undefined,
 }
 
+// enum of key stream types
+export enum StreamType {
+  video = 'video',
+  audio = 'audio',
+  subtitle = 'subtitle',
+}
+
 export interface Istreams {
   codec_name: string;
   codec_type: string,

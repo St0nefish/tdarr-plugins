@@ -126,17 +126,16 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
   args.inputs = lib.loadDefaultValues(args.inputs, details);
   // retrieve configuration
-  const variable = String(args.inputs.variable)
-    .trim();
-  const operation = String(args.inputs.operation);
-  const inputVal = args.inputs.value ? Number(args.inputs.value) : 1;
+  const variable: string = String(args.inputs.variable).trim();
+  const operation: string = String(args.inputs.operation);
+  const inputVal: number = args.inputs.value ? Number(args.inputs.value) : 1;
   // ensure user variable object is initialized
   // eslint-disable-next-line no-param-reassign
   args.variables.user ??= {};
   // retrieve current value
-  const currentVal = Number(args.variables.user[variable] ?? 0);
+  const currentVal: number = Number(args.variables.user[variable] ?? 0);
   // switch on operation to determine new value
-  let newVal;
+  let newVal: number;
   switch (operation) {
     case 'increment':
       newVal = currentVal + 1;
@@ -160,13 +159,14 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   args.jobLog(`Setting variable ${variable} to ${newVal}`);
   // eslint-disable-next-line no-param-reassign
   args.variables.user[variable] = String(currentVal + 1);
-  // standard return
+
   return {
     outputFileObj: args.inputFileObj,
     outputNumber: 1,
     variables: args.variables,
   };
 };
+
 export {
   details,
   plugin,

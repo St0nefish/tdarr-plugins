@@ -64,7 +64,7 @@ exports.details = details;
 // function to get string displaying stream order
 var getStreamOrderStr = function (streams, mediaInfo) { return (streams.map(function (stream, index) {
     var _a;
-    return ("'".concat(index, ":").concat((0, metadataUtils_1.getCodecType)(stream), ":").concat((0, metadataUtils_1.getTitleForStream)(stream, (_a = mediaInfo === null || mediaInfo === void 0 ? void 0 : mediaInfo.track) === null || _a === void 0 ? void 0 : _a[stream.index]), "'"));
+    return ("'".concat(index, ":").concat((0, metadataUtils_1.getCodecType)(stream), ":").concat((0, metadataUtils_1.getOrGenerateTitle)(stream, (_a = mediaInfo === null || mediaInfo === void 0 ? void 0 : mediaInfo.track) === null || _a === void 0 ? void 0 : _a[stream.index]), "'"));
 })
     .join(', ')); };
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

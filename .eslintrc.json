@@ -88,6 +88,9 @@
     // I find destructuring syntax less clear
     "prefer-destructuring": 0,
     // I like explicit types always
-    "@typescript-eslint/no-inferrable-types": 0
+    "@typescript-eslint/no-inferrable-types": 0,
+    // fix no-shadow for enums
+    "no-shadow": "off",
+    "@typescript-eslint/no-shadow": "warn"
   }
 }

@@ -1,5 +1,6 @@
 import { checkFfmpegCommandInit } from '../../../../FlowHelpers/1.0.0/interfaces/flowUtils';
 import {
+  IffmpegCommandStream,
   IpluginDetails,
   IpluginInputArgs,
   IpluginOutputArgs,
@@ -10,14 +11,18 @@ import {
   getMediaInfo,
   getMediaInfoTrack,
   getStreamTypeFlag,
+  getTitle,
+  hasCommentaryFlag,
+  hasDescriptiveFlag,
+  isAudio,
+  isCommentaryStream,
+  isDescriptiveStream,
+  isForcedSubtitle,
   isLanguageUndefined,
+  isStandardStream,
+  isSubtitle,
+  isVideo,
   setTypeIndexes,
-  streamHasCommentary,
-  streamHasDescriptive,
-  streamIsCommentary,
-  streamIsDescriptive,
-  streamIsForcedSubtitle,
-  streamIsStandard,
 } from '../../../../FlowHelpers/1.0.0/metadataUtils';
 import { ImediaInfo } from '../../../../FlowHelpers/1.0.0/interfaces/synced/IFileObject';
 
@@ -157,27 +162,26 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // ensure ffmpeg command has been initialized
   checkFfmpegCommandInit(args);
   // options for tagging missing languages
-  const setTagLanguage = Boolean(args.inputs.setLangTag);
+  const setTagLanguage: boolean = Boolean(args.inputs.setLangTag);
   const tagLanguage: string = setTagLanguage ? String(args.inputs.tagLanguage) : 'eng';
   // options for forcing new stream titles
-  const forceTitle = Boolean(args.inputs.forceTitles);
-  const forceTitleCommentary = Boolean(args.inputs.forceTitleCommentary);
-  const forceTitleDescriptive = Boolean(args.inputs.forceTitleDescriptive);
+  const forceTitle: boolean = Boolean(args.inputs.forceTitles);
+  const forceTitleCommentary: boolean = Boolean(args.inputs.forceTitleCommentary);
+  const forceTitleDescriptive: boolean = Boolean(args.inputs.forceTitleDescriptive);
   // options for managing disposition flags
-  const setDisposition = Boolean(args.inputs.setDisposition);
-  // grab a handle to streams
-  const { streams } = args.variables.ffmpegCommand;
-  // set type indexes, we'll use to manage default flags
+  const setDisposition: boolean = Boolean(args.inputs.setDisposition);
+  // grab a handle to streams and set type indexes
+  const streams: IffmpegCommandStream[] = args.variables.ffmpegCommand.streams;
   setTypeIndexes(streams);
   // execute a mediaInfo scan
   const mediaInfo: ImediaInfo | undefined = await getMediaInfo(args);
   // iterate streams to flag the ones to remove
   streams.forEach((stream) => {
-    const codecType = getCodecType(stream);
+    const codecType: string = getCodecType(stream);
     // copy all streams
     stream.outputArgs.push('-c:{outputIndex}', 'copy');
     // add tags for video, audio, subtitle streams
-    if (['video', 'audio', 'subtitle'].includes(codecType)) {
+    if (isVideo(stream) || isAudio(stream) || isSubtitle(stream)) {
       // check if language tag is missing
       if (setTagLanguage && isLanguageUndefined(stream)) {
         args.jobLog(`found [${codecType}] stream missing language tag - setting to [${tagLanguage}]`);
@@ -191,13 +195,13 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       }
       // check if we should set a stream title
       // true if title is missing or if one of the force new flags is on
-      if (!stream.tags?.title // title is missing
-        || (forceTitle && streamIsStandard(stream)) // force new title for standard stream
-        || (forceTitleCommentary && streamIsCommentary(stream)) // force new title for commentary
-        || (forceTitleDescriptive && streamIsDescriptive(stream)) // force new title for descriptive
+      if (getTitle(stream).length === 0 // title is missing
+        || (forceTitle && isStandardStream(stream)) // force new title for standard stream
+        || (forceTitleCommentary && isCommentaryStream(stream)) // force new title for commentary
+        || (forceTitleDescriptive && isDescriptiveStream(stream)) // force new title for descriptive
       ) {
         // generate a title for this stream
-        const title = generateTitleForStream(stream, getMediaInfoTrack(stream, mediaInfo));
+        const title: string = generateTitleForStream(stream, getMediaInfoTrack(stream, mediaInfo));
         args.jobLog(`found [${codecType}] stream that requires a title - setting to [${title}]`);
         // ensure tags object exists and set title tag
         stream.tags ??= {};
@@ -211,37 +215,37 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     // handle disposition flags if enabled
     if (setDisposition) {
       // array of flags to add or remove
-      const flags = [];
+      const flags: string[] = [];
       // ensure first video and audio streams have default flag set
-      if (['video', 'audio'].includes(codecType) && stream.typeIndex === 0 && !stream.disposition.default) {
+      if ((isVideo(stream) || isAudio(stream)) && stream.typeIndex === 0 && !stream.disposition.default) {
         args.jobLog(`found [${codecType}] stream that is first but not set as default`);
         // add the default flag
         flags.push('+default');
       }
       // handle commentary streams
-      if (streamHasCommentary(stream) && !stream.disposition?.comment) {
+      if (hasCommentaryFlag(stream) && !stream.disposition?.comment) {
         args.jobLog(`found [${codecType}] stream that requires the comment disposition flag`);
         // add comment flag
         flags.push('+comment');
       }
       // handle descriptive streams
-      if (streamHasDescriptive(stream) && !stream.disposition?.descriptions) {
+      if (hasDescriptiveFlag(stream) && !stream.disposition?.descriptions) {
         args.jobLog(`found [${codecType}] stream that requires the descriptions disposition flag`);
         // add descriptions tag
         flags.push('+descriptions');
       }
       // remove default flag from non-standard streams
-      if (!streamIsStandard(stream) && stream.disposition.default) {
+      if (!isStandardStream(stream) && stream.disposition.default) {
         flags.push('-default');
       }
       // handle default and forced flags for subtitles
       if (codecType === 'subtitle') {
         // remove default flag from any non-forced streams
-        if (streamIsForcedSubtitle(stream)) {
+        if (isForcedSubtitle(stream)) {
           flags.push('-default');
         }
         // add forced and default flags if title contains 'forced' but flags are not set
-        if (!(stream.disposition?.forced ?? false) && streamIsForcedSubtitle(stream)) {
+        if (!(stream.disposition?.forced ?? false) && isForcedSubtitle(stream)) {
           flags.push('+forced');
         }
       }

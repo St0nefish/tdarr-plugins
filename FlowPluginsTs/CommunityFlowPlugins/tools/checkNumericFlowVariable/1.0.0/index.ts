@@ -90,9 +90,9 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   // eslint-disable-next-line no-param-reassign
   args.inputs = lib.loadDefaultValues(args.inputs, details);
   // retrieve configuration
-  const currentValue = args.inputs.variable ? Number(args.inputs.variable) : 0;
-  const condition = String(args.inputs.condition);
-  const expectedValue = Number(args.inputs.value);
+  const currentValue: number = args.inputs.variable ? Number(args.inputs.variable) : 0;
+  const condition: string = String(args.inputs.condition);
+  const expectedValue: number = Number(args.inputs.value);
   // evaluate condition
   args.jobLog(`checking if [${currentValue}] [${condition}] [${expectedValue}]`);
   let outputNumber: number;
@@ -119,7 +119,7 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
       // assume false if condition is not supported (not sure how this happens using dropdown input)
       outputNumber = 2;
   }
-  // standard return
+
   return {
     outputFileObj: args.inputFileObj,
     outputNumber,

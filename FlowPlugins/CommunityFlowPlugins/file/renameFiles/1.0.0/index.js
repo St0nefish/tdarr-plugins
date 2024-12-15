@@ -210,7 +210,7 @@ var plugin = function (args) {
     // if any video-based rename is enabled
     if (replaceVideoCodec || replaceVideoRes) {
         // first find the first video stream and get its media info
-        var videoStream = streams === null || streams === void 0 ? void 0 : streams.filter(function (stream) { return (0, metadataUtils_1.getCodecType)(stream) === 'video'; })[0];
+        var videoStream = streams === null || streams === void 0 ? void 0 : streams.filter(metadataUtils_1.isVideo)[0];
         // can't proceed if we can't find a stream to use
         if (videoStream) {
             var videoMediaInfo = (0, metadataUtils_1.getMediaInfoTrack)(videoStream, mediaInfo);
@@ -225,7 +225,7 @@ var plugin = function (args) {
         }
     }
     if (replaceAudioCodec || replaceAudioChannels) {
-        var audioStream = streams === null || streams === void 0 ? void 0 : streams.filter(function (stream) { return (0, metadataUtils_1.getCodecType)(stream) === 'audio'; })[0];
+        var audioStream = streams === null || streams === void 0 ? void 0 : streams.filter(metadataUtils_1.isAudio)[0];
         // can't proceed if we can't find an audio stream to use
         if (audioStream) {
             var audioMediaInfo = (0, metadataUtils_1.getMediaInfoTrack)(audioStream, mediaInfo);

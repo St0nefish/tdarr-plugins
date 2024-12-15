@@ -2,11 +2,15 @@
 import { getEncoder } from '../../../../FlowHelpers/1.0.0/hardwareUtils';
 import { checkFfmpegCommandInit } from '../../../../FlowHelpers/1.0.0/interfaces/flowUtils';
 import {
+  IffmpegCommandStream,
   IpluginDetails,
   IpluginInputArgs,
   IpluginOutputArgs,
 } from '../../../../FlowHelpers/1.0.0/interfaces/interfaces';
-import { getCodecType } from '../../../../FlowHelpers/1.0.0/metadataUtils';
+import {
+  getCodecType,
+  isVideo
+} from '../../../../FlowHelpers/1.0.0/metadataUtils';
 
 /* eslint-disable no-param-reassign */
 const details = (): IpluginDetails => ({
@@ -220,21 +224,21 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // ensure ffmpeg command was initiated
   checkFfmpegCommandInit(args);
   // grab config
-  const hardwareDecoding = Boolean(args.inputs.hardwareDecoding);
-  const targetCodec = String(args.inputs.outputCodec);
-  const ffmpegPresetEnabled = Boolean(args.inputs.ffmpegPresetEnabled);
-  const ffmpegQualityEnabled = Boolean(args.inputs.ffmpegQualityEnabled);
-  const ffmpegPreset = String(args.inputs.ffmpegPreset);
-  const ffmpegQuality = String(args.inputs.ffmpegQuality);
-  const forceEncoding = Boolean(args.inputs.forceEncoding);
-  const hardwareEncoding = Boolean(args.inputs.hardwareEncoding);
-  const hardwareType = String(args.inputs.hardwareType);
-  const titleMode = String(args.inputs.titleMode);
+  const hardwareDecoding: boolean = Boolean(args.inputs.hardwareDecoding);
+  const targetCodec: string = String(args.inputs.outputCodec);
+  const ffmpegPresetEnabled: boolean = Boolean(args.inputs.ffmpegPresetEnabled);
+  const ffmpegQualityEnabled: boolean = Boolean(args.inputs.ffmpegQualityEnabled);
+  const ffmpegPreset: string = String(args.inputs.ffmpegPreset);
+  const ffmpegQuality: string = String(args.inputs.ffmpegQuality);
+  const forceEncoding: boolean = Boolean(args.inputs.forceEncoding);
+  const hardwareEncoding: boolean = Boolean(args.inputs.hardwareEncoding);
+  const hardwareType: string = String(args.inputs.hardwareType);
+  const titleMode: string = String(args.inputs.titleMode);
   // iterate streams
   for (let i = 0; i < args.variables.ffmpegCommand.streams.length; i += 1) {
-    const stream = args.variables.ffmpegCommand.streams[i];
+    const stream: IffmpegCommandStream = args.variables.ffmpegCommand.streams[i];
     // only process video streams
-    if (getCodecType(stream) === 'video') {
+    if (isVideo(stream)) {
       // only encode if forced or codec isn't already correct
       if (forceEncoding || stream.codec_name !== targetCodec) {
         // enable processing and set hardware decoding
@@ -281,7 +285,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       }
     }
   }
-  // standard return
+
   return {
     outputFileObj: args.inputFileObj,
     outputNumber: 1,

@@ -7,9 +7,10 @@ import {
 } from '../../../../FlowHelpers/1.0.0/interfaces/interfaces';
 import { getFfType } from '../../../../FlowHelpers/1.0.0/fileUtils';
 import {
-  getChannelCount,
+  getChannelFromName,
   getCodecType,
   getEncoder,
+  isAudio,
   isLanguageUndefined,
   streamMatchesLanguage,
 } from '../../../../FlowHelpers/1.0.0/metadataUtils';
@@ -213,17 +214,16 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   // ensure ffmpeg command has been initialized
   checkFfmpegCommandInit(args);
   // store inputs
-  const targetCodec = String(args.inputs.audioCodec);
-  const targetLang = String(args.inputs.language)
-    .toLowerCase();
-  const targetChannels = String(args.inputs.channels);
-  const titleMode = String(args.inputs.titleMode);
-  const bitrate = (args.inputs.enableBitrate) ? Number(args.inputs.bitrate) : null;
-  const samplerate = (args.inputs.enableSamplerate) ? Number(args.inputs.samplerate) : null;
+  const targetCodec: string = String(args.inputs.audioCodec);
+  const targetLang: string = String(args.inputs.language).toLowerCase();
+  const targetChannels: string = String(args.inputs.channels);
+  const titleMode: string = String(args.inputs.titleMode);
+  const bitrate: number | null = (args.inputs.enableBitrate) ? Number(args.inputs.bitrate) : null;
+  const samplerate: number | null = (args.inputs.enableSamplerate) ? Number(args.inputs.samplerate) : null;
   // store streams
-  const { streams } = args.variables.ffmpegCommand;
+  const streams: IffmpegCommandStream[] = args.variables.ffmpegCommand.streams;
   // first find audio streams
-  const audioStreams = streams.filter((stream) => (getCodecType(stream) === 'audio'));
+  const audioStreams: IffmpegCommandStream[] = streams.filter(() => (isAudio));
   // if no audio streams found return false
   if (audioStreams.length === 0) {
     throw new Error('No audio streams found in input file');
@@ -231,7 +231,9 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   // log stream to create
   args.jobLog(`attempting to create audio stream [${targetCodec} ${targetChannels} ${targetLang}] `);
   // filter streams to only include audio streams with the specified language tag
-  let sourceStreams = audioStreams.filter((stream) => streamMatchesLanguage(stream, targetLang));
+  let sourceStreams: IffmpegCommandStream[] = audioStreams.filter(
+    (stream) => streamMatchesLanguage(stream, targetLang),
+  );
   // if no streams exist with desired language try again with undefined language
   if (sourceStreams.length === 0) {
     args.jobLog(`No streams with language tag ${targetLang} found. Retrying with undefined `);
@@ -245,8 +247,8 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   }
   // function to determine the best of two input streams - determined by channel count and bitrate
   const getBestStream = (first: IffmpegCommandStream, second: IffmpegCommandStream) => {
-    const s1c = first.channels ?? 0;
-    const s2c = second.channels ?? 0;
+    const s1c: number = first.channels ?? 0;
+    const s2c: number = second.channels ?? 0;
     // use the one with higher channel count
     if (s1c > s2c) {
       return first;
@@ -262,11 +264,11 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
     return second;
   };
   // locate the best available source stream
-  const sourceStream = sourceStreams.reduce(getBestStream);
+  const sourceStream: IffmpegCommandStream = sourceStreams.reduce(getBestStream);
   // if requested stream has more channels than available in best source default to source channels
-  const highestChannelCount = Number(sourceStream.channels);
-  const wantedChannelCount = getChannelCount(targetChannels);
-  let generateChannels = 0;
+  const highestChannelCount: number = Number(sourceStream.channels);
+  const wantedChannelCount: number = getChannelFromName(targetChannels);
+  let generateChannels: number = 0;
   if (wantedChannelCount <= highestChannelCount) {
     generateChannels = wantedChannelCount;
     args.jobLog(`The wanted channel count [${wantedChannelCount}] is <= the`
@@ -319,7 +321,7 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
     // add our new stream ust after its source
     streams.splice(streams.indexOf(sourceStream) + 1, 0, streamCopy);
   }
-  // standard return
+
   return {
     outputFileObj: args.inputFileObj,
     outputNumber: 1,

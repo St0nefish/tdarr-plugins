@@ -169,8 +169,7 @@ var plugin = function (args) {
     (0, flowUtils_1.checkFfmpegCommandInit)(args);
     // store inputs
     var targetCodec = String(args.inputs.audioCodec);
-    var targetLang = String(args.inputs.language)
-        .toLowerCase();
+    var targetLang = String(args.inputs.language).toLowerCase();
     var targetChannels = String(args.inputs.channels);
     var titleMode = String(args.inputs.titleMode);
     var bitrate = (args.inputs.enableBitrate) ? Number(args.inputs.bitrate) : null;
@@ -178,7 +177,7 @@ var plugin = function (args) {
     // store streams
     var streams = args.variables.ffmpegCommand.streams;
     // first find audio streams
-    var audioStreams = streams.filter(function (stream) { return ((0, metadataUtils_1.getCodecType)(stream) === 'audio'); });
+    var audioStreams = streams.filter(function () { return (metadataUtils_1.isAudio); });
     // if no audio streams found return false
     if (audioStreams.length === 0) {
         throw new Error('No audio streams found in input file');
@@ -219,7 +218,7 @@ var plugin = function (args) {
     var sourceStream = sourceStreams.reduce(getBestStream);
     // if requested stream has more channels than available in best source default to source channels
     var highestChannelCount = Number(sourceStream.channels);
-    var wantedChannelCount = (0, metadataUtils_1.getChannelCount)(targetChannels);
+    var wantedChannelCount = (0, metadataUtils_1.getChannelFromName)(targetChannels);
     var generateChannels = 0;
     if (wantedChannelCount <= highestChannelCount) {
         generateChannels = wantedChannelCount;
@@ -276,7 +275,6 @@ var plugin = function (args) {
         // add our new stream ust after its source
         streams.splice(streams.indexOf(sourceStream) + 1, 0, streamCopy);
     }
-    // standard return
     return {
         outputFileObj: args.inputFileObj,
         outputNumber: 1,

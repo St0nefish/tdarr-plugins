@@ -9,7 +9,7 @@ import {
   getCodecType,
   getMediaInfo,
   getStreamSorter,
-  getTitleForStream,
+  getOrGenerateTitle,
   setTypeIndexes,
 } from '../../../../FlowHelpers/1.0.0/metadataUtils';
 import { ImediaInfo } from '../../../../FlowHelpers/1.0.0/interfaces/synced/IFileObject';
@@ -57,10 +57,11 @@ const details = (): IpluginDetails => ({
 });
 
 // function to get string displaying stream order
-const getStreamOrderStr = (streams: IffmpegCommandStream[], mediaInfo?: ImediaInfo) => (
+const getStreamOrderStr = (streams: IffmpegCommandStream[], mediaInfo?: ImediaInfo): string => (
   streams.map((stream: IffmpegCommandStream, index: number) => (
-    `'${index}:${getCodecType(stream)}:${getTitleForStream(stream, mediaInfo?.track?.[stream.index])}'`))
-    .join(', '));
+    `'${index}:${getCodecType(stream)}:${getOrGenerateTitle(stream, mediaInfo?.track?.[stream.index])}'`))
+    .join(', ')
+);
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
@@ -70,7 +71,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // check if ffmpeg command has been initialized
   checkFfmpegCommandInit(args);
   // get a copy of input streams so we can sort without changing the input
-  const { streams } = args.variables.ffmpegCommand;
+  const streams: IffmpegCommandStream[] = args.variables.ffmpegCommand.streams;
   // execute a media info scan
   const mediaInfo: ImediaInfo | undefined = await getMediaInfo(args);
   // generate type indexes

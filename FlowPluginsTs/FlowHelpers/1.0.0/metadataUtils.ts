@@ -7,6 +7,7 @@ import {
   ImediaInfo,
   ImediaInfoTrack,
   Istreams,
+  StreamType,
 } from './interfaces/synced/IFileObject';
 
 // function to execute a MediaInfo scan (if possible) and return a File object with embedded mediaInfo data
@@ -26,6 +27,11 @@ export const getMediaInfo = async (args: IpluginInputArgs): Promise<ImediaInfo |
 // function to get the codec type
 export const getCodecType = (stream: Istreams): string => (stream.codec_type?.toLowerCase() ?? '');
 
+// functions to determine key codec types
+export const isVideo = (stream: Istreams): boolean => getCodecType(stream) !== StreamType.video;
+export const isAudio = (stream: Istreams): boolean => getCodecType(stream) !== StreamType.audio;
+export const isSubtitle = (stream: Istreams): boolean => getCodecType(stream) !== StreamType.subtitle;
+
 // function to get the correct media info track for the input stream - assumes indexes are untouched
 export const getMediaInfoTrack = (stream: Istreams, mediaInfo?: ImediaInfo): ImediaInfoTrack | undefined => {
   const streamIdx: number = stream.index;
@@ -42,10 +48,9 @@ export const getMediaInfoTrack = (stream: Istreams, mediaInfo?: ImediaInfo): Ime
 
 // function to get stream type flag for use in stream specifiers
 export const getStreamTypeFlag = (stream: IffmpegCommandStream): string => {
-  const codecType = getCodecType(stream);
-  if (codecType === 'video') return 'v';
-  if (codecType === 'audio') return 'a';
-  if (codecType === 'subtitle') return 's';
+  if (isVideo(stream)) return 'v';
+  if (isAudio(stream)) return 'a';
+  if (isSubtitle(stream)) return 's';
   return '';
 };
 
@@ -54,7 +59,6 @@ export const getCodecName = (stream: Istreams, mediaInfoTrack?: ImediaInfoTrack)
   mediaInfoTrack?.Format_Commercial_IfAny ?? mediaInfoTrack?.Format ?? stream.codec_name?.toUpperCase()
 );
 
-// function to get video codec name for rename purposes
 // map of audio codecs to display names
 const audioCodecMap: { [key: string]: string } = {
   aac: 'AAC',
@@ -73,11 +77,11 @@ const audioCodecMap: { [key: string]: string } = {
   'dts express ': 'DTS Express',
   'dts 96/24': 'DTS',
 };
+// function to get the codec name for the purposes of renaming files
 export const getFileCodecName = (stream: Istreams, mediaInfoTrack?: ImediaInfoTrack): string => {
-  const codecType: string = getCodecType(stream);
   const codec: string = String(stream?.codec_name).toLowerCase();
   const profile: string = stream.profile?.toLowerCase() ?? '';
-  if (codecType === 'audio') {
+  if (isAudio(stream)) {
     // handle some special cases
     if (codec === 'dts') {
       if (profile === 'dts-hd ma') {
@@ -94,7 +98,7 @@ export const getFileCodecName = (stream: Istreams, mediaInfoTrack?: ImediaInfoTr
     }
     return audioCodecMap[codec];
   }
-  if (codecType === 'video') {
+  if (isVideo(stream)) {
     // 265
     if (['hevc', 'x265', 'h265'].includes(codec)) {
       // check if encoder was x265
@@ -121,9 +125,9 @@ export const getFileCodecName = (stream: Istreams, mediaInfoTrack?: ImediaInfoTr
 export const setTypeIndexes = (streams: IffmpegCommandStream[]): void => (
   streams.map((stream) => getCodecType(stream))
     .filter((value, index, array) => array.indexOf(value) === index)
-    .forEach((codecType) => {
+    .forEach((typeVal) => {
       // for each unique codec type set type index
-      streams.filter((stream) => getCodecType(stream) === codecType)
+      streams.filter((stream) => getCodecType(stream) === typeVal)
         .forEach((stream, index) => {
           // eslint-disable-next-line no-param-reassign
           stream.typeIndex = index;
@@ -205,7 +209,7 @@ const channelMap: { [key: string]: string } = {
 export const getChannelsName = (stream?: Istreams): string => channelMap[Number(stream?.channels)];
 
 // function to convert user-friendly channel layout to a number
-export const getChannelCount = (channelName: string): number => {
+export const getChannelFromName = (channelName: string): number => {
   if (!channelName) {
     return 0;
   }
@@ -275,6 +279,9 @@ const encoderMap: { [key: string]: string } = {
 // function to get the audio encoder for a codec
 export const getEncoder = (codec: string): string => encoderMap[String(codec)];
 
+// function to get the title or '' if not set
+export const getTitle = (stream: IffmpegCommandStream): string => stream.tags?.title ?? '';
+
 // function to check if a language is undefined
 export const isLanguageUndefined = (stream: IffmpegCommandStream): boolean => (
   !stream.tags?.language || stream.tags.language === 'und'
@@ -288,22 +295,18 @@ export const getLanguageTag = (stream: IffmpegCommandStream, defaultLang?: strin
   return String(stream?.tags?.language);
 };
 
-// map language tags to language name
+// function to get language name from tag
 const languageMap: { [key: string]: string } = {
   eng: 'English',
 };
-
-// function to get language name from tag
 export const getLanguageName = (langTag: string): string => (
   languageMap[langTag] ? String(languageMap[langTag]) : langTag.toUpperCase()
 );
 
-// map of language tag alternates
+// function to check if a stream language matches one or more language tags
 const languageTagAlternates: { [key: string]: string[] } = {
   eng: ['eng', 'en', 'en-us', 'en-gb', 'en-ca', 'en-au'],
 };
-
-// function to check if a stream language matches one of a list of tags with support for defaulting undefined
 export const streamMatchesLanguages = (
   stream: IffmpegCommandStream, languageTags: string[], defaultLanguage?: string,
 ): boolean => {
@@ -317,74 +320,66 @@ export const streamMatchesLanguages = (
   // if able to check for tag equivalents in our map, if none configured check for equality against input
   return Boolean(streamLanguage && allValidTags.includes(streamLanguage));
 };
-
-// function to check if a stream matches a single language tag
 export const streamMatchesLanguage = (
   stream: IffmpegCommandStream, languageTag: string, defaultLanguage?: string,
 ): boolean => streamMatchesLanguages(stream, [languageTag], defaultLanguage);
 
 // function to check if a stream appears to be commentary
-export const streamHasCommentary = (stream: IffmpegCommandStream): boolean => (
-  stream.disposition?.comment
-  || stream.tags?.title?.toLowerCase()
-    ?.includes('commentary')
+export const hasCommentaryFlag = (stream: IffmpegCommandStream): boolean => (
+  stream.disposition?.comment || getTitle(stream).toLowerCase()?.includes('commentary')
 );
 
 // function to check if a stream appears to be descriptive
-export const streamHasDescriptive = (stream: IffmpegCommandStream): boolean => (
+export const hasDescriptiveFlag = (stream: IffmpegCommandStream): boolean => (
   stream.disposition?.descriptions
-  || stream.tags?.title?.toLowerCase()
-    ?.includes('description')
-  || stream.tags?.title?.toLowerCase()
-    ?.includes('descriptive')
+  || getTitle(stream).toLowerCase().includes('description')
+  || getTitle(stream).toLowerCase().includes('descriptive')
   || stream.disposition?.visual_impaired
-  || stream.tags?.title?.toLowerCase()
-    ?.includes('sdh')
+  || getTitle(stream).toLowerCase().includes('sdh')
 );
 
 // function to determine if a stream is standard (not commentary and not descriptive)
-export const streamIsStandard = (stream: IffmpegCommandStream): boolean => (
-  !streamHasCommentary(stream) && !streamHasDescriptive(stream)
+export const isStandardStream = (stream: IffmpegCommandStream): boolean => (
+  !hasCommentaryFlag(stream) && !hasDescriptiveFlag(stream)
 );
 
 // function to determine if a stream is commentary but NOT descriptive
-export const streamIsCommentary = (stream: IffmpegCommandStream): boolean => (
-  streamHasCommentary(stream) && !streamHasDescriptive(stream)
+export const isCommentaryStream = (stream: IffmpegCommandStream): boolean => (
+  hasCommentaryFlag(stream) && !hasDescriptiveFlag(stream)
 );
 
 // function to determine if a stream is descriptive
-export const streamIsDescriptive = (stream: IffmpegCommandStream): boolean => (
-  streamHasDescriptive(stream) && !streamHasCommentary(stream)
+export const isDescriptiveStream = (stream: IffmpegCommandStream): boolean => (
+  hasDescriptiveFlag(stream) && !hasCommentaryFlag(stream)
 );
 
 // function to determine if a stream appears to have both commentary and descriptive properties
-export const streamIsDescriptiveCommentary = (stream: IffmpegCommandStream): boolean => (
-  streamHasCommentary(stream) && streamHasDescriptive(stream)
+export const isDescriptiveCommentaryStream = (stream: IffmpegCommandStream): boolean => (
+  hasCommentaryFlag(stream) && hasDescriptiveFlag(stream)
 );
 
 // check if a subtitle stream is forced
-export const streamIsForcedSubtitle = (stream: IffmpegCommandStream): boolean => (
+export const isForcedSubtitle = (stream: IffmpegCommandStream): boolean => (
   getCodecType(stream) === 'subtitle'
-  && ((stream.disposition?.forced === 1 || stream.tags?.title?.toLowerCase().includes('forced')) ?? false)
+  && ((stream.disposition?.forced === 1 || getTitle(stream).toLowerCase().includes('forced')) ?? false)
 );
 
 // function to get a list of descriptors from an audio track's disposition flags
 const getDispositionFlagsText = (stream: IffmpegCommandStream): string | null => {
-  const codecType = getCodecType(stream);
-  if (codecType === 'audio') {
+  if (isAudio(stream)) {
     const audioFlags = [
       (stream.disposition?.dub ? 'dub' : undefined),
-      (streamIsDescriptive(stream) ? 'descriptive' : undefined),
-      (streamIsCommentary(stream) ? 'commentary' : undefined),
+      (isDescriptiveStream(stream) ? 'descriptive' : undefined),
+      (isCommentaryStream(stream) ? 'commentary' : undefined),
     ].filter((item) => item);
     return audioFlags.length > 0 ? `(${audioFlags.join(', ')})` : null;
   }
-  if (codecType === 'subtitle') {
+  if (isSubtitle(stream)) {
     const subtitleFlags = [
       (stream.disposition?.default ? 'default' : undefined),
       (stream.disposition?.forced ? 'forced' : undefined),
-      (streamIsDescriptive(stream) ? 'descriptive' : undefined),
-      (streamIsCommentary(stream) ? 'commentary' : undefined),
+      (isDescriptiveStream(stream) ? 'descriptive' : undefined),
+      (isCommentaryStream(stream) ? 'commentary' : undefined),
     ].filter((item) => item);
     return subtitleFlags.length > 0 ? `(${subtitleFlags.join(', ')})` : null;
   }
@@ -393,36 +388,32 @@ const getDispositionFlagsText = (stream: IffmpegCommandStream): string | null =>
 
 // function to generate the title for a stream
 export const generateTitleForStream = (stream: IffmpegCommandStream, mediaInfoTrack?: ImediaInfoTrack): string => {
-  const codecType = getCodecType(stream);
-  switch (codecType) {
-    case 'video':
-      return [stream?.codec_name?.toUpperCase(), getResolutionName(stream), getBitrateText(stream, mediaInfoTrack)]
-        .filter((item) => item).join(' ');
-    case 'audio':
-      return [
-        getCodecName(stream, mediaInfoTrack),
-        getChannelsName(stream),
-        getBitrateText(stream, mediaInfoTrack),
-        getSampleRateText(stream, mediaInfoTrack),
-        getBitDepthText(stream, mediaInfoTrack),
-        getDispositionFlagsText(stream),
-      ].filter((item) => item)
-        .join(' ');
-    case 'subtitle':
-      return [getLanguageName(getLanguageTag(stream)), getDispositionFlagsText(stream)]
-        .filter((item) => item).join(' ');
-    default:
-      return '';
+  if (isVideo(stream)) {
+    return [stream?.codec_name?.toUpperCase(), getResolutionName(stream), getBitrateText(stream, mediaInfoTrack)]
+      .filter((item) => item).join(' ');
   }
+  if (isAudio(stream)) {
+    return [
+      getCodecName(stream, mediaInfoTrack),
+      getChannelsName(stream),
+      getBitrateText(stream, mediaInfoTrack),
+      getSampleRateText(stream, mediaInfoTrack),
+      getBitDepthText(stream, mediaInfoTrack),
+      getDispositionFlagsText(stream),
+    ].filter((item) => item)
+      .join(' ');
+  }
+  if (isSubtitle(stream)) {
+    return [getLanguageName(getLanguageTag(stream)), getDispositionFlagsText(stream)]
+      .filter((item) => item).join(' ');
+  }
+  return '';
 };
 
-// function to get the title and if undefined generate one
-export const getTitleForStream = (stream: IffmpegCommandStream, mediaInfoTrack?: ImediaInfoTrack): string => {
-  if (stream.tags?.title) {
-    return stream.tags.title;
-  }
-  return generateTitleForStream(stream, mediaInfoTrack);
-};
+// function to get the title and if empty generate one
+export const getOrGenerateTitle = (stream: IffmpegCommandStream, mediaInfoTrack?: ImediaInfoTrack): string => (
+  getTitle(stream) || generateTitleForStream(stream, mediaInfoTrack)
+);
 
 // function to sort streams
 // sorts first by codec type - video, audio, subtitle, {other}
@@ -475,14 +466,14 @@ export const getStreamSorter = (mediaInfo?: ImediaInfo): (
     if (s1Type === 'audio' || s1Type === 'subtitle') {
       // sort by stream flags -> standard, commentary, descriptive, then commentary+descriptive
       // standard streams (not commentary or descriptive) come before commentary or descriptive
-      if (streamIsStandard(s1) && !streamIsStandard(s2)) return -1;
-      if (streamIsStandard(s2) && !streamIsStandard(s1)) return 1;
+      if (isStandardStream(s1) && !isStandardStream(s2)) return -1;
+      if (isStandardStream(s2) && !isStandardStream(s1)) return 1;
       // commentary comes before anything with descriptive flags
-      if (streamIsCommentary(s1) && streamHasDescriptive(s2)) return -1;
-      if (streamIsCommentary(s2) && streamHasDescriptive(s1)) return 1;
+      if (isCommentaryStream(s1) && hasDescriptiveFlag(s2)) return -1;
+      if (isCommentaryStream(s2) && hasDescriptiveFlag(s1)) return 1;
       // descriptive comes before descriptive commentary
-      if (streamIsDescriptive(s1) && streamIsDescriptiveCommentary(s2)) return -1;
-      if (streamIsDescriptive(s2) && streamIsDescriptiveCommentary(s1)) return 1;
+      if (isDescriptiveStream(s1) && isDescriptiveCommentaryStream(s2)) return -1;
+      if (isDescriptiveStream(s2) && isDescriptiveCommentaryStream(s1)) return 1;
       // tiebreakers fork on type
       if (s1Type === 'audio') {
         // channels descending

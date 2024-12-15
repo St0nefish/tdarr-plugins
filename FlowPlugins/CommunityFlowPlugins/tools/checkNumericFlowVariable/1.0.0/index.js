@@ -101,7 +101,6 @@ var plugin = function (args) {
             // assume false if condition is not supported (not sure how this happens using dropdown input)
             outputNumber = 2;
     }
-    // standard return
     return {
         outputFileObj: args.inputFileObj,
         outputNumber: outputNumber,

@@ -45,7 +45,8 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getStreamSorter = exports.getTitleForStream = exports.generateTitleForStream = exports.streamIsForcedSubtitle = exports.streamIsDescriptiveCommentary = exports.streamIsDescriptive = exports.streamIsCommentary = exports.streamIsStandard = exports.streamHasDescriptive = exports.streamHasCommentary = exports.streamMatchesLanguage = exports.streamMatchesLanguages = exports.getLanguageName = exports.getLanguageTag = exports.isLanguageUndefined = exports.getEncoder = exports.getBitDepthText = exports.getBitDepth = exports.getSampleRateText = exports.getSampleRate = exports.getChannelCount = exports.getChannelsName = exports.isLosslessAudio = exports.getBitrateText = exports.getBitrate = exports.getResolutionName = exports.getTypeCountsMap = exports.setTypeIndexes = exports.getFileCodecName = exports.getCodecName = exports.getStreamTypeFlag = exports.getMediaInfoTrack = exports.getCodecType = exports.getMediaInfo = void 0;
+exports.getStreamSorter = exports.getOrGenerateTitle = exports.generateTitleForStream = exports.isForcedSubtitle = exports.isDescriptiveCommentaryStream = exports.isDescriptiveStream = exports.isCommentaryStream = exports.isStandardStream = exports.hasDescriptiveFlag = exports.hasCommentaryFlag = exports.streamMatchesLanguage = exports.streamMatchesLanguages = exports.getLanguageName = exports.getLanguageTag = exports.isLanguageUndefined = exports.getTitle = exports.getEncoder = exports.getBitDepthText = exports.getBitDepth = exports.getSampleRateText = exports.getSampleRate = exports.getChannelFromName = exports.getChannelsName = exports.isLosslessAudio = exports.getBitrateText = exports.getBitrate = exports.getResolutionName = exports.getTypeCountsMap = exports.setTypeIndexes = exports.getFileCodecName = exports.getCodecName = exports.getStreamTypeFlag = exports.getMediaInfoTrack = exports.isSubtitle = exports.isAudio = exports.isVideo = exports.getCodecType = exports.getMediaInfo = void 0;
+var IFileObject_1 = require("./interfaces/synced/IFileObject");
 // function to execute a MediaInfo scan (if possible) and return a File object with embedded mediaInfo data
 var getMediaInfo = function (args) { return __awaiter(void 0, void 0, void 0, function () {
     var file;
@@ -71,6 +72,13 @@ exports.getMediaInfo = getMediaInfo;
 // function to get the codec type
 var getCodecType = function (stream) { var _a, _b; return ((_b = (_a = stream.codec_type) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== null && _b !== void 0 ? _b : ''); };
 exports.getCodecType = getCodecType;
+// functions to determine key codec types
+var isVideo = function (stream) { return (0, exports.getCodecType)(stream) !== IFileObject_1.StreamType.video; };
+exports.isVideo = isVideo;
+var isAudio = function (stream) { return (0, exports.getCodecType)(stream) !== IFileObject_1.StreamType.audio; };
+exports.isAudio = isAudio;
+var isSubtitle = function (stream) { return (0, exports.getCodecType)(stream) !== IFileObject_1.StreamType.subtitle; };
+exports.isSubtitle = isSubtitle;
 // function to get the correct media info track for the input stream - assumes indexes are untouched
 var getMediaInfoTrack = function (stream, mediaInfo) {
     var streamIdx = stream.index;
@@ -88,12 +96,11 @@ var getMediaInfoTrack = function (stream, mediaInfo) {
 exports.getMediaInfoTrack = getMediaInfoTrack;
 // function to get stream type flag for use in stream specifiers
 var getStreamTypeFlag = function (stream) {
-    var codecType = (0, exports.getCodecType)(stream);
-    if (codecType === 'video')
+    if ((0, exports.isVideo)(stream))
         return 'v';
-    if (codecType === 'audio')
+    if ((0, exports.isAudio)(stream))
         return 'a';
-    if (codecType === 'subtitle')
+    if ((0, exports.isSubtitle)(stream))
         return 's';
     return '';
 };
@@ -104,7 +111,6 @@ var getCodecName = function (stream, mediaInfoTrack) {
     return ((_b = (_a = mediaInfoTrack === null || mediaInfoTrack === void 0 ? void 0 : mediaInfoTrack.Format_Commercial_IfAny) !== null && _a !== void 0 ? _a : mediaInfoTrack === null || mediaInfoTrack === void 0 ? void 0 : mediaInfoTrack.Format) !== null && _b !== void 0 ? _b : (_c = stream.codec_name) === null || _c === void 0 ? void 0 : _c.toUpperCase());
 };
 exports.getCodecName = getCodecName;
-// function to get video codec name for rename purposes
 // map of audio codecs to display names
 var audioCodecMap = {
     aac: 'AAC',
@@ -123,12 +129,12 @@ var audioCodecMap = {
     'dts express ': 'DTS Express',
     'dts 96/24': 'DTS',
 };
+// function to get the codec name for the purposes of renaming files
 var getFileCodecName = function (stream, mediaInfoTrack) {
     var _a, _b, _c, _d, _e, _f;
-    var codecType = (0, exports.getCodecType)(stream);
     var codec = String(stream === null || stream === void 0 ? void 0 : stream.codec_name).toLowerCase();
     var profile = (_b = (_a = stream.profile) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== null && _b !== void 0 ? _b : '';
-    if (codecType === 'audio') {
+    if ((0, exports.isAudio)(stream)) {
         // handle some special cases
         if (codec === 'dts') {
             if (profile === 'dts-hd ma') {
@@ -145,7 +151,7 @@ var getFileCodecName = function (stream, mediaInfoTrack) {
         }
         return audioCodecMap[codec];
     }
-    if (codecType === 'video') {
+    if ((0, exports.isVideo)(stream)) {
         // 265
         if (['hevc', 'x265', 'h265'].includes(codec)) {
             // check if encoder was x265
@@ -171,9 +177,9 @@ exports.getFileCodecName = getFileCodecName;
 // function to set a typeIndex field on each stream in the input array
 var setTypeIndexes = function (streams) { return (streams.map(function (stream) { return (0, exports.getCodecType)(stream); })
     .filter(function (value, index, array) { return array.indexOf(value) === index; })
-    .forEach(function (codecType) {
+    .forEach(function (typeVal) {
     // for each unique codec type set type index
-    streams.filter(function (stream) { return (0, exports.getCodecType)(stream) === codecType; })
+    streams.filter(function (stream) { return (0, exports.getCodecType)(stream) === typeVal; })
         .forEach(function (stream, index) {
         // eslint-disable-next-line no-param-reassign
         stream.typeIndex = index;
@@ -254,7 +260,7 @@ var channelMap = {
 var getChannelsName = function (stream) { return channelMap[Number(stream === null || stream === void 0 ? void 0 : stream.channels)]; };
 exports.getChannelsName = getChannelsName;
 // function to convert user-friendly channel layout to a number
-var getChannelCount = function (channelName) {
+var getChannelFromName = function (channelName) {
     if (!channelName) {
         return 0;
     }
@@ -262,7 +268,7 @@ var getChannelCount = function (channelName) {
         .map(Number)
         .reduce(function (last, current) { return last + current; }, 0);
 };
-exports.getChannelCount = getChannelCount;
+exports.getChannelFromName = getChannelFromName;
 // function to get the sample rate for a file
 var getSampleRate = function (stream, mediaInfoTrack) {
     // prefer from media info
@@ -321,6 +327,9 @@ var encoderMap = {
 // function to get the audio encoder for a codec
 var getEncoder = function (codec) { return encoderMap[String(codec)]; };
 exports.getEncoder = getEncoder;
+// function to get the title or '' if not set
+var getTitle = function (stream) { var _a, _b; return (_b = (_a = stream.tags) === null || _a === void 0 ? void 0 : _a.title) !== null && _b !== void 0 ? _b : ''; };
+exports.getTitle = getTitle;
 // function to check if a language is undefined
 var isLanguageUndefined = function (stream) {
     var _a;
@@ -336,18 +345,16 @@ var getLanguageTag = function (stream, defaultLang) {
     return String((_a = stream === null || stream === void 0 ? void 0 : stream.tags) === null || _a === void 0 ? void 0 : _a.language);
 };
 exports.getLanguageTag = getLanguageTag;
-// map language tags to language name
+// function to get language name from tag
 var languageMap = {
     eng: 'English',
 };
-// function to get language name from tag
 var getLanguageName = function (langTag) { return (languageMap[langTag] ? String(languageMap[langTag]) : langTag.toUpperCase()); };
 exports.getLanguageName = getLanguageName;
-// map of language tag alternates
+// function to check if a stream language matches one or more language tags
 var languageTagAlternates = {
     eng: ['eng', 'en', 'en-us', 'en-gb', 'en-ca', 'en-au'],
 };
-// function to check if a stream language matches one of a list of tags with support for defaulting undefined
 var streamMatchesLanguages = function (stream, languageTags, defaultLanguage) {
     // grab the language value with support for optional default
     var streamLanguage = (0, exports.getLanguageTag)(stream, defaultLanguage);
@@ -359,63 +366,60 @@ var streamMatchesLanguages = function (stream, languageTags, defaultLanguage) {
     return Boolean(streamLanguage && allValidTags.includes(streamLanguage));
 };
 exports.streamMatchesLanguages = streamMatchesLanguages;
-// function to check if a stream matches a single language tag
 var streamMatchesLanguage = function (stream, languageTag, defaultLanguage) { return (0, exports.streamMatchesLanguages)(stream, [languageTag], defaultLanguage); };
 exports.streamMatchesLanguage = streamMatchesLanguage;
 // function to check if a stream appears to be commentary
-var streamHasCommentary = function (stream) {
-    var _a, _b, _c, _d;
-    return (((_a = stream.disposition) === null || _a === void 0 ? void 0 : _a.comment)
-        || ((_d = (_c = (_b = stream.tags) === null || _b === void 0 ? void 0 : _b.title) === null || _c === void 0 ? void 0 : _c.toLowerCase()) === null || _d === void 0 ? void 0 : _d.includes('commentary')));
+var hasCommentaryFlag = function (stream) {
+    var _a, _b;
+    return (((_a = stream.disposition) === null || _a === void 0 ? void 0 : _a.comment) || ((_b = (0, exports.getTitle)(stream).toLowerCase()) === null || _b === void 0 ? void 0 : _b.includes('commentary')));
 };
-exports.streamHasCommentary = streamHasCommentary;
+exports.hasCommentaryFlag = hasCommentaryFlag;
 // function to check if a stream appears to be descriptive
-var streamHasDescriptive = function (stream) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+var hasDescriptiveFlag = function (stream) {
+    var _a, _b;
     return (((_a = stream.disposition) === null || _a === void 0 ? void 0 : _a.descriptions)
-        || ((_d = (_c = (_b = stream.tags) === null || _b === void 0 ? void 0 : _b.title) === null || _c === void 0 ? void 0 : _c.toLowerCase()) === null || _d === void 0 ? void 0 : _d.includes('description'))
-        || ((_g = (_f = (_e = stream.tags) === null || _e === void 0 ? void 0 : _e.title) === null || _f === void 0 ? void 0 : _f.toLowerCase()) === null || _g === void 0 ? void 0 : _g.includes('descriptive'))
-        || ((_h = stream.disposition) === null || _h === void 0 ? void 0 : _h.visual_impaired)
-        || ((_l = (_k = (_j = stream.tags) === null || _j === void 0 ? void 0 : _j.title) === null || _k === void 0 ? void 0 : _k.toLowerCase()) === null || _l === void 0 ? void 0 : _l.includes('sdh')));
+        || (0, exports.getTitle)(stream).toLowerCase().includes('description')
+        || (0, exports.getTitle)(stream).toLowerCase().includes('descriptive')
+        || ((_b = stream.disposition) === null || _b === void 0 ? void 0 : _b.visual_impaired)
+        || (0, exports.getTitle)(stream).toLowerCase().includes('sdh'));
 };
-exports.streamHasDescriptive = streamHasDescriptive;
+exports.hasDescriptiveFlag = hasDescriptiveFlag;
 // function to determine if a stream is standard (not commentary and not descriptive)
-var streamIsStandard = function (stream) { return (!(0, exports.streamHasCommentary)(stream) && !(0, exports.streamHasDescriptive)(stream)); };
-exports.streamIsStandard = streamIsStandard;
+var isStandardStream = function (stream) { return (!(0, exports.hasCommentaryFlag)(stream) && !(0, exports.hasDescriptiveFlag)(stream)); };
+exports.isStandardStream = isStandardStream;
 // function to determine if a stream is commentary but NOT descriptive
-var streamIsCommentary = function (stream) { return ((0, exports.streamHasCommentary)(stream) && !(0, exports.streamHasDescriptive)(stream)); };
-exports.streamIsCommentary = streamIsCommentary;
+var isCommentaryStream = function (stream) { return ((0, exports.hasCommentaryFlag)(stream) && !(0, exports.hasDescriptiveFlag)(stream)); };
+exports.isCommentaryStream = isCommentaryStream;
 // function to determine if a stream is descriptive
-var streamIsDescriptive = function (stream) { return ((0, exports.streamHasDescriptive)(stream) && !(0, exports.streamHasCommentary)(stream)); };
-exports.streamIsDescriptive = streamIsDescriptive;
+var isDescriptiveStream = function (stream) { return ((0, exports.hasDescriptiveFlag)(stream) && !(0, exports.hasCommentaryFlag)(stream)); };
+exports.isDescriptiveStream = isDescriptiveStream;
 // function to determine if a stream appears to have both commentary and descriptive properties
-var streamIsDescriptiveCommentary = function (stream) { return ((0, exports.streamHasCommentary)(stream) && (0, exports.streamHasDescriptive)(stream)); };
-exports.streamIsDescriptiveCommentary = streamIsDescriptiveCommentary;
+var isDescriptiveCommentaryStream = function (stream) { return ((0, exports.hasCommentaryFlag)(stream) && (0, exports.hasDescriptiveFlag)(stream)); };
+exports.isDescriptiveCommentaryStream = isDescriptiveCommentaryStream;
 // check if a subtitle stream is forced
-var streamIsForcedSubtitle = function (stream) {
-    var _a, _b, _c, _d;
+var isForcedSubtitle = function (stream) {
+    var _a, _b;
     return ((0, exports.getCodecType)(stream) === 'subtitle'
-        && ((_d = (((_a = stream.disposition) === null || _a === void 0 ? void 0 : _a.forced) === 1 || ((_c = (_b = stream.tags) === null || _b === void 0 ? void 0 : _b.title) === null || _c === void 0 ? void 0 : _c.toLowerCase().includes('forced')))) !== null && _d !== void 0 ? _d : false));
+        && ((_b = (((_a = stream.disposition) === null || _a === void 0 ? void 0 : _a.forced) === 1 || (0, exports.getTitle)(stream).toLowerCase().includes('forced'))) !== null && _b !== void 0 ? _b : false));
 };
-exports.streamIsForcedSubtitle = streamIsForcedSubtitle;
+exports.isForcedSubtitle = isForcedSubtitle;
 // function to get a list of descriptors from an audio track's disposition flags
 var getDispositionFlagsText = function (stream) {
     var _a, _b, _c;
-    var codecType = (0, exports.getCodecType)(stream);
-    if (codecType === 'audio') {
+    if ((0, exports.isAudio)(stream)) {
         var audioFlags = [
             (((_a = stream.disposition) === null || _a === void 0 ? void 0 : _a.dub) ? 'dub' : undefined),
-            ((0, exports.streamIsDescriptive)(stream) ? 'descriptive' : undefined),
-            ((0, exports.streamIsCommentary)(stream) ? 'commentary' : undefined),
+            ((0, exports.isDescriptiveStream)(stream) ? 'descriptive' : undefined),
+            ((0, exports.isCommentaryStream)(stream) ? 'commentary' : undefined),
         ].filter(function (item) { return item; });
         return audioFlags.length > 0 ? "(".concat(audioFlags.join(', '), ")") : null;
     }
-    if (codecType === 'subtitle') {
+    if ((0, exports.isSubtitle)(stream)) {
         var subtitleFlags = [
             (((_b = stream.disposition) === null || _b === void 0 ? void 0 : _b.default) ? 'default' : undefined),
             (((_c = stream.disposition) === null || _c === void 0 ? void 0 : _c.forced) ? 'forced' : undefined),
-            ((0, exports.streamIsDescriptive)(stream) ? 'descriptive' : undefined),
-            ((0, exports.streamIsCommentary)(stream) ? 'commentary' : undefined),
+            ((0, exports.isDescriptiveStream)(stream) ? 'descriptive' : undefined),
+            ((0, exports.isCommentaryStream)(stream) ? 'commentary' : undefined),
         ].filter(function (item) { return item; });
         return subtitleFlags.length > 0 ? "(".concat(subtitleFlags.join(', '), ")") : null;
     }
@@ -424,38 +428,31 @@ var getDispositionFlagsText = function (stream) {
 // function to generate the title for a stream
 var generateTitleForStream = function (stream, mediaInfoTrack) {
     var _a;
-    var codecType = (0, exports.getCodecType)(stream);
-    switch (codecType) {
-        case 'video':
-            return [(_a = stream === null || stream === void 0 ? void 0 : stream.codec_name) === null || _a === void 0 ? void 0 : _a.toUpperCase(), (0, exports.getResolutionName)(stream), (0, exports.getBitrateText)(stream, mediaInfoTrack)]
-                .filter(function (item) { return item; }).join(' ');
-        case 'audio':
-            return [
-                (0, exports.getCodecName)(stream, mediaInfoTrack),
-                (0, exports.getChannelsName)(stream),
-                (0, exports.getBitrateText)(stream, mediaInfoTrack),
-                (0, exports.getSampleRateText)(stream, mediaInfoTrack),
-                (0, exports.getBitDepthText)(stream, mediaInfoTrack),
-                getDispositionFlagsText(stream),
-            ].filter(function (item) { return item; })
-                .join(' ');
-        case 'subtitle':
-            return [(0, exports.getLanguageName)((0, exports.getLanguageTag)(stream)), getDispositionFlagsText(stream)]
-                .filter(function (item) { return item; }).join(' ');
-        default:
-            return '';
+    if ((0, exports.isVideo)(stream)) {
+        return [(_a = stream === null || stream === void 0 ? void 0 : stream.codec_name) === null || _a === void 0 ? void 0 : _a.toUpperCase(), (0, exports.getResolutionName)(stream), (0, exports.getBitrateText)(stream, mediaInfoTrack)]
+            .filter(function (item) { return item; }).join(' ');
     }
+    if ((0, exports.isAudio)(stream)) {
+        return [
+            (0, exports.getCodecName)(stream, mediaInfoTrack),
+            (0, exports.getChannelsName)(stream),
+            (0, exports.getBitrateText)(stream, mediaInfoTrack),
+            (0, exports.getSampleRateText)(stream, mediaInfoTrack),
+            (0, exports.getBitDepthText)(stream, mediaInfoTrack),
+            getDispositionFlagsText(stream),
+        ].filter(function (item) { return item; })
+            .join(' ');
+    }
+    if ((0, exports.isSubtitle)(stream)) {
+        return [(0, exports.getLanguageName)((0, exports.getLanguageTag)(stream)), getDispositionFlagsText(stream)]
+            .filter(function (item) { return item; }).join(' ');
+    }
+    return '';
 };
 exports.generateTitleForStream = generateTitleForStream;
-// function to get the title and if undefined generate one
-var getTitleForStream = function (stream, mediaInfoTrack) {
-    var _a;
-    if ((_a = stream.tags) === null || _a === void 0 ? void 0 : _a.title) {
-        return stream.tags.title;
-    }
-    return (0, exports.generateTitleForStream)(stream, mediaInfoTrack);
-};
-exports.getTitleForStream = getTitleForStream;
+// function to get the title and if empty generate one
+var getOrGenerateTitle = function (stream, mediaInfoTrack) { return ((0, exports.getTitle)(stream) || (0, exports.generateTitleForStream)(stream, mediaInfoTrack)); };
+exports.getOrGenerateTitle = getOrGenerateTitle;
 // function to sort streams
 // sorts first by codec type - video, audio, subtitle, {other}
 // sorts video by resolution (desc), bitrate (desc)
@@ -514,19 +511,19 @@ var getStreamSorter = function (mediaInfo) { return (function (s1, s2) {
     if (s1Type === 'audio' || s1Type === 'subtitle') {
         // sort by stream flags -> standard, commentary, descriptive, then commentary+descriptive
         // standard streams (not commentary or descriptive) come before commentary or descriptive
-        if ((0, exports.streamIsStandard)(s1) && !(0, exports.streamIsStandard)(s2))
+        if ((0, exports.isStandardStream)(s1) && !(0, exports.isStandardStream)(s2))
             return -1;
-        if ((0, exports.streamIsStandard)(s2) && !(0, exports.streamIsStandard)(s1))
+        if ((0, exports.isStandardStream)(s2) && !(0, exports.isStandardStream)(s1))
             return 1;
         // commentary comes before anything with descriptive flags
-        if ((0, exports.streamIsCommentary)(s1) && (0, exports.streamHasDescriptive)(s2))
+        if ((0, exports.isCommentaryStream)(s1) && (0, exports.hasDescriptiveFlag)(s2))
             return -1;
-        if ((0, exports.streamIsCommentary)(s2) && (0, exports.streamHasDescriptive)(s1))
+        if ((0, exports.isCommentaryStream)(s2) && (0, exports.hasDescriptiveFlag)(s1))
             return 1;
         // descriptive comes before descriptive commentary
-        if ((0, exports.streamIsDescriptive)(s1) && (0, exports.streamIsDescriptiveCommentary)(s2))
+        if ((0, exports.isDescriptiveStream)(s1) && (0, exports.isDescriptiveCommentaryStream)(s2))
             return -1;
-        if ((0, exports.streamIsDescriptive)(s2) && (0, exports.streamIsDescriptiveCommentary)(s1))
+        if ((0, exports.isDescriptiveStream)(s2) && (0, exports.isDescriptiveCommentaryStream)(s1))
             return 1;
         // tiebreakers fork on type
         if (s1Type === 'audio') {

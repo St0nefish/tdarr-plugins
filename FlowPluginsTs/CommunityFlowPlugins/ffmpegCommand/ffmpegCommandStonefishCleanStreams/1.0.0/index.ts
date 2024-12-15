@@ -14,15 +14,21 @@ import {
   getMediaInfoTrack,
   getResolutionName,
   getStreamSorter,
-  getTitleForStream,
+  getOrGenerateTitle,
   getTypeCountsMap,
+  isAudio,
+  isSubtitle,
+  isVideo,
   setTypeIndexes,
-  streamIsCommentary,
-  streamIsDescriptive,
-  streamIsStandard,
+  isCommentaryStream,
+  isDescriptiveStream,
+  isStandardStream,
   streamMatchesLanguages,
 } from '../../../../FlowHelpers/1.0.0/metadataUtils';
-import { ImediaInfo } from '../../../../FlowHelpers/1.0.0/interfaces/synced/IFileObject';
+import {
+  ImediaInfo,
+  StreamType,
+} from '../../../../FlowHelpers/1.0.0/interfaces/synced/IFileObject';
 
 /* eslint-disable no-param-reassign */
 const details = (): IpluginDetails => ({
@@ -342,23 +348,22 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // ensure ffmpeg command has been initialized
   checkFfmpegCommandInit(args);
   // flags for what should be removed
-  const removeVideo = Boolean(args.inputs.removeVideo);
-  const removeAudio = Boolean(args.inputs.removeAudio);
-  const removeSubtitles = Boolean(args.inputs.removeSubtitles);
-  const removeDuplicates = Boolean(args.inputs.removeDuplicates);
-  const removeOther = Boolean(args.inputs.removeOther);
-  const removeCommentaryAudio = Boolean(args.inputs.removeCommentaryAudio);
-  const removeCommentarySubs = Boolean(args.inputs.removeCommentarySubs);
-  const removeDescriptiveAudio = Boolean(args.inputs.removeDescriptiveAudio);
-  const removeDescriptiveSubs = Boolean(args.inputs.removeDescriptiveSubs);
+  const removeVideo: boolean = Boolean(args.inputs.removeVideo);
+  const removeAudio: boolean = Boolean(args.inputs.removeAudio);
+  const removeSubs: boolean = Boolean(args.inputs.removeSubtitles);
+  const removeOther: boolean = Boolean(args.inputs.removeOther);
+  const removeDuplicates: boolean = Boolean(args.inputs.removeDuplicates);
+  const removeCommentaryAudio: boolean = Boolean(args.inputs.removeCommentaryAudio);
+  const removeCommentarySubs: boolean = Boolean(args.inputs.removeCommentarySubs);
+  const removeDescriptiveAudio: boolean = Boolean(args.inputs.removeDescriptiveAudio);
+  const removeDescriptiveSubs: boolean = Boolean(args.inputs.removeDescriptiveSubs);
   const keepLanguages: string[] = String(args.inputs.keepLanguages)
     .split(',')
     .filter((langTag) => langTag)
     .map((langTag: string) => langTag.trim());
-  const defaultLanguage = keepLanguages[0] ?? 'eng';
-  // grab a handle to streams
-  const { streams } = args.variables.ffmpegCommand;
-  // generate type indexes
+  const defaultLanguage: string = keepLanguages[0] ?? 'eng';
+  // grab a handle to streams and set type indexes
+  const streams: IffmpegCommandStream[] = args.variables.ffmpegCommand.streams;
   setTypeIndexes(streams);
   // execute a media info scan
   const mediaInfo: ImediaInfo | undefined = await getMediaInfo(args);
@@ -366,64 +371,59 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const inputStreamCounts: { [key: string]: number; } = getTypeCountsMap(streams);
   args.jobLog(`input stream counts: ${JSON.stringify(inputStreamCounts)}`);
   // track number of removed streams of each type for later validation
-  const streamRemovedMap: { [key: string]: number } = {
-    video: 0,
-    audio: 0,
-    subtitle: 0,
-  };
+  const streamRemovedMap: { [key: string]: number } = {};
   const countRemoved = (stream: IffmpegCommandStream) => {
     const codecType = getCodecType(stream);
     streamRemovedMap[codecType] = (streamRemovedMap[codecType] ?? 0) + 1;
   };
   // function to get de-duplication grouping key
   const getDedupeGroupKey = (stream: IffmpegCommandStream): string => {
-    const codecType = getCodecType(stream);
     // build array of group-by keys - always start with codec type
-    const groupBy: (string | undefined)[] = [codecType];
-    if (codecType === 'video') {
+    const groupBy: (string | undefined)[] = [getCodecType(stream)];
+    if (isVideo(stream)) {
       groupBy.push(getLanguageTag(stream, defaultLanguage));
-    } else if (codecType === 'audio') {
+    } else if (isAudio(stream)) {
       // audio always groups by language
       groupBy.push(getLanguageTag(stream, defaultLanguage));
-      if (streamIsStandard(stream)) {
+      if (isStandardStream(stream)) {
         // standard streams also group by channels
         groupBy.push(getChannelsName(stream));
       } else {
         // commentary & descriptive streams also group by title
-        groupBy.push(`[${getTitleForStream(stream)}]`);
+        groupBy.push(`[${getOrGenerateTitle(stream)}]`);
       }
-    } else if (codecType === 'subtitle') {
+    } else if (isSubtitle(stream)) {
       // subs always group by language
       groupBy.push(getLanguageTag(stream, defaultLanguage));
-      if (streamIsStandard(stream)) {
+      if (isStandardStream(stream)) {
         // standard streams subgroup by the default + forced flags
         groupBy.push(stream.disposition.default ? 'default' : undefined);
         groupBy.push(stream.disposition.forced ? 'forced' : undefined);
       } else {
         // commentary/descriptive streams subgroup by flags and title
-        groupBy.push(streamIsCommentary(stream) ? 'commentary' : undefined);
-        groupBy.push(streamIsDescriptive(stream) ? 'descriptive' : undefined);
-        groupBy.push(`[${getTitleForStream(stream)}]`);
+        groupBy.push(isCommentaryStream(stream) ? 'commentary' : undefined);
+        groupBy.push(isDescriptiveStream(stream) ? 'descriptive' : undefined);
+        groupBy.push(`[${getOrGenerateTitle(stream)}]`);
       }
     } else {
       // all other types subgroup by type index
-      groupBy.push(`index=${stream.typeIndex}`);
+      groupBy.push(`typeIndex=${stream.typeIndex}`);
     }
     // filter out any undefined keys and join with ':' to build group by key
     return groupBy.filter((item) => item).join(':');
   };
   // function to get sort info from a stream (used for logging)
   const getSortInfo = (stream: IffmpegCommandStream): string => {
-    switch (getCodecType(stream)) {
-      case 'video':
-        return `${getResolutionName(stream)} ${getBitrateText(stream, getMediaInfoTrack(stream, mediaInfo))}`;
-      case 'audio':
-        return `${getBitrateText(stream)}`;
-      case 'subtitle':
-        return `index:${stream.typeIndex}`;
-      default:
-        return '';
+    if (isVideo(stream)) {
+      return `${getResolutionName(stream)} ${getBitrateText(stream, getMediaInfoTrack(stream, mediaInfo))}`;
     }
+    if (isAudio(stream)) {
+      return `${getBitrateText(stream)}`;
+    }
+    if (isSubtitle(stream)) {
+      return `index:${stream.typeIndex}`;
+    }
+    return '';
   };
   // create a map to hold streams for de-duplicating later if enabled
   const dedupeMap: { [key: string]: { [key: string]: IffmpegCommandStream[] } } = {
@@ -440,9 +440,9 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   };
   // iterate streams to flag the ones to remove
   args.variables.ffmpegCommand.streams.forEach((stream: IffmpegCommandStream) => {
-    const codecType = getCodecType(stream);
+    const codecType: string = getCodecType(stream);
     switch (codecType) {
-      case 'video':
+      case StreamType.video:
         if (removeVideo) {
           if (!streamMatchesLanguages(stream, keepLanguages, defaultLanguage)) {
             // language is unwanted
@@ -451,7 +451,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
           }
         }
         break;
-      case 'audio':
+      case StreamType.audio:
         // determine if we should remove this audio stream
         if (removeAudio) {
           // audio cleanup is enabled
@@ -459,29 +459,29 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
             // language is unwanted
             stream.removed = true;
             stream.removeReason = `language [${stream.tags?.language}] is unwanted`;
-          } else if (removeCommentaryAudio && streamIsCommentary(stream)) {
+          } else if (removeCommentaryAudio && isCommentaryStream(stream)) {
             // unwanted commentary
             stream.removed = true;
             stream.removeReason = 'detected as unwanted commentary';
-          } else if (removeDescriptiveAudio && streamIsDescriptive(stream)) {
+          } else if (removeDescriptiveAudio && isDescriptiveStream(stream)) {
             // unwanted descriptive
             stream.removed = true;
             stream.removeReason = 'detected as unwanted description';
           }
         }
         break;
-      case 'subtitle':
-        if (removeSubtitles) {
+      case StreamType.subtitle:
+        if (removeSubs) {
           // subtitle cleanup is enabled
           if (!streamMatchesLanguages(stream, keepLanguages, defaultLanguage)) {
             // language is unwanted
             stream.removed = true;
             stream.removeReason = `language [${stream.tags?.language}] is unwanted`;
-          } else if (removeCommentarySubs && streamIsCommentary(stream)) {
+          } else if (removeCommentarySubs && isCommentaryStream(stream)) {
             // unwanted commentary
             stream.removed = true;
             stream.removeReason = 'detected as unwanted commentary';
-          } else if (removeDescriptiveSubs && streamIsDescriptive(stream)) {
+          } else if (removeDescriptiveSubs && isDescriptiveStream(stream)) {
             // unwanted descriptive
             stream.removed = true;
             stream.removeReason = 'detected as unwanted description';
@@ -501,7 +501,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       countRemoved(stream);
       args.jobLog(
         `removing [${codecType}] stream [s:${stream.index}:a:${stream.typeIndex}] `
-        + `[${getTitleForStream(stream, mediaInfo?.track?.[stream.index])}] - ${stream.removeReason}`,
+        + `[${getOrGenerateTitle(stream, mediaInfo?.track?.[stream.index])}] - ${stream.removeReason}`,
       );
     } else {
       // add to map for subsequent de-duplication
@@ -524,7 +524,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
                   if (index > 0) {
                     args.jobLog(
                       `removing [${codecType}] stream [s:${stream.index}:a:${stream.typeIndex}] `
-                      + `[${getTitleForStream(stream, mediaInfo?.track?.[stream.index])}] - stream is not best option `
+                      + `[${getOrGenerateTitle(stream, mediaInfo?.track?.[stream.index])}] - stream is not best option `
                       + `for group-by-key:[${groupByKey}] and sort info:[${getSortInfo(stream)}]`,
                     );
                     stream.removed = true;

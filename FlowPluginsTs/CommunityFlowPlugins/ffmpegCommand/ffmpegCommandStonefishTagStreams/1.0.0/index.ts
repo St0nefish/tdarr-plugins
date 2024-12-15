@@ -239,7 +239,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
         flags.push('-default');
       }
       // handle default and forced flags for subtitles
-      if (codecType === 'subtitle') {
+      if (isSubtitle(stream)) {
         // remove default flag from any non-forced streams
         if (isForcedSubtitle(stream)) {
           flags.push('-default');

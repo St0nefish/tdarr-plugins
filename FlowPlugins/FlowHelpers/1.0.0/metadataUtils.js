@@ -73,11 +73,11 @@ exports.getMediaInfo = getMediaInfo;
 var getCodecType = function (stream) { var _a, _b; return ((_b = (_a = stream.codec_type) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== null && _b !== void 0 ? _b : ''); };
 exports.getCodecType = getCodecType;
 // functions to determine key codec types
-var isVideo = function (stream) { return (0, exports.getCodecType)(stream) !== IFileObject_1.StreamType.video; };
+var isVideo = function (stream) { return (0, exports.getCodecType)(stream) === IFileObject_1.StreamType.video; };
 exports.isVideo = isVideo;
-var isAudio = function (stream) { return (0, exports.getCodecType)(stream) !== IFileObject_1.StreamType.audio; };
+var isAudio = function (stream) { return (0, exports.getCodecType)(stream) === IFileObject_1.StreamType.audio; };
 exports.isAudio = isAudio;
-var isSubtitle = function (stream) { return (0, exports.getCodecType)(stream) !== IFileObject_1.StreamType.subtitle; };
+var isSubtitle = function (stream) { return (0, exports.getCodecType)(stream) === IFileObject_1.StreamType.subtitle; };
 exports.isSubtitle = isSubtitle;
 // function to get the correct media info track for the input stream - assumes indexes are untouched
 var getMediaInfoTrack = function (stream, mediaInfo) {

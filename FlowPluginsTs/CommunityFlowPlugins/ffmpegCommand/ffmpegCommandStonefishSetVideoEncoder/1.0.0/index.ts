@@ -7,10 +7,7 @@ import {
   IpluginInputArgs,
   IpluginOutputArgs,
 } from '../../../../FlowHelpers/1.0.0/interfaces/interfaces';
-import {
-  getCodecType,
-  isVideo
-} from '../../../../FlowHelpers/1.0.0/metadataUtils';
+import { isVideo } from '../../../../FlowHelpers/1.0.0/metadataUtils';
 
 /* eslint-disable no-param-reassign */
 const details = (): IpluginDetails => ({

@@ -224,7 +224,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                             flags.push('-default');
                         }
                         // handle default and forced flags for subtitles
-                        if (codecType === 'subtitle') {
+                        if ((0, metadataUtils_1.isSubtitle)(stream)) {
                             // remove default flag from any non-forced streams
                             if ((0, metadataUtils_1.isForcedSubtitle)(stream)) {
                                 flags.push('-default');

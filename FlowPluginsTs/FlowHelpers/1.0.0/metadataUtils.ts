@@ -28,9 +28,9 @@ export const getMediaInfo = async (args: IpluginInputArgs): Promise<ImediaInfo |
 export const getCodecType = (stream: Istreams): string => (stream.codec_type?.toLowerCase() ?? '');
 
 // functions to determine key codec types
-export const isVideo = (stream: Istreams): boolean => getCodecType(stream) !== StreamType.video;
-export const isAudio = (stream: Istreams): boolean => getCodecType(stream) !== StreamType.audio;
-export const isSubtitle = (stream: Istreams): boolean => getCodecType(stream) !== StreamType.subtitle;
+export const isVideo = (stream: Istreams): boolean => getCodecType(stream) === StreamType.video;
+export const isAudio = (stream: Istreams): boolean => getCodecType(stream) === StreamType.audio;
+export const isSubtitle = (stream: Istreams): boolean => getCodecType(stream) === StreamType.subtitle;
 
 // function to get the correct media info track for the input stream - assumes indexes are untouched
 export const getMediaInfoTrack = (stream: Istreams, mediaInfo?: ImediaInfo): ImediaInfoTrack | undefined => {

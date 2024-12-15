@@ -45,7 +45,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getStreamSorter = exports.getTitleForStream = exports.generateTitleForStream = exports.streamIsDescriptiveCommentary = exports.streamIsDescriptive = exports.streamIsCommentary = exports.streamIsStandard = exports.streamHasDescriptive = exports.streamHasCommentary = exports.streamMatchesLanguage = exports.streamMatchesLanguages = exports.getLanguageName = exports.getLanguageTag = exports.isLanguageUndefined = exports.getEncoder = exports.getBitDepthText = exports.getBitDepth = exports.getSampleRateText = exports.getSampleRate = exports.getChannelCount = exports.getChannelsName = exports.isLosslessAudio = exports.getBitrateText = exports.getBitrate = exports.getResolutionName = exports.getTypeCountsMap = exports.setTypeIndexes = exports.getFileCodecName = exports.getCodecName = exports.getStreamTypeFlag = exports.getMediaInfoTrack = exports.getCodecType = exports.getMediaInfo = void 0;
+exports.getStreamSorter = exports.getTitleForStream = exports.generateTitleForStream = exports.streamIsForcedSubtitle = exports.streamIsDescriptiveCommentary = exports.streamIsDescriptive = exports.streamIsCommentary = exports.streamIsStandard = exports.streamHasDescriptive = exports.streamHasCommentary = exports.streamMatchesLanguage = exports.streamMatchesLanguages = exports.getLanguageName = exports.getLanguageTag = exports.isLanguageUndefined = exports.getEncoder = exports.getBitDepthText = exports.getBitDepth = exports.getSampleRateText = exports.getSampleRate = exports.getChannelCount = exports.getChannelsName = exports.isLosslessAudio = exports.getBitrateText = exports.getBitrate = exports.getResolutionName = exports.getTypeCountsMap = exports.setTypeIndexes = exports.getFileCodecName = exports.getCodecName = exports.getStreamTypeFlag = exports.getMediaInfoTrack = exports.getCodecType = exports.getMediaInfo = void 0;
 // function to execute a MediaInfo scan (if possible) and return a File object with embedded mediaInfo data
 var getMediaInfo = function (args) { return __awaiter(void 0, void 0, void 0, function () {
     var file;
@@ -391,6 +391,13 @@ exports.streamIsDescriptive = streamIsDescriptive;
 // function to determine if a stream appears to have both commentary and descriptive properties
 var streamIsDescriptiveCommentary = function (stream) { return ((0, exports.streamHasCommentary)(stream) && (0, exports.streamHasDescriptive)(stream)); };
 exports.streamIsDescriptiveCommentary = streamIsDescriptiveCommentary;
+// check if a subtitle stream is forced
+var streamIsForcedSubtitle = function (stream) {
+    var _a, _b, _c, _d;
+    return ((0, exports.getCodecType)(stream) === 'subtitle'
+        && ((_d = (((_a = stream.disposition) === null || _a === void 0 ? void 0 : _a.forced) === 1 || ((_c = (_b = stream.tags) === null || _b === void 0 ? void 0 : _b.title) === null || _c === void 0 ? void 0 : _c.toLowerCase().includes('forced')))) !== null && _d !== void 0 ? _d : false));
+};
+exports.streamIsForcedSubtitle = streamIsForcedSubtitle;
 // function to get a list of descriptors from an audio track's disposition flags
 var getDispositionFlagsText = function (stream) {
     var _a, _b, _c;

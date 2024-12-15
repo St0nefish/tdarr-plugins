@@ -318,30 +318,44 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 };
                 getDedupeGroupKey = function (stream) {
                     var codecType = (0, metadataUtils_1.getCodecType)(stream);
+                    // build array of group-by keys - always start with codec type
+                    var groupBy = [codecType];
                     if (codecType === 'video') {
-                        return (0, metadataUtils_1.getLanguageTag)(stream, defaultLanguage);
+                        groupBy.push((0, metadataUtils_1.getLanguageTag)(stream, defaultLanguage));
                     }
-                    if (codecType === 'audio') {
-                        var flags = [
-                            (0, metadataUtils_1.streamIsCommentary)(stream) ? 'commentary' : undefined,
-                            (0, metadataUtils_1.streamIsDescriptive)(stream) ? 'descriptive' : undefined,
-                        ].filter(function (item) { return item; }).join(', ');
-                        var key = "".concat((0, metadataUtils_1.getLanguageTag)(stream, defaultLanguage), " ").concat((0, metadataUtils_1.getChannelsName)(stream));
-                        if (flags.length > 0) {
-                            key += " ".concat(flags);
+                    else if (codecType === 'audio') {
+                        // audio always groups by language
+                        groupBy.push((0, metadataUtils_1.getLanguageTag)(stream, defaultLanguage));
+                        if ((0, metadataUtils_1.streamIsStandard)(stream)) {
+                            // standard streams also group by channels
+                            groupBy.push((0, metadataUtils_1.getChannelsName)(stream));
                         }
-                        return key;
+                        else {
+                            // commentary & descriptive streams also group by title
+                            groupBy.push("[".concat((0, metadataUtils_1.getTitleForStream)(stream), "]"));
+                        }
                     }
-                    if (codecType === 'subtitle') {
-                        return [
-                            stream.disposition.default ? 'default' : undefined,
-                            stream.disposition.forced ? 'forced' : undefined,
-                            (0, metadataUtils_1.streamIsCommentary)(stream) ? 'commentary' : undefined,
-                            (0, metadataUtils_1.streamIsDescriptive)(stream) ? 'descriptive' : undefined,
-                        ].filter(function (item) { return item; })
-                            .join(', ');
+                    else if (codecType === 'subtitle') {
+                        // subs always group by language
+                        groupBy.push((0, metadataUtils_1.getLanguageTag)(stream, defaultLanguage));
+                        if ((0, metadataUtils_1.streamIsStandard)(stream)) {
+                            // standard streams subgroup by the default + forced flags
+                            groupBy.push(stream.disposition.default ? 'default' : undefined);
+                            groupBy.push(stream.disposition.forced ? 'forced' : undefined);
+                        }
+                        else {
+                            // commentary/descriptive streams subgroup by flags and title
+                            groupBy.push((0, metadataUtils_1.streamIsCommentary)(stream) ? 'commentary' : undefined);
+                            groupBy.push((0, metadataUtils_1.streamIsDescriptive)(stream) ? 'descriptive' : undefined);
+                            groupBy.push("[".concat((0, metadataUtils_1.getTitleForStream)(stream), "]"));
+                        }
                     }
-                    return "index:".concat(stream.typeIndex);
+                    else {
+                        // all other types subgroup by type index
+                        groupBy.push("index=".concat(stream.typeIndex));
+                    }
+                    // filter out any undefined keys and join with ':' to build group by key
+                    return groupBy.filter(function (item) { return item; }).join(':');
                 };
                 getSortInfo = function (stream) {
                     switch ((0, metadataUtils_1.getCodecType)(stream)) {
@@ -438,6 +452,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                             + "[".concat((0, metadataUtils_1.getTitleForStream)(stream, (_d = mediaInfo === null || mediaInfo === void 0 ? void 0 : mediaInfo.track) === null || _d === void 0 ? void 0 : _d[stream.index]), "] - ").concat(stream.removeReason));
                     }
                     else {
+                        // add to map for subsequent de-duplication
                         addToDedupeMap(stream);
                     }
                 });

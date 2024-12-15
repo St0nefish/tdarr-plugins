@@ -362,6 +362,12 @@ export const streamIsDescriptiveCommentary = (stream: IffmpegCommandStream): boo
   streamHasCommentary(stream) && streamHasDescriptive(stream)
 );
 
+// check if a subtitle stream is forced
+export const streamIsForcedSubtitle = (stream: IffmpegCommandStream): boolean => (
+  getCodecType(stream) === 'subtitle'
+  && ((stream.disposition?.forced === 1 || stream.tags?.title?.toLowerCase().includes('forced')) ?? false)
+);
+
 // function to get a list of descriptors from an audio track's disposition flags
 const getDispositionFlagsText = (stream: IffmpegCommandStream): string | null => {
   const codecType = getCodecType(stream);

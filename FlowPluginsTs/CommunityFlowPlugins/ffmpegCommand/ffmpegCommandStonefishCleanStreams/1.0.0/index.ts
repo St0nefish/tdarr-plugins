@@ -19,6 +19,7 @@ import {
   setTypeIndexes,
   streamIsCommentary,
   streamIsDescriptive,
+  streamIsStandard,
   streamMatchesLanguages,
 } from '../../../../FlowHelpers/1.0.0/metadataUtils';
 import { ImediaInfo } from '../../../../FlowHelpers/1.0.0/interfaces/synced/IFileObject';
@@ -377,30 +378,39 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // function to get de-duplication grouping key
   const getDedupeGroupKey = (stream: IffmpegCommandStream): string => {
     const codecType = getCodecType(stream);
+    // build array of group-by keys - always start with codec type
+    const groupBy: (string | undefined)[] = [codecType];
     if (codecType === 'video') {
-      return getLanguageTag(stream, defaultLanguage);
-    }
-    if (codecType === 'audio') {
-      const flags = [
-        streamIsCommentary(stream) ? 'commentary' : undefined,
-        streamIsDescriptive(stream) ? 'descriptive' : undefined,
-      ].filter((item) => item).join(', ');
-      let key = `${getLanguageTag(stream, defaultLanguage)} ${getChannelsName(stream)}`;
-      if (flags.length > 0) {
-        key += ` ${flags}`;
+      groupBy.push(getLanguageTag(stream, defaultLanguage));
+    } else if (codecType === 'audio') {
+      // audio always groups by language
+      groupBy.push(getLanguageTag(stream, defaultLanguage));
+      if (streamIsStandard(stream)) {
+        // standard streams also group by channels
+        groupBy.push(getChannelsName(stream));
+      } else {
+        // commentary & descriptive streams also group by title
+        groupBy.push(`[${getTitleForStream(stream)}]`);
       }
-      return key;
+    } else if (codecType === 'subtitle') {
+      // subs always group by language
+      groupBy.push(getLanguageTag(stream, defaultLanguage));
+      if (streamIsStandard(stream)) {
+        // standard streams subgroup by the default + forced flags
+        groupBy.push(stream.disposition.default ? 'default' : undefined);
+        groupBy.push(stream.disposition.forced ? 'forced' : undefined);
+      } else {
+        // commentary/descriptive streams subgroup by flags and title
+        groupBy.push(streamIsCommentary(stream) ? 'commentary' : undefined);
+        groupBy.push(streamIsDescriptive(stream) ? 'descriptive' : undefined);
+        groupBy.push(`[${getTitleForStream(stream)}]`);
+      }
+    } else {
+      // all other types subgroup by type index
+      groupBy.push(`index=${stream.typeIndex}`);
     }
-    if (codecType === 'subtitle') {
-      return [
-        stream.disposition.default ? 'default' : undefined,
-        stream.disposition.forced ? 'forced' : undefined,
-        streamIsCommentary(stream) ? 'commentary' : undefined,
-        streamIsDescriptive(stream) ? 'descriptive' : undefined,
-      ].filter((item) => item)
-        .join(', ');
-    }
-    return `index:${stream.typeIndex}`;
+    // filter out any undefined keys and join with ':' to build group by key
+    return groupBy.filter((item) => item).join(':');
   };
   // function to get sort info from a stream (used for logging)
   const getSortInfo = (stream: IffmpegCommandStream): string => {
@@ -494,6 +504,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
         + `[${getTitleForStream(stream, mediaInfo?.track?.[stream.index])}] - ${stream.removeReason}`,
       );
     } else {
+      // add to map for subsequent de-duplication
       addToDedupeMap(stream);
     }
   });

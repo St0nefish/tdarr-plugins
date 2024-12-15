@@ -139,7 +139,7 @@ var details = function () { return ({
 exports.details = details;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, forceTitle, forceTitleCommentary, forceTitleDescriptive, setDisposition, setTagLanguage, tagLanguage, streams, mediaInfo;
+    var lib, setTagLanguage, tagLanguage, forceTitle, forceTitleCommentary, forceTitleDescriptive, setDisposition, streams, mediaInfo;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -148,12 +148,12 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
                 // ensure ffmpeg command has been initialized
                 (0, flowUtils_1.checkFfmpegCommandInit)(args);
+                setTagLanguage = Boolean(args.inputs.setLangTag);
+                tagLanguage = setTagLanguage ? String(args.inputs.tagLanguage) : 'eng';
                 forceTitle = Boolean(args.inputs.forceTitles);
                 forceTitleCommentary = Boolean(args.inputs.forceTitleCommentary);
                 forceTitleDescriptive = Boolean(args.inputs.forceTitleDescriptive);
                 setDisposition = Boolean(args.inputs.setDisposition);
-                setTagLanguage = Boolean(args.inputs.setLangTag);
-                tagLanguage = setTagLanguage ? String(args.inputs.tagLanguage) : 'eng';
                 streams = args.variables.ffmpegCommand.streams;
                 // set type indexes, we'll use to manage default flags
                 (0, metadataUtils_1.setTypeIndexes)(streams);
@@ -162,7 +162,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 mediaInfo = _a.sent();
                 // iterate streams to flag the ones to remove
                 streams.forEach(function (stream) {
-                    var _a, _b, _c, _d, _e;
+                    var _a, _b, _c, _d, _e, _f, _g;
                     var codecType = (0, metadataUtils_1.getCodecType)(stream);
                     // copy all streams
                     stream.outputArgs.push('-c:{outputIndex}', 'copy');
@@ -203,7 +203,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         // array of flags to add or remove
                         var flags = [];
                         // ensure first video and audio streams have default flag set
-                        if (stream.typeIndex === 0 && !stream.disposition.default) {
+                        if (['video', 'audio'].includes(codecType) && stream.typeIndex === 0 && !stream.disposition.default) {
                             args.jobLog("found [".concat(codecType, "] stream that is first but not set as default"));
                             // add the default flag
                             flags.push('+default');
@@ -224,6 +224,18 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         if (!(0, metadataUtils_1.streamIsStandard)(stream) && stream.disposition.default) {
                             flags.push('-default');
                         }
+                        // handle default and forced flags for subtitles
+                        if (codecType === 'subtitle') {
+                            // remove default flag from any non-forced streams
+                            if ((0, metadataUtils_1.streamIsForcedSubtitle)(stream)) {
+                                flags.push('-default');
+                            }
+                            // add forced and default flags if title contains 'forced' but flags are not set
+                            if (!((_g = (_f = stream.disposition) === null || _f === void 0 ? void 0 : _f.forced) !== null && _g !== void 0 ? _g : false) && (0, metadataUtils_1.streamIsForcedSubtitle)(stream)) {
+                                flags.push('+forced');
+                            }
+                        }
+                        // add forced flag if title contains forced
                         // if any flag alterations are required construct the command
                         if (flags.length > 0) {
                             // set shouldProcess

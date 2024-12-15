@@ -16,6 +16,7 @@ import {
   streamHasDescriptive,
   streamIsCommentary,
   streamIsDescriptive,
+  streamIsForcedSubtitle,
   streamIsStandard,
 } from '../../../../FlowHelpers/1.0.0/metadataUtils';
 import { ImediaInfo } from '../../../../FlowHelpers/1.0.0/interfaces/synced/IFileObject';
@@ -155,13 +156,15 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   args.inputs = lib.loadDefaultValues(args.inputs, details);
   // ensure ffmpeg command has been initialized
   checkFfmpegCommandInit(args);
-  // tag configuration
+  // options for tagging missing languages
+  const setTagLanguage = Boolean(args.inputs.setLangTag);
+  const tagLanguage: string = setTagLanguage ? String(args.inputs.tagLanguage) : 'eng';
+  // options for forcing new stream titles
   const forceTitle = Boolean(args.inputs.forceTitles);
   const forceTitleCommentary = Boolean(args.inputs.forceTitleCommentary);
   const forceTitleDescriptive = Boolean(args.inputs.forceTitleDescriptive);
+  // options for managing disposition flags
   const setDisposition = Boolean(args.inputs.setDisposition);
-  const setTagLanguage = Boolean(args.inputs.setLangTag);
-  const tagLanguage: string = setTagLanguage ? String(args.inputs.tagLanguage) : 'eng';
   // grab a handle to streams
   const { streams } = args.variables.ffmpegCommand;
   // set type indexes, we'll use to manage default flags
@@ -210,7 +213,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       // array of flags to add or remove
       const flags = [];
       // ensure first video and audio streams have default flag set
-      if (stream.typeIndex === 0 && !stream.disposition.default) {
+      if (['video', 'audio'].includes(codecType) && stream.typeIndex === 0 && !stream.disposition.default) {
         args.jobLog(`found [${codecType}] stream that is first but not set as default`);
         // add the default flag
         flags.push('+default');
@@ -231,6 +234,18 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       if (!streamIsStandard(stream) && stream.disposition.default) {
         flags.push('-default');
       }
+      // handle default and forced flags for subtitles
+      if (codecType === 'subtitle') {
+        // remove default flag from any non-forced streams
+        if (streamIsForcedSubtitle(stream)) {
+          flags.push('-default');
+        }
+        // add forced and default flags if title contains 'forced' but flags are not set
+        if (!(stream.disposition?.forced ?? false) && streamIsForcedSubtitle(stream)) {
+          flags.push('+forced');
+        }
+      }
+      // add forced flag if title contains forced
       // if any flag alterations are required construct the command
       if (flags.length > 0) {
         // set shouldProcess

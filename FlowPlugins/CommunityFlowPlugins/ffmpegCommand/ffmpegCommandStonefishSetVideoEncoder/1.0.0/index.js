@@ -224,10 +224,9 @@ var details = function () { return ({
 exports.details = details;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, hardwareDecoding, targetCodec, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, videoStreams, i, stream, encoderProperties;
-    var _a, _b;
-    return __generator(this, function (_c) {
-        switch (_c.label) {
+    var lib, hardwareDecoding, targetCodec, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, encoderProperties;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
             case 0:
                 lib = require('../../../../../methods/lib')();
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
@@ -244,65 +243,63 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 hardwareEncoding = Boolean(args.inputs.hardwareEncoding);
                 hardwareType = String(args.inputs.hardwareType);
                 titleMode = String(args.inputs.titleMode);
-                videoStreams = args.variables.ffmpegCommand.streams.filter(metadataUtils_1.isVideo);
-                i = 0;
-                _c.label = 1;
-            case 1:
-                if (!(i < videoStreams.length)) return [3 /*break*/, 4];
-                stream = videoStreams[i];
-                if (!(forceEncoding || stream.codec_name !== targetCodec)) return [3 /*break*/, 3];
-                // enable processing and set hardware decoding
-                args.variables.ffmpegCommand.shouldProcess = true;
-                args.variables.ffmpegCommand.hardwareDecoding = hardwareDecoding;
                 return [4 /*yield*/, (0, hardwareUtils_1.getEncoder)({
                         targetCodec: targetCodec,
                         hardwareEncoding: hardwareEncoding,
                         hardwareType: hardwareType,
                         args: args,
                     })];
-            case 2:
-                encoderProperties = _c.sent();
-                // set output stream option
-                stream.outputArgs.push('-c:{outputIndex}', encoderProperties.encoder);
-                // handle quality settings
-                if (ffmpegQualityEnabled) {
-                    if (encoderProperties.isGpu) {
-                        stream.outputArgs.push('-qp', ffmpegQuality);
+            case 1:
+                encoderProperties = _a.sent();
+                // iterate streams, filter to video, and configure encoding options
+                args.variables.ffmpegCommand.streams.filter(metadataUtils_1.isVideo).forEach(function (stream) {
+                    var _a, _b;
+                    // only encode if forced or codec isn't already correct
+                    if (forceEncoding || stream.codec_name !== targetCodec) {
+                        // enable processing and set hardware decoding
+                        args.variables.ffmpegCommand.shouldProcess = true;
+                        args.variables.ffmpegCommand.hardwareDecoding = hardwareDecoding;
+                        // set this stream to be output
+                        stream.outputArgs.push('-c:{outputIndex}');
+                        // set encoder to use
+                        stream.outputArgs.push(encoderProperties.encoder);
+                        // handle configured quality settings
+                        if (ffmpegQualityEnabled) {
+                            if (encoderProperties.isGpu) {
+                                stream.outputArgs.push('-qp', ffmpegQuality);
+                            }
+                            else {
+                                stream.outputArgs.push('-crf', ffmpegQuality);
+                            }
+                        }
+                        // handle configured preset
+                        if (ffmpegPresetEnabled) {
+                            if (targetCodec !== 'av1' && ffmpegPreset) {
+                                stream.outputArgs.push('-preset', ffmpegPreset);
+                            }
+                        }
+                        // handle hardware decoding options
+                        if (hardwareDecoding) {
+                            (_a = stream.inputArgs).push.apply(_a, encoderProperties.inputArgs);
+                        }
+                        // push remaining encoder output args
+                        if (encoderProperties.outputArgs) {
+                            (_b = stream.outputArgs).push.apply(_b, encoderProperties.outputArgs);
+                        }
+                        // handle title removal or generation
+                        if (titleMode === 'clear') {
+                            stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', 'title=');
+                        }
+                        else if (titleMode === 'generate') {
+                            stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', "title=".concat(targetCodec));
+                        }
                     }
-                    else {
-                        stream.outputArgs.push('-crf', ffmpegQuality);
-                    }
-                }
-                // handle presets
-                if (ffmpegPresetEnabled) {
-                    if (targetCodec !== 'av1' && ffmpegPreset) {
-                        stream.outputArgs.push('-preset', ffmpegPreset);
-                    }
-                }
-                // handle hardware decoding options
-                if (hardwareDecoding) {
-                    (_a = stream.inputArgs).push.apply(_a, encoderProperties.inputArgs);
-                }
-                // push remaining encoder output args
-                if (encoderProperties.outputArgs) {
-                    (_b = stream.outputArgs).push.apply(_b, encoderProperties.outputArgs);
-                }
-                // handle title removal
-                if (titleMode === 'clear') {
-                    stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', 'title=');
-                }
-                else if (titleMode === 'generate') {
-                    stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', "title=".concat(targetCodec));
-                }
-                _c.label = 3;
-            case 3:
-                i += 1;
-                return [3 /*break*/, 1];
-            case 4: return [2 /*return*/, {
-                    outputFileObj: args.inputFileObj,
-                    outputNumber: 1,
-                    variables: args.variables,
-                }];
+                });
+                return [2 /*return*/, {
+                        outputFileObj: args.inputFileObj,
+                        outputNumber: 1,
+                        variables: args.variables,
+                    }];
         }
     });
 }); };

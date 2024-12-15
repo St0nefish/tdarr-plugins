@@ -231,27 +231,25 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const hardwareEncoding: boolean = Boolean(args.inputs.hardwareEncoding);
   const hardwareType: string = String(args.inputs.hardwareType);
   const titleMode: string = String(args.inputs.titleMode);
-  // iterate streams, filter to video, and encode
-  const videoStreams: IffmpegCommandStream[] = args.variables.ffmpegCommand.streams.filter(isVideo);
-  // setup to encode all video streams
-  for (let i = 0; i < videoStreams.length; i += 1) {
-    const stream: IffmpegCommandStream = videoStreams[i];
+  // load encoder options
+  const encoderProperties = await getEncoder({
+    targetCodec,
+    hardwareEncoding,
+    hardwareType,
+    args,
+  });
+  // iterate streams, filter to video, and configure encoding options
+  args.variables.ffmpegCommand.streams.filter(isVideo).forEach((stream: IffmpegCommandStream) => {
     // only encode if forced or codec isn't already correct
     if (forceEncoding || stream.codec_name !== targetCodec) {
       // enable processing and set hardware decoding
       args.variables.ffmpegCommand.shouldProcess = true;
       args.variables.ffmpegCommand.hardwareDecoding = hardwareDecoding;
-      // get encoder options
-      // eslint-disable-next-line no-await-in-loop
-      const encoderProperties = await getEncoder({
-        targetCodec,
-        hardwareEncoding,
-        hardwareType,
-        args,
-      });
-      // set output stream option
-      stream.outputArgs.push('-c:{outputIndex}', encoderProperties.encoder);
-      // handle quality settings
+      // set this stream to be output
+      stream.outputArgs.push('-c:{outputIndex}');
+      // set encoder to use
+      stream.outputArgs.push(encoderProperties.encoder);
+      // handle configured quality settings
       if (ffmpegQualityEnabled) {
         if (encoderProperties.isGpu) {
           stream.outputArgs.push('-qp', ffmpegQuality);
@@ -259,7 +257,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
           stream.outputArgs.push('-crf', ffmpegQuality);
         }
       }
-      // handle presets
+      // handle configured preset
       if (ffmpegPresetEnabled) {
         if (targetCodec !== 'av1' && ffmpegPreset) {
           stream.outputArgs.push('-preset', ffmpegPreset);
@@ -273,14 +271,14 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       if (encoderProperties.outputArgs) {
         stream.outputArgs.push(...encoderProperties.outputArgs);
       }
-      // handle title removal
+      // handle title removal or generation
       if (titleMode === 'clear') {
         stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', 'title=');
       } else if (titleMode === 'generate') {
         stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', `title=${targetCodec}`);
       }
     }
-  }
+  });
 
   return {
     outputFileObj: args.inputFileObj,

@@ -228,6 +228,10 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
                     returnInfo = cropValues[0];
                 }
                 args.jobLog("returning crop info: ".concat(JSON.stringify(returnInfo)));
+                return [4 /*yield*/, (0, exports.sleep)(100)];
+            case 8:
+                _f.sent();
+                args.jobLog('<=================== end ===================>');
                 return [2 /*return*/, returnInfo];
         }
     });

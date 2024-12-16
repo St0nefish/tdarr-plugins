@@ -211,5 +211,7 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
     returnInfo = cropValues[0];
   }
   args.jobLog(`returning crop info: ${JSON.stringify(returnInfo)}`);
+  await sleep(100);
+  args.jobLog('<=================== end ===================>');
   return returnInfo;
 };

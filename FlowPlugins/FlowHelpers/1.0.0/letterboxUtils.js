@@ -52,11 +52,12 @@ exports.getCropInfoFromString = getCropInfoFromString;
 var getCropInfoString = function (cropInfo) { return ("".concat(cropInfo.w, ":").concat(cropInfo.h, ":").concat(cropInfo.x, ":").concat(cropInfo.y)); };
 exports.getCropInfoString = getCropInfoString;
 var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var cropRegex, totalDuration, startOffset, endOffset, scannedTime, fps, spawnArgs, response, cropdetectLines, unmatchedLines, cropValues, numSamples, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency, numValues;
+    var os, cropRegex, totalDuration, startOffset, endOffset, scannedTime, fps, spawnArgs, response, cropdetectLines, unmatchedLines, cropValues, numSamples, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency, numValues;
     var _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
+                os = require('os');
                 cropRegex = /(\d+:\d+:\d+:\d+)/gm;
                 totalDuration = Math.round(Number((_b = (_a = args.inputFileObj.ffProbeData.format) === null || _a === void 0 ? void 0 : _a.duration) !== null && _b !== void 0 ? _b : 0));
                 args.jobLog("will scan ".concat(Math.round(totalDuration * 0.90), " seconds of the total ").concat(totalDuration, " seconds"));
@@ -96,11 +97,13 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
                 // logs
                 args.jobLog('<========== scan complete ==========>');
                 args.jobLog("parsing [".concat(response.errorLogFull.length, "] total lines of log data"));
-                cropdetectLines = response.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); });
+                cropdetectLines = response.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); })
+                    .map(function (line) { return line.split(os.EOL)[0]; });
                 args.jobLog("parsing [".concat(cropdetectLines.length, "] lines containing cropdetect summary"));
                 args.jobLog("cropdetect 0: ".concat(cropdetectLines[0]));
                 unmatchedLines = [];
                 cropValues = cropdetectLines
+                    .map(function (line) { return line.split(os.EOL)[0]; })
                     .map(function (line) {
                     var match = cropRegex.exec(line);
                     if (match) {

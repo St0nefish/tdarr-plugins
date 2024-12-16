@@ -37,6 +37,8 @@ export interface CropInfoHeight {
 }
 
 export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => {
+  // load os info
+  const os = require('os');
   // regex to find cropdetect settings
   const cropRegex: RegExp = /(\d+:\d+:\d+:\d+)/gm;
   // determine input video duration
@@ -84,12 +86,14 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
   // logs
   args.jobLog('<========== scan complete ==========>');
   args.jobLog(`parsing [${response.errorLogFull.length}] total lines of log data`);
-  const cropdetectLines = response.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_'));
+  const cropdetectLines = response.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_'))
+    .map((line) => line.split(os.EOL)[0]);
   args.jobLog(`parsing [${cropdetectLines.length}] lines containing cropdetect summary`);
   args.jobLog(`cropdetect 0: ${cropdetectLines[0]}`);
   // build a list of crop settings
   const unmatchedLines: string[] = [];
   const cropValues: CropInfo[] = cropdetectLines
+    .map((line) => line.split(os.EOL)[0])
     .map((line) => {
       const match: RegExpMatchArray | null = cropRegex.exec(line);
       if (match) {

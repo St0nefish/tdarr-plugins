@@ -93,15 +93,8 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
   // build a list of crop settings
   const unmatchedLines: string[] = [];
   const cropValues: CropInfo[] = cropdetectLines
-    .map((line) => line.split(os.EOL)[0])
-    .map((line) => {
-      const match: RegExpMatchArray | null = cropRegex.exec(line);
-      if (match) {
-        return match[0];
-      }
-      unmatchedLines.push(line);
-      return undefined;
-    }).filter((line) => line)
+    .map((line) => line.split('crop=').pop())
+    .filter((line) => line)
     .map((line) => getCropInfoFromString(String(line)));
   args.jobLog(`found ${unmatchedLines.length} unmatched lines`);
   args.jobLog(`unmatched 0: ${unmatchedLines[0]}`);

@@ -103,15 +103,8 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
                 args.jobLog("cropdetect 0: ".concat(cropdetectLines[0]));
                 unmatchedLines = [];
                 cropValues = cropdetectLines
-                    .map(function (line) { return line.split(os.EOL)[0]; })
-                    .map(function (line) {
-                    var match = cropRegex.exec(line);
-                    if (match) {
-                        return match[0];
-                    }
-                    unmatchedLines.push(line);
-                    return undefined;
-                }).filter(function (line) { return line; })
+                    .map(function (line) { return line.split('crop=').pop(); })
+                    .filter(function (line) { return line; })
                     .map(function (line) { return (0, exports.getCropInfoFromString)(String(line)); });
                 args.jobLog("found ".concat(unmatchedLines.length, " unmatched lines"));
                 args.jobLog("unmatched 0: ".concat(unmatchedLines[0]));

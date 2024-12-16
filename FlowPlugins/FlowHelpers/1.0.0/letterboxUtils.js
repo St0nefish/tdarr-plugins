@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCropInfo = exports.getCropInfoString = exports.getCropInfoFromString = void 0;
+exports.getCropInfo = exports.sleep = exports.getCropInfoString = exports.getCropInfoFromString = void 0;
 var cliUtils_1 = require("./cliUtils");
 var getCropInfoFromString = function (cropInfoStr) {
     var _a, _b, _c, _d;
@@ -51,8 +51,13 @@ var getCropInfoFromString = function (cropInfoStr) {
 exports.getCropInfoFromString = getCropInfoFromString;
 var getCropInfoString = function (cropInfo) { return ("".concat(cropInfo.w, ":").concat(cropInfo.h, ":").concat(cropInfo.x, ":").concat(cropInfo.y)); };
 exports.getCropInfoString = getCropInfoString;
+// eslint-disable-next-line require-await
+var sleep = function (ms) { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
+    return [2 /*return*/, new Promise(function (resolve) { return setTimeout(resolve, ms); })];
+}); }); };
+exports.sleep = sleep;
 var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var os, cropRegex, totalDuration, startOffset, endOffset, scannedTime, fps, spawnArgs, response, cropdetectLines, unmatchedLines, cropValues, numSamples, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency, numValues;
+    var os, cropRegex, totalDuration, startOffset, endOffset, scannedTime, fps, spawnArgs, response, cropValues, numSamples, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency, numValues;
     var _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
@@ -95,19 +100,20 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
             case 1:
                 response = _c.sent();
                 // logs
+                return [4 /*yield*/, (0, exports.sleep)(100)];
+            case 2:
+                // logs
+                _c.sent();
                 args.jobLog('<========== scan complete ==========>');
+                return [4 /*yield*/, (0, exports.sleep)(100)];
+            case 3:
+                _c.sent();
                 args.jobLog("parsing [".concat(response.errorLogFull.length, "] total lines of log data"));
-                cropdetectLines = response.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); })
-                    .map(function (line) { return line.split(os.EOL)[0]; });
-                args.jobLog("parsing [".concat(cropdetectLines.length, "] lines containing cropdetect summary"));
-                args.jobLog("cropdetect 0: ".concat(cropdetectLines[0]));
-                unmatchedLines = [];
-                cropValues = cropdetectLines
+                cropValues = response.errorLogFull
+                    .filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); })
+                    .map(function (line) { return line.split(os.EOL)[0]; })
                     .map(function (line) { return line.split('crop=').pop(); })
-                    .filter(function (line) { return line; })
                     .map(function (line) { return (0, exports.getCropInfoFromString)(String(line)); });
-                args.jobLog("found ".concat(unmatchedLines.length, " unmatched lines"));
-                args.jobLog("unmatched 0: ".concat(unmatchedLines[0]));
                 numSamples = cropValues.length;
                 args.jobLog("parsing cropdetect data from ".concat(numSamples, " sampled frames"));
                 cropValueFrequency = {};
@@ -119,28 +125,39 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
                 cropValues.forEach(function (cropInfo) {
                     var _a, _b, _c, _d, _e, _f, _g;
                     var _h, _j;
-                    if (cropInfo) {
-                        var cropInfoString = (0, exports.getCropInfoString)(cropInfo);
-                        cropValueFrequency[cropInfoString] = ((_a = cropValueFrequency[cropInfoString]) !== null && _a !== void 0 ? _a : 0) + 1;
-                        // track width and x-offset frequencies
-                        cropWidthFrequency[cropInfo.w] = ((_b = cropWidthFrequency[cropInfo.w]) !== null && _b !== void 0 ? _b : 0) + 1;
-                        (_c = cropXOffsetFrequency[_h = cropInfo.w]) !== null && _c !== void 0 ? _c : (cropXOffsetFrequency[_h] = {});
-                        cropXOffsetFrequency[cropInfo.w][cropInfo.x] = ((_d = cropXOffsetFrequency[cropInfo.w][cropInfo.x]) !== null && _d !== void 0 ? _d : 0) + 1;
-                        // track height and y-offset frequencies
-                        cropHeightFrequency[cropInfo.h] = ((_e = cropHeightFrequency[cropInfo.h]) !== null && _e !== void 0 ? _e : 0) + 1;
-                        (_f = cropYOffsetFrequency[_j = cropInfo.h]) !== null && _f !== void 0 ? _f : (cropYOffsetFrequency[_j] = {});
-                        cropYOffsetFrequency[cropInfo.h][cropInfo.y] = ((_g = cropYOffsetFrequency[cropInfo.h][cropInfo.y]) !== null && _g !== void 0 ? _g : 0) + 1;
-                    }
+                    var cropInfoString = (0, exports.getCropInfoString)(cropInfo);
+                    cropValueFrequency[cropInfoString] = ((_a = cropValueFrequency[cropInfoString]) !== null && _a !== void 0 ? _a : 0) + 1;
+                    // track width and x-offset frequencies
+                    cropWidthFrequency[cropInfo.w] = ((_b = cropWidthFrequency[cropInfo.w]) !== null && _b !== void 0 ? _b : 0) + 1;
+                    (_c = cropXOffsetFrequency[_h = cropInfo.w]) !== null && _c !== void 0 ? _c : (cropXOffsetFrequency[_h] = {});
+                    cropXOffsetFrequency[cropInfo.w][cropInfo.x] = ((_d = cropXOffsetFrequency[cropInfo.w][cropInfo.x]) !== null && _d !== void 0 ? _d : 0) + 1;
+                    // track height and y-offset frequencies
+                    cropHeightFrequency[cropInfo.h] = ((_e = cropHeightFrequency[cropInfo.h]) !== null && _e !== void 0 ? _e : 0) + 1;
+                    (_f = cropYOffsetFrequency[_j = cropInfo.h]) !== null && _f !== void 0 ? _f : (cropYOffsetFrequency[_j] = {});
+                    cropYOffsetFrequency[cropInfo.h][cropInfo.y] = ((_g = cropYOffsetFrequency[cropInfo.h][cropInfo.y]) !== null && _g !== void 0 ? _g : 0) + 1;
                 });
                 // frequency logs
+                return [4 /*yield*/, (0, exports.sleep)(100)];
+            case 4:
+                // frequency logs
+                _c.sent();
                 args.jobLog('<========== start frequency data ==========>');
+                return [4 /*yield*/, (0, exports.sleep)(100)];
+            case 5:
+                _c.sent();
                 args.jobLog("parsed info from ".concat(cropValues.length, " total frames"));
                 args.jobLog("crop info frequencies: ".concat(JSON.stringify(cropValueFrequency)));
                 args.jobLog("crop info width frequencies: ".concat(JSON.stringify(cropWidthFrequency)));
                 args.jobLog("crop info x-offset frequencies: ".concat(JSON.stringify(cropXOffsetFrequency)));
                 args.jobLog("crop info height frequencies: ".concat(JSON.stringify(cropHeightFrequency)));
                 args.jobLog("crop info y-offset frequencies: ".concat(JSON.stringify(cropYOffsetFrequency)));
+                return [4 /*yield*/, (0, exports.sleep)(100)];
+            case 6:
+                _c.sent();
                 args.jobLog('<========== end frequency data ==========>');
+                return [4 /*yield*/, (0, exports.sleep)(100)];
+            case 7:
+                _c.sent();
                 numValues = Object.keys(cropValueFrequency).length;
                 if (numValues > 1) {
                     args.jobLog("detected ".concat(numValues, " unique cropdetect values - calculating best result"));

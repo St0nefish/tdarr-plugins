@@ -36,6 +36,9 @@ export interface CropInfoHeight {
   y: number;
 }
 
+// eslint-disable-next-line require-await
+export const sleep = async (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => {
   // load os info
   const os = require('os');
@@ -84,20 +87,16 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
       args,
     })).runCli();
   // logs
+  await sleep(100);
   args.jobLog('<========== scan complete ==========>');
+  await sleep(100);
   args.jobLog(`parsing [${response.errorLogFull.length}] total lines of log data`);
-  const cropdetectLines = response.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_'))
-    .map((line) => line.split(os.EOL)[0]);
-  args.jobLog(`parsing [${cropdetectLines.length}] lines containing cropdetect summary`);
-  args.jobLog(`cropdetect 0: ${cropdetectLines[0]}`);
   // build a list of crop settings
-  const unmatchedLines: string[] = [];
-  const cropValues: CropInfo[] = cropdetectLines
+  const cropValues: CropInfo[] = response.errorLogFull
+    .filter((line) => line.startsWith('[Parsed_cropdetect_'))
+    .map((line) => line.split(os.EOL)[0])
     .map((line) => line.split('crop=').pop())
-    .filter((line) => line)
     .map((line) => getCropInfoFromString(String(line)));
-  args.jobLog(`found ${unmatchedLines.length} unmatched lines`);
-  args.jobLog(`unmatched 0: ${unmatchedLines[0]}`);
   // determine number of samples we're working with
   const numSamples: number = cropValues.length;
   args.jobLog(`parsing cropdetect data from ${numSamples} sampled frames`);
@@ -110,28 +109,30 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
   const cropYOffsetFrequency: { [key: number]: { [key: number]: number } } = {};
   // iterate to parse
   cropValues.forEach((cropInfo) => {
-    if (cropInfo) {
-      const cropInfoString = getCropInfoString(cropInfo);
-      cropValueFrequency[cropInfoString] = (cropValueFrequency[cropInfoString] ?? 0) + 1;
-      // track width and x-offset frequencies
-      cropWidthFrequency[cropInfo.w] = (cropWidthFrequency[cropInfo.w] ?? 0) + 1;
-      cropXOffsetFrequency[cropInfo.w] ??= {};
-      cropXOffsetFrequency[cropInfo.w][cropInfo.x] = (cropXOffsetFrequency[cropInfo.w][cropInfo.x] ?? 0) + 1;
-      // track height and y-offset frequencies
-      cropHeightFrequency[cropInfo.h] = (cropHeightFrequency[cropInfo.h] ?? 0) + 1;
-      cropYOffsetFrequency[cropInfo.h] ??= {};
-      cropYOffsetFrequency[cropInfo.h][cropInfo.y] = (cropYOffsetFrequency[cropInfo.h][cropInfo.y] ?? 0) + 1;
-    }
+    const cropInfoString = getCropInfoString(cropInfo);
+    cropValueFrequency[cropInfoString] = (cropValueFrequency[cropInfoString] ?? 0) + 1;
+    // track width and x-offset frequencies
+    cropWidthFrequency[cropInfo.w] = (cropWidthFrequency[cropInfo.w] ?? 0) + 1;
+    cropXOffsetFrequency[cropInfo.w] ??= {};
+    cropXOffsetFrequency[cropInfo.w][cropInfo.x] = (cropXOffsetFrequency[cropInfo.w][cropInfo.x] ?? 0) + 1;
+    // track height and y-offset frequencies
+    cropHeightFrequency[cropInfo.h] = (cropHeightFrequency[cropInfo.h] ?? 0) + 1;
+    cropYOffsetFrequency[cropInfo.h] ??= {};
+    cropYOffsetFrequency[cropInfo.h][cropInfo.y] = (cropYOffsetFrequency[cropInfo.h][cropInfo.y] ?? 0) + 1;
   });
   // frequency logs
+  await sleep(100);
   args.jobLog('<========== start frequency data ==========>');
+  await sleep(100);
   args.jobLog(`parsed info from ${cropValues.length} total frames`);
   args.jobLog(`crop info frequencies: ${JSON.stringify(cropValueFrequency)}`);
   args.jobLog(`crop info width frequencies: ${JSON.stringify(cropWidthFrequency)}`);
   args.jobLog(`crop info x-offset frequencies: ${JSON.stringify(cropXOffsetFrequency)}`);
   args.jobLog(`crop info height frequencies: ${JSON.stringify(cropHeightFrequency)}`);
   args.jobLog(`crop info y-offset frequencies: ${JSON.stringify(cropYOffsetFrequency)}`);
+  await sleep(100);
   args.jobLog('<========== end frequency data ==========>');
+  await sleep(100);
   // determine if we can just return the top value or if we need to parse
   const numValues = Object.keys(cropValueFrequency).length;
   if (numValues > 1) {

@@ -91,7 +91,17 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
                     updateWorker: args.updateWorker,
                     args: args,
                 });
-                return [4 /*yield*/, cli.runCli()];
+                return [4 /*yield*/, (new cliUtils_1.CLI({
+                        cli: args.ffmpegPath,
+                        spawnArgs: spawnArgs,
+                        spawnOpts: {},
+                        jobLog: args.jobLog,
+                        outputFilePath: args.inputFileObj._id,
+                        inputFileObj: args.inputFileObj,
+                        logFullCliOutput: args.logFullCliOutput,
+                        updateWorker: args.updateWorker,
+                        args: args,
+                    })).runCli()];
             case 1:
                 response = _c.sent();
                 // logs

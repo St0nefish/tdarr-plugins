@@ -81,7 +81,17 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo[]> =
     args,
   });
   // execute cli
-  const response: { cliExitCode: number, errorLogFull: string[] } = await cli.runCli();
+  const response: { cliExitCode: number, errorLogFull: string[] } = await (new CLI({
+    cli: args.ffmpegPath,
+    spawnArgs,
+    spawnOpts: {},
+    jobLog: args.jobLog,
+    outputFilePath: args.inputFileObj._id,
+    inputFileObj: args.inputFileObj,
+    logFullCliOutput: args.logFullCliOutput,
+    updateWorker: args.updateWorker,
+    args,
+  })).runCli();
   // logs
   args.jobLog('<========== scan complete ==========>');
   // build a list of crop settings

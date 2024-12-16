@@ -113,19 +113,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   args.inputs = lib.loadDefaultValues(args.inputs, details);
   // get a list of crop settings
   const cropValues: CropInfo[] = await getCropInfo(args);
-  // build a map of frequency
-  const cropValueFrequency: { [key: string]: number } = {};
-  cropValues.forEach((value) => {
-    cropValueFrequency[value.toString()] = (cropValueFrequency[value.toString()] ?? 0) + 1;
-  });
-  // logs
-  args.jobLog('<========== scan complete ==========>');
-  args.jobLog(`frequencies: ${JSON.stringify(cropValueFrequency)}`);
-  args.jobLog('<========== raw crop data ==========>');
-  cropValues.forEach((detail: CropInfo, index: number) => {
-    args.jobLog(`[${index}] - ${detail.toString()}`);
-  });
-  args.jobLog('<========== logs complete ==========>');
+
   return {
     outputFileObj: args.inputFileObj,
     outputNumber: 1,

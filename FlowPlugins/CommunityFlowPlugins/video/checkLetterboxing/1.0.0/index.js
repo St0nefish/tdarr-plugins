@@ -120,7 +120,7 @@ var details = function () { return ({
 }); };
 exports.details = details;
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, cropValues, cropValueFrequency;
+    var lib, cropValues;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -130,19 +130,6 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 return [4 /*yield*/, (0, letterboxUtils_1.getCropInfo)(args)];
             case 1:
                 cropValues = _a.sent();
-                cropValueFrequency = {};
-                cropValues.forEach(function (value) {
-                    var _a;
-                    cropValueFrequency[value.toString()] = ((_a = cropValueFrequency[value.toString()]) !== null && _a !== void 0 ? _a : 0) + 1;
-                });
-                // logs
-                args.jobLog('<========== scan complete ==========>');
-                args.jobLog("frequencies: ".concat(JSON.stringify(cropValueFrequency)));
-                args.jobLog('<========== raw crop data ==========>');
-                cropValues.forEach(function (detail, index) {
-                    args.jobLog("[".concat(index, "] - ").concat(detail.toString()));
-                });
-                args.jobLog('<========== logs complete ==========>');
                 return [2 /*return*/, {
                         outputFileObj: args.inputFileObj,
                         outputNumber: 1,

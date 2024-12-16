@@ -140,7 +140,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 // set cropdetect settings
                 spawnArgs.push('-vf', 'fps=fps=0.1,mestimate,cropdetect=mode=mvedges,metadata=mode=print');
                 // no output file
-                spawnArgs.push('-f', 'null', '2>&1');
+                spawnArgs.push('-f', 'null', '-', '2>&1');
                 // grep for relevant lines
                 spawnArgs.push('|', 'grep', 'Parsed_cropdetect_');
                 cli = new cliUtils_1.CLI({

@@ -139,6 +139,7 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
   await sleep(100);
   // determine if we can just return the top value or if we need to parse
   const numValues = Object.keys(cropValueFrequency).length;
+  let returnInfo: CropInfo;
   if (numValues > 1) {
     args.jobLog(`detected ${numValues} unique cropdetect values - calculating best result`);
     // pull values from input file - first get the video stream
@@ -199,13 +200,16 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
       });
     }
     // build the return CropInfo object from our selected values
-    return {
+    returnInfo = {
       w: outputWidth,
       h: outputHeight,
       x: outputX,
       y: outputY,
     };
+  } else {
+    // return the only detected value
+    returnInfo = cropValues[0];
   }
-  // return the only detected value
-  return cropValues[0];
+  args.jobLog(`returning crop info: ${JSON.stringify(returnInfo)}`);
+  return returnInfo;
 };

@@ -58,7 +58,7 @@ var sleep = function (ms) { return __awaiter(void 0, void 0, void 0, function ()
 }); }); };
 exports.sleep = sleep;
 var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var os, cropRegex, totalDuration, startOffset, endOffset, scannedTime, fps, spawnArgs, response, cropValues, numSamples, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency, numValues, videoStream, inputWidth, outputWidth_1, outputX_1, xOffsetCount_1, inputHeight, outputHeight_1, outputY_1, yOffsetCount_1;
+    var os, cropRegex, totalDuration, startOffset, endOffset, scannedTime, fps, spawnArgs, response, cropValues, numSamples, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency, numValues, returnInfo, videoStream, inputWidth, outputWidth_1, outputX_1, xOffsetCount_1, inputHeight, outputHeight_1, outputY_1, yOffsetCount_1;
     var _a, _b, _c, _d, _e;
     return __generator(this, function (_f) {
         switch (_f.label) {
@@ -216,15 +216,19 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
                         });
                     }
                     // build the return CropInfo object from our selected values
-                    return [2 /*return*/, {
-                            w: outputWidth_1,
-                            h: outputHeight_1,
-                            x: outputX_1,
-                            y: outputY_1,
-                        }];
+                    returnInfo = {
+                        w: outputWidth_1,
+                        h: outputHeight_1,
+                        x: outputX_1,
+                        y: outputY_1,
+                    };
                 }
-                // return the only detected value
-                return [2 /*return*/, cropValues[0]];
+                else {
+                    // return the only detected value
+                    returnInfo = cropValues[0];
+                }
+                args.jobLog("returning crop info: ".concat(JSON.stringify(returnInfo)));
+                return [2 /*return*/, returnInfo];
         }
     });
 }); };

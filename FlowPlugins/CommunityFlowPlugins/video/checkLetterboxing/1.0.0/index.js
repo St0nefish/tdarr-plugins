@@ -162,7 +162,6 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     if (match) {
                         args.jobLog("[".concat(index, "] - ").concat(match[1]));
                     }
-                    args.jobLog("[".concat(index, "] - ").concat(line));
                 });
                 args.jobLog('<========== logs complete ==========>');
                 return [2 /*return*/, {

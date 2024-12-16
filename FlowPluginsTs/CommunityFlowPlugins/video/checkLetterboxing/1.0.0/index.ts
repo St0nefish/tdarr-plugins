@@ -144,7 +144,6 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     if (match) {
       args.jobLog(`[${index}] - ${match[1]}`);
     }
-    args.jobLog(`[${index}] - ${line}`);
   });
   args.jobLog('<========== logs complete ==========>');
   return {

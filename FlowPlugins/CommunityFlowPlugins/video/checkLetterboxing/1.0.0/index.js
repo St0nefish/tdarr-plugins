@@ -120,27 +120,29 @@ var details = function () { return ({
 }); };
 exports.details = details;
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, cropRegex, spawnArgs, cli, res, cropValues, cropValuesSplit;
+    var lib, cropRegex, spawnArgs, cli, res, cropValues, cropValueFrequency;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 lib = require('../../../../../methods/lib')();
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
-                cropRegex = /.*(?<=crop=)([0-9]+:[0-9]+:[0-9]+:[0-9]+).*/g;
+                cropRegex = /.*(?<=crop=)(\d+:\d+:\d+:\d+).*/g;
                 spawnArgs = [];
                 // always hide banner and stats
                 spawnArgs.push('-hide_banner', '-nostats');
                 // set start offset
-                spawnArgs.push('-ss', '300');
+                spawnArgs.push('-ss', '0:10:00');
                 // set sample length
-                spawnArgs.push('-t', '4');
+                spawnArgs.push('-to', '0:20:00');
                 // set input file
                 spawnArgs.push('-i', args.inputFileObj._id);
                 // set cropdetect settings
-                spawnArgs.push('-vf', 'cropdetect,metadata=mode=print');
+                spawnArgs.push('-vf', 'fps=fps=0.1,mestimate,cropdetect=mode=mvedges,metadata=mode=print');
                 // no output file
                 spawnArgs.push('-f', 'null', '2>&1');
+                // grep for relevant lines
+                spawnArgs.push('|', 'grep', '--line-buffered', 'Parsed_cropdetect_');
                 cli = new cliUtils_1.CLI({
                     cli: args.ffmpegPath,
                     spawnArgs: spawnArgs,
@@ -155,25 +157,23 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 return [4 /*yield*/, cli.runCli()];
             case 1:
                 res = _a.sent();
-                cropValues = res.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); })
-                    .map(function (line) { var _a; return (_a = cropRegex.exec(line)) === null || _a === void 0 ? void 0 : _a[1]; }).filter(function (line) { return line; }).map(function (line) { return String(line); });
-                cropValuesSplit = cropValues.map(function (value) {
+                cropValues = res.errorLogFull.map(function (line) { var _a; return (_a = cropRegex.exec(line)) === null || _a === void 0 ? void 0 : _a[1]; }).filter(function (line) { return line; })
+                    .map(function (value) {
                     var _a, _b, _c, _d;
-                    var split = value.split(':');
-                    return {
-                        w: Number((_a = split[0]) !== null && _a !== void 0 ? _a : 0),
-                        h: Number((_b = split[1]) !== null && _b !== void 0 ? _b : 0),
-                        x: Number((_c = split[2]) !== null && _c !== void 0 ? _c : 0),
-                        y: Number((_d = split[3]) !== null && _d !== void 0 ? _d : 0),
-                    };
+                    var split = String(value).split(':');
+                    return new CropInfo(Number((_a = split[0]) !== null && _a !== void 0 ? _a : 0), Number((_b = split[1]) !== null && _b !== void 0 ? _b : 0), Number((_c = split[2]) !== null && _c !== void 0 ? _c : 0), Number((_d = split[3]) !== null && _d !== void 0 ? _d : 0));
+                });
+                cropValueFrequency = {};
+                cropValues.forEach(function (value) {
+                    var _a;
+                    cropValueFrequency[value.toString()] = ((_a = cropValueFrequency[value.toString()]) !== null && _a !== void 0 ? _a : 0) + 1;
                 });
                 // logs
                 args.jobLog('<========== scan complete ==========>');
-                cropValues.forEach(function (line, index) {
-                    args.jobLog("[".concat(index, "] - ").concat(line));
-                });
-                cropValuesSplit.forEach(function (value, index) {
-                    args.jobLog("[".concat(index, "] - ").concat(JSON.stringify(value)));
+                args.jobLog("frequencies: ".concat(JSON.stringify(cropValueFrequency)));
+                args.jobLog('<========== raw crop data ==========>');
+                cropValues.forEach(function (detail, index) {
+                    args.jobLog("[".concat(index, "] - ").concat(detail.toString()));
                 });
                 args.jobLog('<========== logs complete ==========>');
                 return [2 /*return*/, {

@@ -108,21 +108,23 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
   args.inputs = lib.loadDefaultValues(args.inputs, details);
   // regex to find cropdetect settings
-  const cropRegex: RegExp = /.*(?<=crop=)([0-9]+:[0-9]+:[0-9]+:[0-9]+).*/g;
+  const cropRegex: RegExp = /.*(?<=crop=)(\d+:\d+:\d+:\d+).*/g;
   // build ffmpeg command
   const spawnArgs: string[] = [];
   // always hide banner and stats
   spawnArgs.push('-hide_banner', '-nostats');
   // set start offset
-  spawnArgs.push('-ss', '300');
+  spawnArgs.push('-ss', '0:10:00');
   // set sample length
-  spawnArgs.push('-t', '4');
+  spawnArgs.push('-to', '0:20:00');
   // set input file
   spawnArgs.push('-i', args.inputFileObj._id);
   // set cropdetect settings
-  spawnArgs.push('-vf', 'cropdetect,metadata=mode=print');
+  spawnArgs.push('-vf', 'fps=fps=0.1,mestimate,cropdetect=mode=mvedges,metadata=mode=print');
   // no output file
   spawnArgs.push('-f', 'null', '2>&1');
+  // grep for relevant lines
+  spawnArgs.push('|', 'grep', '--line-buffered', 'Parsed_cropdetect_');
   // build cli
   const cli = new CLI({
     cli: args.ffmpegPath,
@@ -138,25 +140,22 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // execute cli
   const res: { cliExitCode: number, errorLogFull: string[] } = await cli.runCli();
   // get a list of crop settings
-  const cropValues: string[] = res.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_'))
-    .map((line) => cropRegex.exec(line)?.[1]).filter((line) => line).map((line) => String(line));
-  // get a list of objects split by measurement
-  const cropValuesSplit: { w: number, h: number, x: number, y: number; }[] = cropValues.map((value) => {
-    const split: string[] = value.split(':');
-    return {
-      w: Number(split[0] ?? 0),
-      h: Number(split[1] ?? 0),
-      x: Number(split[2] ?? 0),
-      y: Number(split[3] ?? 0),
-    };
+  const cropValues: CropInfo[] = res.errorLogFull.map((line) => cropRegex.exec(line)?.[1]).filter((line) => line)
+    .map((value) => {
+      const split: string[] = String(value).split(':');
+      return new CropInfo(Number(split[0] ?? 0), Number(split[1] ?? 0), Number(split[2] ?? 0), Number(split[3] ?? 0));
+    });
+  // build a map of frequency
+  const cropValueFrequency: { [key: string]: number } = {};
+  cropValues.forEach((value) => {
+    cropValueFrequency[value.toString()] = (cropValueFrequency[value.toString()] ?? 0) + 1;
   });
   // logs
   args.jobLog('<========== scan complete ==========>');
-  cropValues.forEach((line: string, index: number) => {
-    args.jobLog(`[${index}] - ${line}`);
-  });
-  cropValuesSplit.forEach((value, index) => {
-    args.jobLog(`[${index}] - ${JSON.stringify(value)}`);
+  args.jobLog(`frequencies: ${JSON.stringify(cropValueFrequency)}`);
+  args.jobLog('<========== raw crop data ==========>');
+  cropValues.forEach((detail: CropInfo, index: number) => {
+    args.jobLog(`[${index}] - ${detail.toString()}`);
   });
   args.jobLog('<========== logs complete ==========>');
   return {

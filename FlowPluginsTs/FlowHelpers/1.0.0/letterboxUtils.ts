@@ -38,7 +38,7 @@ export interface CropInfoHeight {
 
 export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => {
   // regex to find cropdetect settings
-  const cropRegex: RegExp = /.*(?<=crop=)(\d+:\d+:\d+:\d+).*/g;
+  const cropRegex: RegExp = /.*(?<=crop=)(\d+:\d+:\d+:\d+)\n(?:.*\n?)+/gm;
   // determine input video duration
   const totalDuration: number = Math.round(Number(args.inputFileObj.ffProbeData.format?.duration ?? 0));
   args.jobLog(`will scan ${Math.round(totalDuration * 0.90)} seconds of the total ${totalDuration} seconds`);
@@ -61,7 +61,7 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
   // set start offset
   spawnArgs.push('-ss', `${600}`);
   // set sample length
-  spawnArgs.push('-to', `${1200}`);
+  spawnArgs.push('-to', `${900}`);
   // set input file
   spawnArgs.push('-i', args.inputFileObj._id);
   // set cropdetect settings

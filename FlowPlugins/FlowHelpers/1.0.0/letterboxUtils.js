@@ -57,7 +57,7 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
-                cropRegex = /.*(?<=crop=)(\d+:\d+:\d+:\d+).*/g;
+                cropRegex = /.*(?<=crop=)(\d+:\d+:\d+:\d+)\n(?:.*\n?)+/gm;
                 totalDuration = Math.round(Number((_b = (_a = args.inputFileObj.ffProbeData.format) === null || _a === void 0 ? void 0 : _a.duration) !== null && _b !== void 0 ? _b : 0));
                 args.jobLog("will scan ".concat(Math.round(totalDuration * 0.90), " seconds of the total ").concat(totalDuration, " seconds"));
                 startOffset = Math.round(0.05 * totalDuration);
@@ -73,7 +73,7 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
                 // set start offset
                 spawnArgs.push('-ss', "".concat(600));
                 // set sample length
-                spawnArgs.push('-to', "".concat(1200));
+                spawnArgs.push('-to', "".concat(900));
                 // set input file
                 spawnArgs.push('-i', args.inputFileObj._id);
                 // set cropdetect settings

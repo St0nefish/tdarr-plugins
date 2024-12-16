@@ -1,29 +1,29 @@
 import { IpluginInputArgs } from './interfaces/interfaces';
 import { CLI } from './cliUtils';
 
-export class CropInfo {
+export interface CropInfo {
   // width
-  w: number = 0;
-
+  w: number;
   // height
-  h: number = 0;
-
+  h: number;
   // x offset
-  x: number = 0;
-
+  x: number;
   // y offset
-  y: number = 0;
+  y: number;
+}
 
-  // constructor
-  constructor(w: number, h: number = 0, x: number = 0, y: number = 0) {
-    this.w = w;
-    this.h = h;
-    this.x = x;
-    this.y = y;
-  }
+export const getCropInfoString = (cropInfo: CropInfo): string => (
+  `${cropInfo.w}:${cropInfo.h}:${cropInfo.x}:${cropInfo.y}`
+);
 
-  // toString
-  toString = (): string => `${this.w}:${this.h}:${this.x}:${this.y}`;
+export interface CropInfoWidth {
+  w: number;
+  x: number;
+}
+
+export interface CropInfoHeight {
+  h: number;
+  y: number;
 }
 
 export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo[]> => {
@@ -57,12 +57,52 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo[]> =
   });
   // execute cli
   const res: { cliExitCode: number, errorLogFull: string[] } = await cli.runCli();
-  // return a list of crop settings
-  return res.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_'))
+  args.jobLog('<========== scan complete ==========>');
+  // build a list of crop settings
+  const cropValues: CropInfo[] = res.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_'))
     .map((line) => cropRegex.exec(line)?.[1])
     .filter((line) => line)
     .map((value) => {
       const split: string[] = String(value).split(':');
-      return new CropInfo(Number(split[0] ?? 0), Number(split[1] ?? 0), Number(split[2] ?? 0), Number(split[3] ?? 0));
+      return {
+        w: Number(split[0] ?? 0),
+        h: Number(split[1] ?? 0),
+        x: Number(split[2] ?? 0),
+        y: Number(split[3] ?? 0),
+      };
     });
+  // logs
+  args.jobLog('<========== raw crop data ==========>');
+  cropValues.forEach((cropInfo: CropInfo, index: number) => {
+    args.jobLog(`[${index}] - ${getCropInfoString(cropInfo)}`);
+  });
+  args.jobLog('<========== frequency data ==========>');
+  // build a map of frequency for overall w:h:x:y
+  const cropValueFrequency: { [key: string]: number } = {};
+  // build arrays separately tracking width and height
+  const cropWidthFrequency: { [key: number]: number } = {};
+  const cropXOffsetFrequency: { [key: number]: { [key: number]: number } } = {};
+  const cropHeightFrequency: { [key: number]: number } = {};
+  const cropYOffsetFrequency: { [key: number]: { [key: number]: number } } = {};
+  // iterate to parse
+  cropValues.forEach((cropInfo) => {
+    const cropInfoString = getCropInfoString(cropInfo);
+    cropValueFrequency[cropInfoString] = (cropValueFrequency[cropInfoString] ?? 0) + 1;
+    // track width and x-offset frequencies
+    cropWidthFrequency[cropInfo.w] = (cropWidthFrequency[cropInfo.w] ?? 0) + 1;
+    cropXOffsetFrequency[cropInfo.w] ??= {};
+    cropXOffsetFrequency[cropInfo.w][cropInfo.x] = (cropXOffsetFrequency[cropInfo.w][cropInfo.x] ?? 0) + 1;
+    // track height and y-offset frequencies
+    cropHeightFrequency[cropInfo.h] = (cropHeightFrequency[cropInfo.h] ?? 0) + 1;
+    cropYOffsetFrequency[cropInfo.h] ??= {};
+    cropYOffsetFrequency[cropInfo.h][cropInfo.y] = (cropYOffsetFrequency[cropInfo.h][cropInfo.y] ?? 0) + 1;
+  });
+  // frequency logs
+  args.jobLog(`crop info frequencies: ${JSON.stringify(cropValueFrequency)}`);
+  args.jobLog(`crop info width frequencies: ${JSON.stringify(cropWidthFrequency)}`);
+  args.jobLog(`crop info x-offset frequencies: ${JSON.stringify(cropXOffsetFrequency)}`);
+  args.jobLog(`crop info height frequencies: ${JSON.stringify(cropHeightFrequency)}`);
+  args.jobLog(`crop info y-offset frequencies: ${JSON.stringify(cropYOffsetFrequency)}`);
+  args.jobLog('<=============== end ===============>');
+  return cropValues;
 };

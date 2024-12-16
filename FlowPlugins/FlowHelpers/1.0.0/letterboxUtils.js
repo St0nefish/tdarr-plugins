@@ -36,35 +36,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCropInfo = exports.CropInfo = void 0;
+exports.getCropInfo = exports.getCropInfoString = void 0;
 var cliUtils_1 = require("./cliUtils");
-var CropInfo = /** @class */ (function () {
-    // constructor
-    function CropInfo(w, h, x, y) {
-        if (h === void 0) { h = 0; }
-        if (x === void 0) { x = 0; }
-        if (y === void 0) { y = 0; }
-        var _this = this;
-        // width
-        this.w = 0;
-        // height
-        this.h = 0;
-        // x offset
-        this.x = 0;
-        // y offset
-        this.y = 0;
-        // toString
-        this.toString = function () { return "".concat(_this.w, ":").concat(_this.h, ":").concat(_this.x, ":").concat(_this.y); };
-        this.w = w;
-        this.h = h;
-        this.x = x;
-        this.y = y;
-    }
-    return CropInfo;
-}());
-exports.CropInfo = CropInfo;
+var getCropInfoString = function (cropInfo) { return ("".concat(cropInfo.w, ":").concat(cropInfo.h, ":").concat(cropInfo.x, ":").concat(cropInfo.y)); };
+exports.getCropInfoString = getCropInfoString;
 var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var cropRegex, spawnArgs, cli, res;
+    var cropRegex, spawnArgs, cli, res, cropValues, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -96,15 +73,54 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
                 return [4 /*yield*/, cli.runCli()];
             case 1:
                 res = _a.sent();
-                // return a list of crop settings
-                return [2 /*return*/, res.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); })
-                        .map(function (line) { var _a; return (_a = cropRegex.exec(line)) === null || _a === void 0 ? void 0 : _a[1]; })
-                        .filter(function (line) { return line; })
-                        .map(function (value) {
-                        var _a, _b, _c, _d;
-                        var split = String(value).split(':');
-                        return new CropInfo(Number((_a = split[0]) !== null && _a !== void 0 ? _a : 0), Number((_b = split[1]) !== null && _b !== void 0 ? _b : 0), Number((_c = split[2]) !== null && _c !== void 0 ? _c : 0), Number((_d = split[3]) !== null && _d !== void 0 ? _d : 0));
-                    })];
+                args.jobLog('<========== scan complete ==========>');
+                cropValues = res.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); })
+                    .map(function (line) { var _a; return (_a = cropRegex.exec(line)) === null || _a === void 0 ? void 0 : _a[1]; })
+                    .filter(function (line) { return line; })
+                    .map(function (value) {
+                    var _a, _b, _c, _d;
+                    var split = String(value).split(':');
+                    return {
+                        w: Number((_a = split[0]) !== null && _a !== void 0 ? _a : 0),
+                        h: Number((_b = split[1]) !== null && _b !== void 0 ? _b : 0),
+                        x: Number((_c = split[2]) !== null && _c !== void 0 ? _c : 0),
+                        y: Number((_d = split[3]) !== null && _d !== void 0 ? _d : 0),
+                    };
+                });
+                // logs
+                args.jobLog('<========== raw crop data ==========>');
+                cropValues.forEach(function (cropInfo, index) {
+                    args.jobLog("[".concat(index, "] - ").concat((0, exports.getCropInfoString)(cropInfo)));
+                });
+                args.jobLog('<========== frequency data ==========>');
+                cropValueFrequency = {};
+                cropWidthFrequency = {};
+                cropXOffsetFrequency = {};
+                cropHeightFrequency = {};
+                cropYOffsetFrequency = {};
+                // iterate to parse
+                cropValues.forEach(function (cropInfo) {
+                    var _a, _b, _c, _d, _e, _f, _g;
+                    var _h, _j;
+                    var cropInfoString = (0, exports.getCropInfoString)(cropInfo);
+                    cropValueFrequency[cropInfoString] = ((_a = cropValueFrequency[cropInfoString]) !== null && _a !== void 0 ? _a : 0) + 1;
+                    // track width and x-offset frequencies
+                    cropWidthFrequency[cropInfo.w] = ((_b = cropWidthFrequency[cropInfo.w]) !== null && _b !== void 0 ? _b : 0) + 1;
+                    (_c = cropXOffsetFrequency[_h = cropInfo.w]) !== null && _c !== void 0 ? _c : (cropXOffsetFrequency[_h] = {});
+                    cropXOffsetFrequency[cropInfo.w][cropInfo.x] = ((_d = cropXOffsetFrequency[cropInfo.w][cropInfo.x]) !== null && _d !== void 0 ? _d : 0) + 1;
+                    // track height and y-offset frequencies
+                    cropHeightFrequency[cropInfo.h] = ((_e = cropHeightFrequency[cropInfo.h]) !== null && _e !== void 0 ? _e : 0) + 1;
+                    (_f = cropYOffsetFrequency[_j = cropInfo.h]) !== null && _f !== void 0 ? _f : (cropYOffsetFrequency[_j] = {});
+                    cropYOffsetFrequency[cropInfo.h][cropInfo.y] = ((_g = cropYOffsetFrequency[cropInfo.h][cropInfo.y]) !== null && _g !== void 0 ? _g : 0) + 1;
+                });
+                // frequency logs
+                args.jobLog("crop info frequencies: ".concat(JSON.stringify(cropValueFrequency)));
+                args.jobLog("crop info width frequencies: ".concat(JSON.stringify(cropWidthFrequency)));
+                args.jobLog("crop info x-offset frequencies: ".concat(JSON.stringify(cropXOffsetFrequency)));
+                args.jobLog("crop info height frequencies: ".concat(JSON.stringify(cropHeightFrequency)));
+                args.jobLog("crop info y-offset frequencies: ".concat(JSON.stringify(cropYOffsetFrequency)));
+                args.jobLog('<=============== end ===============>');
+                return [2 /*return*/, cropValues];
         }
     });
 }); };

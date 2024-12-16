@@ -123,8 +123,6 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   spawnArgs.push('-vf', 'fps=fps=0.1,mestimate,cropdetect=mode=mvedges,metadata=mode=print');
   // no output file
   spawnArgs.push('-f', 'null', '-');
-  // grep for relevant lines
-  spawnArgs.push('|', 'grep', 'Parsed_cropdetect_');
   // build cli
   const cli = new CLI({
     cli: args.ffmpegPath,
@@ -140,7 +138,9 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // execute cli
   const res: { cliExitCode: number, errorLogFull: string[] } = await cli.runCli();
   // get a list of crop settings
-  const cropValues: CropInfo[] = res.errorLogFull.map((line) => cropRegex.exec(line)?.[1]).filter((line) => line)
+  const cropValues: CropInfo[] = res.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_'))
+    .map((line) => cropRegex.exec(line)?.[1])
+    .filter((line) => line)
     .map((value) => {
       const split: string[] = String(value).split(':');
       return new CropInfo(Number(split[0] ?? 0), Number(split[1] ?? 0), Number(split[2] ?? 0), Number(split[3] ?? 0));

@@ -141,8 +141,6 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 spawnArgs.push('-vf', 'fps=fps=0.1,mestimate,cropdetect=mode=mvedges,metadata=mode=print');
                 // no output file
                 spawnArgs.push('-f', 'null', '-');
-                // grep for relevant lines
-                spawnArgs.push('|', 'grep', 'Parsed_cropdetect_');
                 cli = new cliUtils_1.CLI({
                     cli: args.ffmpegPath,
                     spawnArgs: spawnArgs,
@@ -157,7 +155,9 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 return [4 /*yield*/, cli.runCli()];
             case 1:
                 res = _a.sent();
-                cropValues = res.errorLogFull.map(function (line) { var _a; return (_a = cropRegex.exec(line)) === null || _a === void 0 ? void 0 : _a[1]; }).filter(function (line) { return line; })
+                cropValues = res.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); })
+                    .map(function (line) { var _a; return (_a = cropRegex.exec(line)) === null || _a === void 0 ? void 0 : _a[1]; })
+                    .filter(function (line) { return line; })
                     .map(function (value) {
                     var _a, _b, _c, _d;
                     var split = String(value).split(':');

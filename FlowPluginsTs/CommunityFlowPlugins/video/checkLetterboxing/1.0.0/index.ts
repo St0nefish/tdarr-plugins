@@ -108,7 +108,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
   args.inputs = lib.loadDefaultValues(args.inputs, details);
   // regex to find cropdetect settings
-  const cropRegex: RegExp = /.*(?<=crop=)([0-9]+:[0-9]+:[0-9]+:[0-9]+).*/gm;
+  const cropRegex: RegExp = /.*(?<=crop=)([0-9]+:[0-9]+:[0-9]+:[0-9]+).*/g;
   // build ffmpeg command
   const spawnArgs: string[] = [];
   // always hide banner and stats
@@ -138,6 +138,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // execute cli
   const res: { cliExitCode: number, errorLogFull: string[] } = await cli.runCli();
   // logs
+  args.jobLog('<========== scan complete ==========>');
   res.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_')).forEach((line: string, index: number) => {
     const match = cropRegex.exec(line);
     if (match) {
@@ -145,6 +146,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     }
     args.jobLog(`[${index}] - ${line}`);
   });
+  args.jobLog('<========== logs complete ==========>');
   return {
     outputFileObj: args.inputFileObj,
     outputNumber: 1,

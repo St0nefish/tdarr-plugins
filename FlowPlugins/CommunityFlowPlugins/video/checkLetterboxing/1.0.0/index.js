@@ -127,7 +127,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 lib = require('../../../../../methods/lib')();
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
-                cropRegex = /.*(?<=crop=)([0-9]+:[0-9]+:[0-9]+:[0-9]+).*/gm;
+                cropRegex = /.*(?<=crop=)([0-9]+:[0-9]+:[0-9]+:[0-9]+).*/g;
                 spawnArgs = [];
                 // always hide banner and stats
                 spawnArgs.push('-hide_banner', '-nostats');
@@ -156,6 +156,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
             case 1:
                 res = _a.sent();
                 // logs
+                args.jobLog('<========== scan complete ==========>');
                 res.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); }).forEach(function (line, index) {
                     var match = cropRegex.exec(line);
                     if (match) {
@@ -163,6 +164,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     }
                     args.jobLog("[".concat(index, "] - ").concat(line));
                 });
+                args.jobLog('<========== logs complete ==========>');
                 return [2 /*return*/, {
                         outputFileObj: args.inputFileObj,
                         outputNumber: 1,

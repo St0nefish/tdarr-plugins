@@ -40,19 +40,28 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo[]> =
   // regex to find cropdetect settings
   const cropRegex: RegExp = /.*(?<=crop=)(\d+:\d+:\d+:\d+).*/g;
   // determine input video duration
-  const totalDuration: number = Number(args.inputFileObj.ffProbeData.format?.duration ?? 0);
+  const totalDuration: number = Math.round(Number(args.inputFileObj.ffProbeData.format?.duration ?? 0));
+  args.jobLog(`will scan ${Math.round(totalDuration * 0.90)} seconds of the total ${totalDuration} seconds`);
   // calculate scan framerate
   // determine duration of scanned time as total - (start offset + end offset)
   // given the scanned duration and aim for about 250 total samples across this time
-  const fps = 250 / (totalDuration * 0.90);
+  const startOffset: number = Math.round(0.05 * totalDuration);
+  const endOffset: number = Math.round(0.95 * totalDuration);
+  const scannedTime: number = totalDuration - (startOffset + endOffset);
+  const fps: number = 250 / (totalDuration * 0.90);
+  // log some details
+  args.jobLog(
+    `total duration:${totalDuration}s, scanned duration:${scannedTime}s, `
+    + `start offset:${startOffset}s, end offset:${endOffset}, scan framerate:${fps}fps`,
+  );
   // build ffmpeg command
   const spawnArgs: string[] = [];
   // always hide banner and stats
   spawnArgs.push('-hide_banner', '-nostats');
   // set start offset
-  spawnArgs.push('-ss', `${Math.round(0.05 * totalDuration)}`);
+  spawnArgs.push('-ss', `${startOffset}`);
   // set sample length
-  spawnArgs.push('-to', `${Math.round(0.95 * totalDuration)}`);
+  spawnArgs.push('-to', `${endOffset}`);
   // set input file
   spawnArgs.push('-i', args.inputFileObj._id);
   // set cropdetect settings

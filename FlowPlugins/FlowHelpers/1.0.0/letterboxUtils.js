@@ -52,21 +52,28 @@ exports.getCropInfoFromString = getCropInfoFromString;
 var getCropInfoString = function (cropInfo) { return ("".concat(cropInfo.w, ":").concat(cropInfo.h, ":").concat(cropInfo.x, ":").concat(cropInfo.y)); };
 exports.getCropInfoString = getCropInfoString;
 var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var cropRegex, totalDuration, fps, spawnArgs, cli, response, cropValues, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency;
+    var cropRegex, totalDuration, startOffset, endOffset, scannedTime, fps, spawnArgs, cli, response, cropValues, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency;
     var _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
                 cropRegex = /.*(?<=crop=)(\d+:\d+:\d+:\d+).*/g;
-                totalDuration = Number((_b = (_a = args.inputFileObj.ffProbeData.format) === null || _a === void 0 ? void 0 : _a.duration) !== null && _b !== void 0 ? _b : 0);
+                totalDuration = Math.round(Number((_b = (_a = args.inputFileObj.ffProbeData.format) === null || _a === void 0 ? void 0 : _a.duration) !== null && _b !== void 0 ? _b : 0));
+                args.jobLog("will scan ".concat(Math.round(totalDuration * 0.90), " seconds of the total ").concat(totalDuration, " seconds"));
+                startOffset = Math.round(0.05 * totalDuration);
+                endOffset = Math.round(0.95 * totalDuration);
+                scannedTime = totalDuration - (startOffset + endOffset);
                 fps = 250 / (totalDuration * 0.90);
+                // log some details
+                args.jobLog("total duration:".concat(totalDuration, "s, scanned duration:").concat(scannedTime, "s, ")
+                    + "start offset:".concat(startOffset, "s, end offset:").concat(endOffset, ", scan framerate:").concat(fps, "fps"));
                 spawnArgs = [];
                 // always hide banner and stats
                 spawnArgs.push('-hide_banner', '-nostats');
                 // set start offset
-                spawnArgs.push('-ss', "".concat(Math.round(0.05 * totalDuration)));
+                spawnArgs.push('-ss', "".concat(startOffset));
                 // set sample length
-                spawnArgs.push('-to', "".concat(Math.round(0.95 * totalDuration)));
+                spawnArgs.push('-to', "".concat(endOffset));
                 // set input file
                 spawnArgs.push('-i', args.inputFileObj._id);
                 // set cropdetect settings

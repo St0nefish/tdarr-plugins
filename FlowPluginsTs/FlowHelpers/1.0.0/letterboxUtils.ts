@@ -36,7 +36,7 @@ export interface CropInfoHeight {
   y: number;
 }
 
-export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo[]> => {
+export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => {
   // regex to find cropdetect settings
   const cropRegex: RegExp = /.*(?<=crop=)(\d+:\d+:\d+:\d+).*/g;
   // determine input video duration
@@ -59,27 +59,15 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo[]> =
   // always hide banner and stats
   spawnArgs.push('-hide_banner', '-nostats');
   // set start offset
-  spawnArgs.push('-ss', `${startOffset}`);
+  spawnArgs.push('-ss', `${600}`);
   // set sample length
-  spawnArgs.push('-to', `${endOffset}`);
+  spawnArgs.push('-to', `${1200}`);
   // set input file
   spawnArgs.push('-i', args.inputFileObj._id);
   // set cropdetect settings
-  spawnArgs.push('-vf', `fps=fps=${fps},mestimate,cropdetect=mode=mvedges,metadata=mode=print`);
+  spawnArgs.push('-vf', `fps=fps=${0.1},mestimate,cropdetect=mode=mvedges,metadata=mode=print`);
   // no output file
   spawnArgs.push('-f', 'null', '-');
-  // build cli
-  const cli = new CLI({
-    cli: args.ffmpegPath,
-    spawnArgs,
-    spawnOpts: {},
-    jobLog: args.jobLog,
-    outputFilePath: args.inputFileObj._id,
-    inputFileObj: args.inputFileObj,
-    logFullCliOutput: args.logFullCliOutput,
-    updateWorker: args.updateWorker,
-    args,
-  });
   // execute cli
   const response: { cliExitCode: number, errorLogFull: string[] } = await (
     new CLI({
@@ -98,17 +86,24 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo[]> =
   args.jobLog(`parsing [${response.errorLogFull.length}] total lines of log data`);
   const cropdetectLines = response.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_'));
   args.jobLog(`parsing [${cropdetectLines.length}] lines containing cropdetect summary`);
+  args.jobLog(`cropdetect 0: ${cropdetectLines[0]}`);
   // build a list of crop settings
+  const unmatchedLines: string[] = [];
   const cropValues: CropInfo[] = cropdetectLines
-    .map((line) => cropRegex.exec(line)?.[1])
-    .filter((line) => line)
-    .map((line) => String(line))
-    .map((value) => getCropInfoFromString(String(value)));
-  // logs
-  args.jobLog('<========== raw crop data ==========>');
-  cropValues.forEach((cropInfo: CropInfo, index: number) => {
-    args.jobLog(`[${index}] - ${getCropInfoString(cropInfo)}`);
-  });
+    .map((line) => {
+      const match: RegExpMatchArray | null = cropRegex.exec(line);
+      if (match) {
+        return match[1];
+      }
+      unmatchedLines.push(line);
+      return undefined;
+    }).filter((line) => line)
+    .map((line) => getCropInfoFromString(String(line)));
+  args.jobLog(`found ${unmatchedLines.length} unmatched lines`);
+  args.jobLog(`unmatched 0: ${unmatchedLines[0]}`);
+  // determine number of samples we're working with
+  const numSamples: number = cropValues.length;
+  args.jobLog(`parsing cropdetect data from ${numSamples} sampled frames`);
   // build a map of frequency for overall w:h:x:y
   const cropValueFrequency: { [key: string]: number } = {};
   // build arrays separately tracking width and height
@@ -118,25 +113,32 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo[]> =
   const cropYOffsetFrequency: { [key: number]: { [key: number]: number } } = {};
   // iterate to parse
   cropValues.forEach((cropInfo) => {
-    const cropInfoString = getCropInfoString(cropInfo);
-    cropValueFrequency[cropInfoString] = (cropValueFrequency[cropInfoString] ?? 0) + 1;
-    // track width and x-offset frequencies
-    cropWidthFrequency[cropInfo.w] = (cropWidthFrequency[cropInfo.w] ?? 0) + 1;
-    cropXOffsetFrequency[cropInfo.w] ??= {};
-    cropXOffsetFrequency[cropInfo.w][cropInfo.x] = (cropXOffsetFrequency[cropInfo.w][cropInfo.x] ?? 0) + 1;
-    // track height and y-offset frequencies
-    cropHeightFrequency[cropInfo.h] = (cropHeightFrequency[cropInfo.h] ?? 0) + 1;
-    cropYOffsetFrequency[cropInfo.h] ??= {};
-    cropYOffsetFrequency[cropInfo.h][cropInfo.y] = (cropYOffsetFrequency[cropInfo.h][cropInfo.y] ?? 0) + 1;
+    if (cropInfo) {
+      const cropInfoString = getCropInfoString(cropInfo);
+      cropValueFrequency[cropInfoString] = (cropValueFrequency[cropInfoString] ?? 0) + 1;
+      // track width and x-offset frequencies
+      cropWidthFrequency[cropInfo.w] = (cropWidthFrequency[cropInfo.w] ?? 0) + 1;
+      cropXOffsetFrequency[cropInfo.w] ??= {};
+      cropXOffsetFrequency[cropInfo.w][cropInfo.x] = (cropXOffsetFrequency[cropInfo.w][cropInfo.x] ?? 0) + 1;
+      // track height and y-offset frequencies
+      cropHeightFrequency[cropInfo.h] = (cropHeightFrequency[cropInfo.h] ?? 0) + 1;
+      cropYOffsetFrequency[cropInfo.h] ??= {};
+      cropYOffsetFrequency[cropInfo.h][cropInfo.y] = (cropYOffsetFrequency[cropInfo.h][cropInfo.y] ?? 0) + 1;
+    }
   });
   // frequency logs
-  args.jobLog('<========== frequency data ==========>');
+  args.jobLog('<========== start frequency data ==========>');
   args.jobLog(`parsed info from ${cropValues.length} total frames`);
   args.jobLog(`crop info frequencies: ${JSON.stringify(cropValueFrequency)}`);
   args.jobLog(`crop info width frequencies: ${JSON.stringify(cropWidthFrequency)}`);
   args.jobLog(`crop info x-offset frequencies: ${JSON.stringify(cropXOffsetFrequency)}`);
   args.jobLog(`crop info height frequencies: ${JSON.stringify(cropHeightFrequency)}`);
   args.jobLog(`crop info y-offset frequencies: ${JSON.stringify(cropYOffsetFrequency)}`);
-  args.jobLog('<=============== end ===============>');
-  return cropValues;
+  args.jobLog('<========== end frequency data ==========>');
+  // determine if we can just return the top value or if we need to parse
+  const numValues = Object.keys(cropValueFrequency).length;
+  if (numValues > 1) {
+    args.jobLog(`detected ${numValues} unique cropdetect values - calculating best result`);
+  }
+  return cropValues[0];
 };

@@ -112,7 +112,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
   args.inputs = lib.loadDefaultValues(args.inputs, details);
   // get a list of crop settings
-  const cropValues: CropInfo[] = await getCropInfo(args);
+  const cropInfo: CropInfo = await getCropInfo(args);
 
   return {
     outputFileObj: args.inputFileObj,

@@ -120,7 +120,7 @@ var details = function () { return ({
 }); };
 exports.details = details;
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, cropValues;
+    var lib, cropInfo;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -129,7 +129,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
                 return [4 /*yield*/, (0, letterboxUtils_1.getCropInfo)(args)];
             case 1:
-                cropValues = _a.sent();
+                cropInfo = _a.sent();
                 return [2 /*return*/, {
                         outputFileObj: args.inputFileObj,
                         outputNumber: 1,

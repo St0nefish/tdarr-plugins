@@ -131,9 +131,9 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 // always hide banner and stats
                 spawnArgs.push('-hide_banner', '-nostats');
                 // set start offset
-                spawnArgs.push('-ss', '120');
+                spawnArgs.push('-ss', '300');
                 // set sample length
-                spawnArgs.push('-t', '1');
+                spawnArgs.push('-t', '4');
                 // set input file
                 spawnArgs.push('-i', args.inputFileObj._id);
                 // set cropdetect settings
@@ -155,7 +155,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
             case 1:
                 res = _a.sent();
                 // logs
-                res.errorLogFull.forEach(function (line, index) {
+                res.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); }).forEach(function (line, index) {
                     args.jobLog("[".concat(index, "] - ").concat(line));
                 });
                 return [2 /*return*/, {

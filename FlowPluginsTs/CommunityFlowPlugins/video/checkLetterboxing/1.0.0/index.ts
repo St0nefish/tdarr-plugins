@@ -112,9 +112,9 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // always hide banner and stats
   spawnArgs.push('-hide_banner', '-nostats');
   // set start offset
-  spawnArgs.push('-ss', '120');
+  spawnArgs.push('-ss', '300');
   // set sample length
-  spawnArgs.push('-t', '1');
+  spawnArgs.push('-t', '4');
   // set input file
   spawnArgs.push('-i', args.inputFileObj._id);
   // set cropdetect settings
@@ -136,7 +136,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // execute cli
   const res: { cliExitCode: number, errorLogFull: string[] } = await cli.runCli();
   // logs
-  res.errorLogFull.forEach((line: string, index: number) => {
+  res.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_')).forEach((line: string, index: number) => {
     args.jobLog(`[${index}] - ${line}`);
   });
   return {
@@ -145,6 +145,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     variables: args.variables,
   };
 };
+
 export {
   details,
   plugin,

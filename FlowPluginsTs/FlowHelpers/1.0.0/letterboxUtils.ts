@@ -1,5 +1,10 @@
-import { IpluginInputArgs } from './interfaces/interfaces';
+import {
+  IffmpegCommandStream,
+  IpluginInputArgs
+} from './interfaces/interfaces';
 import { CLI } from './cliUtils';
+import { Istreams } from './interfaces/synced/IFileObject';
+import { isVideo } from './metadataUtils';
 
 export interface CropInfo {
   // width
@@ -88,7 +93,7 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
     })).runCli();
   // logs
   await sleep(100);
-  args.jobLog('<========== scan complete ==========>');
+  args.jobLog('<========== cropdata scan complete ==========>');
   await sleep(100);
   args.jobLog(`parsing [${response.errorLogFull.length}] total lines of log data`);
   // build a list of crop settings
@@ -99,7 +104,7 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
     .map((line) => getCropInfoFromString(String(line)));
   // determine number of samples we're working with
   const numSamples: number = cropValues.length;
-  args.jobLog(`parsing cropdetect data from ${numSamples} sampled frames`);
+  args.jobLog(`parsing ${numSamples} lines containing cropdetect data`);
   // build a map of frequency for overall w:h:x:y
   const cropValueFrequency: { [key: string]: number } = {};
   // build arrays separately tracking width and height
@@ -124,19 +129,83 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
   await sleep(100);
   args.jobLog('<========== start frequency data ==========>');
   await sleep(100);
-  args.jobLog(`parsed info from ${cropValues.length} total frames`);
   args.jobLog(`crop info frequencies: ${JSON.stringify(cropValueFrequency)}`);
   args.jobLog(`crop info width frequencies: ${JSON.stringify(cropWidthFrequency)}`);
   args.jobLog(`crop info x-offset frequencies: ${JSON.stringify(cropXOffsetFrequency)}`);
   args.jobLog(`crop info height frequencies: ${JSON.stringify(cropHeightFrequency)}`);
   args.jobLog(`crop info y-offset frequencies: ${JSON.stringify(cropYOffsetFrequency)}`);
   await sleep(100);
-  args.jobLog('<========== end frequency data ==========>');
+  args.jobLog('<=========== end frequency data ===========>');
   await sleep(100);
   // determine if we can just return the top value or if we need to parse
   const numValues = Object.keys(cropValueFrequency).length;
   if (numValues > 1) {
     args.jobLog(`detected ${numValues} unique cropdetect values - calculating best result`);
+    // pull values from input file - first get the video stream
+    const videoStream: Istreams | undefined = args.inputFileObj?.ffProbeData?.streams?.filter(isVideo)[0];
+    if (!videoStream) {
+      throw new Error('Failed to find a video stream - why are you attempting to de-letterbox a non-video file?');
+    }
+    // ==== determine width and X offset ====
+    const inputWidth: number = Number(videoStream.width);
+    let outputWidth: number = 0;
+    let outputX: number = 0;
+    // if native width is present and at least 5% of frames keep it
+    if (cropWidthFrequency[inputWidth] && cropWidthFrequency[inputWidth] >= (numValues * 0.05)) {
+      outputWidth = inputWidth;
+      outputX = 0;
+    } else {
+      // weird, video appears to be pillarboxed - find the maximum value representing at least 5% of sampled frames
+      Object.keys(cropWidthFrequency).forEach((widthStr: string) => {
+        const widthVal: number = Number(widthStr);
+        if ((widthVal > outputWidth) && (cropWidthFrequency[widthVal] >= (numValues * 0.05))) {
+          outputWidth = widthVal;
+        }
+      });
+      // now grab the most frequent x-offset for the selected width value
+      let xOffsetCount: number = 0;
+      Object.keys(cropXOffsetFrequency[outputWidth]).forEach((offsetStr: string) => {
+        const offsetVal: number = Number(offsetStr);
+        if (cropXOffsetFrequency[outputWidth][offsetVal] > xOffsetCount) {
+          outputX = offsetVal;
+          xOffsetCount = cropXOffsetFrequency[outputWidth][offsetVal];
+        }
+      });
+    }
+    // ==== determine height and Y offset ====
+    const inputHeight: number = Number(videoStream.height);
+    let outputHeight: number = 0;
+    let outputY: number = 0;
+    // if native height is present and at least 5% of frames keep it
+    if (cropHeightFrequency[inputHeight] && cropHeightFrequency[inputHeight] >= (numValues * 0.05)) {
+      outputHeight = inputHeight;
+      outputY = 0;
+    } else {
+      // video appears to be letterboxed - find the maximum value representing at least 5% of sampled frames
+      Object.keys(cropHeightFrequency).forEach((heightStr: string) => {
+        const heightVal: number = Number(heightStr);
+        if ((heightVal > outputHeight) && (cropHeightFrequency[heightVal] >= (numValues * 0.05))) {
+          outputHeight = heightVal;
+        }
+      });
+      // now grab the most frequent y-offset for the selected height value
+      let yOffsetCount: number = 0;
+      Object.keys(cropYOffsetFrequency[outputHeight]).forEach((offsetStr: string) => {
+        const offsetVal: number = Number(offsetStr);
+        if (cropYOffsetFrequency[outputHeight][offsetVal] >= yOffsetCount) {
+          outputY = offsetVal;
+          yOffsetCount = cropYOffsetFrequency[outputHeight][offsetVal];
+        }
+      });
+    }
+    // build the return CropInfo object from our selected values
+    return {
+      w: outputWidth,
+      h: outputHeight,
+      x: outputX,
+      y: outputY,
+    };
   }
+  // return the only detected value
   return cropValues[0];
 };

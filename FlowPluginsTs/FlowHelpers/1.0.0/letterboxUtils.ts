@@ -81,21 +81,25 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo[]> =
     args,
   });
   // execute cli
-  const response: { cliExitCode: number, errorLogFull: string[] } = await (new CLI({
-    cli: args.ffmpegPath,
-    spawnArgs,
-    spawnOpts: {},
-    jobLog: args.jobLog,
-    outputFilePath: args.inputFileObj._id,
-    inputFileObj: args.inputFileObj,
-    logFullCliOutput: args.logFullCliOutput,
-    updateWorker: args.updateWorker,
-    args,
-  })).runCli();
+  const response: { cliExitCode: number, errorLogFull: string[] } = await (
+    new CLI({
+      cli: args.ffmpegPath,
+      spawnArgs,
+      spawnOpts: {},
+      jobLog: args.jobLog,
+      outputFilePath: args.inputFileObj._id,
+      inputFileObj: args.inputFileObj,
+      logFullCliOutput: args.logFullCliOutput,
+      updateWorker: args.updateWorker,
+      args,
+    })).runCli();
   // logs
   args.jobLog('<========== scan complete ==========>');
+  args.jobLog(`parsing [${response.errorLogFull.length}] total lines of log data`);
+  const cropdetectLines = response.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_'));
+  args.jobLog(`parsing [${cropdetectLines.length}] lines containing cropdetect summary`);
   // build a list of crop settings
-  const cropValues: CropInfo[] = response.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_'))
+  const cropValues: CropInfo[] = cropdetectLines
     .map((line) => cropRegex.exec(line)?.[1])
     .filter((line) => line)
     .map((line) => String(line))

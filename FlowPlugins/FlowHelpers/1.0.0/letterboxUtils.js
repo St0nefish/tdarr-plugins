@@ -52,7 +52,7 @@ exports.getCropInfoFromString = getCropInfoFromString;
 var getCropInfoString = function (cropInfo) { return ("".concat(cropInfo.w, ":").concat(cropInfo.h, ":").concat(cropInfo.x, ":").concat(cropInfo.y)); };
 exports.getCropInfoString = getCropInfoString;
 var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var cropRegex, totalDuration, startOffset, endOffset, scannedTime, fps, spawnArgs, cli, response, cropValues, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency;
+    var cropRegex, totalDuration, startOffset, endOffset, scannedTime, fps, spawnArgs, cli, response, cropdetectLines, cropValues, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency;
     var _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
@@ -106,7 +106,10 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
                 response = _c.sent();
                 // logs
                 args.jobLog('<========== scan complete ==========>');
-                cropValues = response.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); })
+                args.jobLog("parsing [".concat(response.errorLogFull.length, "] total lines of log data"));
+                cropdetectLines = response.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); });
+                args.jobLog("parsing [".concat(cropdetectLines.length, "] lines containing cropdetect summary"));
+                cropValues = cropdetectLines
                     .map(function (line) { var _a; return (_a = cropRegex.exec(line)) === null || _a === void 0 ? void 0 : _a[1]; })
                     .filter(function (line) { return line; })
                     .map(function (line) { return String(line); })

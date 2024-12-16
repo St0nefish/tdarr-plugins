@@ -41,6 +41,7 @@ exports.plugin = exports.details = void 0;
 var hardwareUtils_1 = require("../../../../FlowHelpers/1.0.0/hardwareUtils");
 var flowUtils_1 = require("../../../../FlowHelpers/1.0.0/interfaces/flowUtils");
 var metadataUtils_1 = require("../../../../FlowHelpers/1.0.0/metadataUtils");
+var fileUtils_1 = require("../../../../FlowHelpers/1.0.0/fileUtils");
 /* eslint-disable no-param-reassign */
 var details = function () { return ({
     name: 'Set Video Encoder (stonefish)',
@@ -55,6 +56,37 @@ var details = function () { return ({
     sidebarPosition: -1,
     icon: '',
     inputs: [
+        {
+            label: 'Output Container',
+            name: 'outputContainer',
+            type: 'string',
+            defaultValue: 'mkv',
+            inputUI: {
+                type: 'dropdown',
+                options: [
+                    'mkv',
+                    'mp4',
+                ],
+            },
+            tooltip: 'Specify the container to use',
+        },
+        {
+            label: 'Output Resolution',
+            name: 'outputResolution',
+            type: 'string',
+            defaultValue: '1080p',
+            inputUI: {
+                type: 'dropdown',
+                options: [
+                    '480p',
+                    '720p',
+                    '1080p',
+                    '1440p',
+                    '4KUHD',
+                ],
+            },
+            tooltip: 'Specify the codec to use',
+        },
         {
             label: 'Output Codec',
             name: 'outputCodec',
@@ -222,9 +254,28 @@ var details = function () { return ({
     ],
 }); };
 exports.details = details;
+// function to get vf options by resolution - defaults to 1080p
+var getVfScaleArgs = function (targetResolution) {
+    switch (targetResolution) {
+        case '480p':
+            return ['-vf', 'scale=720:-2'];
+        case '576p':
+            return ['-vf', 'scale=720:-2'];
+        case '720p':
+            return ['-vf', 'scale=1280:-2'];
+        case '1080p':
+            return ['-vf', 'scale=1920:-2'];
+        case '1440p':
+            return ['-vf', 'scale=2560:-2'];
+        case '4KUHD':
+            return ['-vf', 'scale=3840:-2'];
+        default:
+            return ['-vf', 'scale=1920:-2'];
+    }
+};
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, hardwareDecoding, targetCodec, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, encoderProperties;
+    var lib, outputContainer, outputResolution, outputCodec, hardwareDecoding, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, encoderProperties, container;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -233,8 +284,10 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
                 // ensure ffmpeg command was initiated
                 (0, flowUtils_1.checkFfmpegCommandInit)(args);
+                outputContainer = String(args.inputs.outputContainer);
+                outputResolution = String(args.inputs.outputResolution);
+                outputCodec = String(args.inputs.outputCodec);
                 hardwareDecoding = Boolean(args.inputs.hardwareDecoding);
-                targetCodec = String(args.inputs.outputCodec);
                 ffmpegPresetEnabled = Boolean(args.inputs.ffmpegPresetEnabled);
                 ffmpegQualityEnabled = Boolean(args.inputs.ffmpegQualityEnabled);
                 ffmpegPreset = String(args.inputs.ffmpegPreset);
@@ -244,18 +297,27 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 hardwareType = String(args.inputs.hardwareType);
                 titleMode = String(args.inputs.titleMode);
                 return [4 /*yield*/, (0, hardwareUtils_1.getEncoder)({
-                        targetCodec: targetCodec,
+                        targetCodec: outputCodec,
                         hardwareEncoding: hardwareEncoding,
                         hardwareType: hardwareType,
                         args: args,
                     })];
             case 1:
                 encoderProperties = _a.sent();
+                // first handle container if not already correct
+                if ((0, fileUtils_1.getContainer)(args.inputFileObj._id) !== outputContainer) {
+                    args.variables.ffmpegCommand.shouldProcess = true;
+                    args.variables.ffmpegCommand.container = outputContainer;
+                    container = args.inputFileObj.container.toLowerCase();
+                    if (['ts', 'avi', 'mpg', 'mpeg'].includes(container)) {
+                        args.variables.ffmpegCommand.overallOuputArguments.push('-fflags', '+genpts');
+                    }
+                }
                 // iterate streams, filter to video, and configure encoding options
                 args.variables.ffmpegCommand.streams.filter(metadataUtils_1.isVideo).forEach(function (stream) {
-                    var _a, _b;
+                    var _a, _b, _c;
                     // only encode if forced or codec isn't already correct
-                    if (forceEncoding || stream.codec_name !== targetCodec) {
+                    if (forceEncoding || stream.codec_name !== outputCodec) {
                         // enable processing and set hardware decoding
                         args.variables.ffmpegCommand.shouldProcess = true;
                         args.variables.ffmpegCommand.hardwareDecoding = hardwareDecoding;
@@ -263,6 +325,10 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         stream.outputArgs.push('-c:{outputIndex}');
                         // set encoder to use
                         stream.outputArgs.push(encoderProperties.encoder);
+                        // handle resolution if necessary
+                        if (outputResolution !== args.inputFileObj.video_resolution) {
+                            (_a = stream.outputArgs).push.apply(_a, getVfScaleArgs(outputResolution));
+                        }
                         // handle configured quality settings
                         if (ffmpegQualityEnabled) {
                             if (encoderProperties.isGpu) {
@@ -274,24 +340,24 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         }
                         // handle configured preset
                         if (ffmpegPresetEnabled) {
-                            if (targetCodec !== 'av1' && ffmpegPreset) {
+                            if (outputCodec !== 'av1' && ffmpegPreset) {
                                 stream.outputArgs.push('-preset', ffmpegPreset);
                             }
                         }
                         // handle hardware decoding options
                         if (hardwareDecoding) {
-                            (_a = stream.inputArgs).push.apply(_a, encoderProperties.inputArgs);
+                            (_b = stream.inputArgs).push.apply(_b, encoderProperties.inputArgs);
                         }
                         // push remaining encoder output args
                         if (encoderProperties.outputArgs) {
-                            (_b = stream.outputArgs).push.apply(_b, encoderProperties.outputArgs);
+                            (_c = stream.outputArgs).push.apply(_c, encoderProperties.outputArgs);
                         }
                         // handle title removal or generation
                         if (titleMode === 'clear') {
                             stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', 'title=');
                         }
                         else if (titleMode === 'generate') {
-                            stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', "title=".concat(targetCodec));
+                            stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', "title=".concat(outputCodec));
                         }
                     }
                 });

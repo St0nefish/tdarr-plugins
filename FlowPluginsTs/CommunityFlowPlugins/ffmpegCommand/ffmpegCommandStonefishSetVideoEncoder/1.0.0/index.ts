@@ -8,6 +8,7 @@ import {
   IpluginOutputArgs,
 } from '../../../../FlowHelpers/1.0.0/interfaces/interfaces';
 import { isVideo } from '../../../../FlowHelpers/1.0.0/metadataUtils';
+import { getContainer } from '../../../../FlowHelpers/1.0.0/fileUtils';
 
 /* eslint-disable no-param-reassign */
 const details = (): IpluginDetails => ({
@@ -37,6 +38,37 @@ const details = (): IpluginDetails => ({
   sidebarPosition: -1,
   icon: '',
   inputs: [
+    {
+      label: 'Output Container',
+      name: 'outputContainer',
+      type: 'string',
+      defaultValue: 'mkv',
+      inputUI: {
+        type: 'dropdown',
+        options: [
+          'mkv',
+          'mp4',
+        ],
+      },
+      tooltip: 'Specify the container to use',
+    },
+    {
+      label: 'Output Resolution',
+      name: 'outputResolution',
+      type: 'string',
+      defaultValue: '1080p',
+      inputUI: {
+        type: 'dropdown',
+        options: [
+          '480p',
+          '720p',
+          '1080p',
+          '1440p',
+          '4KUHD',
+        ],
+      },
+      tooltip: 'Specify the codec to use',
+    },
     {
       label: 'Output Codec',
       name: 'outputCodec',
@@ -213,6 +245,26 @@ const details = (): IpluginDetails => ({
   ],
 });
 
+// function to get vf options by resolution - defaults to 1080p
+const getVfScaleArgs = (targetResolution: string): string[] => {
+  switch (targetResolution) {
+    case '480p':
+      return ['-vf', 'scale=720:-2'];
+    case '576p':
+      return ['-vf', 'scale=720:-2'];
+    case '720p':
+      return ['-vf', 'scale=1280:-2'];
+    case '1080p':
+      return ['-vf', 'scale=1920:-2'];
+    case '1440p':
+      return ['-vf', 'scale=2560:-2'];
+    case '4KUHD':
+      return ['-vf', 'scale=3840:-2'];
+    default:
+      return ['-vf', 'scale=1920:-2'];
+  }
+};
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const lib = require('../../../../../methods/lib')();
@@ -221,8 +273,10 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // ensure ffmpeg command was initiated
   checkFfmpegCommandInit(args);
   // grab config
+  const outputContainer: string = String(args.inputs.outputContainer);
+  const outputResolution: string = String(args.inputs.outputResolution);
+  const outputCodec: string = String(args.inputs.outputCodec);
   const hardwareDecoding: boolean = Boolean(args.inputs.hardwareDecoding);
-  const targetCodec: string = String(args.inputs.outputCodec);
   const ffmpegPresetEnabled: boolean = Boolean(args.inputs.ffmpegPresetEnabled);
   const ffmpegQualityEnabled: boolean = Boolean(args.inputs.ffmpegQualityEnabled);
   const ffmpegPreset: string = String(args.inputs.ffmpegPreset);
@@ -233,15 +287,25 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const titleMode: string = String(args.inputs.titleMode);
   // load encoder options
   const encoderProperties = await getEncoder({
-    targetCodec,
+    targetCodec: outputCodec,
     hardwareEncoding,
     hardwareType,
     args,
   });
+  // first handle container if not already correct
+  if (getContainer(args.inputFileObj._id) !== outputContainer) {
+    args.variables.ffmpegCommand.shouldProcess = true;
+    args.variables.ffmpegCommand.container = outputContainer;
+    // handle genpts if coming from odd container
+    const container = args.inputFileObj.container.toLowerCase();
+    if (['ts', 'avi', 'mpg', 'mpeg'].includes(container)) {
+      args.variables.ffmpegCommand.overallOuputArguments.push('-fflags', '+genpts');
+    }
+  }
   // iterate streams, filter to video, and configure encoding options
   args.variables.ffmpegCommand.streams.filter(isVideo).forEach((stream: IffmpegCommandStream) => {
     // only encode if forced or codec isn't already correct
-    if (forceEncoding || stream.codec_name !== targetCodec) {
+    if (forceEncoding || stream.codec_name !== outputCodec) {
       // enable processing and set hardware decoding
       args.variables.ffmpegCommand.shouldProcess = true;
       args.variables.ffmpegCommand.hardwareDecoding = hardwareDecoding;
@@ -249,6 +313,10 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       stream.outputArgs.push('-c:{outputIndex}');
       // set encoder to use
       stream.outputArgs.push(encoderProperties.encoder);
+      // handle resolution if necessary
+      if (outputResolution !== args.inputFileObj.video_resolution) {
+        stream.outputArgs.push(...getVfScaleArgs(outputResolution));
+      }
       // handle configured quality settings
       if (ffmpegQualityEnabled) {
         if (encoderProperties.isGpu) {
@@ -259,7 +327,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       }
       // handle configured preset
       if (ffmpegPresetEnabled) {
-        if (targetCodec !== 'av1' && ffmpegPreset) {
+        if (outputCodec !== 'av1' && ffmpegPreset) {
           stream.outputArgs.push('-preset', ffmpegPreset);
         }
       }
@@ -275,7 +343,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       if (titleMode === 'clear') {
         stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', 'title=');
       } else if (titleMode === 'generate') {
-        stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', `title=${targetCodec}`);
+        stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', `title=${outputCodec}`);
       }
     }
   });

@@ -124,7 +124,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // no output file
   spawnArgs.push('-f', 'null', '2>&1');
   // grep for relevant lines
-  spawnArgs.push('|', 'grep', '--line-buffered', 'Parsed_cropdetect_');
+  spawnArgs.push('|', 'grep', 'Parsed_cropdetect_');
   // build cli
   const cli = new CLI({
     cli: args.ffmpegPath,

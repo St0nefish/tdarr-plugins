@@ -142,7 +142,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 // no output file
                 spawnArgs.push('-f', 'null', '2>&1');
                 // grep for relevant lines
-                spawnArgs.push('|', 'grep', '--line-buffered', 'Parsed_cropdetect_');
+                spawnArgs.push('|', 'grep', 'Parsed_cropdetect_');
                 cli = new cliUtils_1.CLI({
                     cli: args.ffmpegPath,
                     spawnArgs: spawnArgs,

@@ -37,7 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.plugin = exports.details = void 0;
-var cliUtils_1 = require("../../../../FlowHelpers/1.0.0/cliUtils");
+var letterboxUtils_1 = require("../../../../FlowHelpers/1.0.0/letterboxUtils");
 /* eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }] */
 var details = function () { return ({
     name: 'Check Letterboxing',
@@ -120,49 +120,16 @@ var details = function () { return ({
 }); };
 exports.details = details;
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, cropRegex, spawnArgs, cli, res, cropValues, cropValueFrequency;
+    var lib, cropValues, cropValueFrequency;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 lib = require('../../../../../methods/lib')();
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
-                cropRegex = /.*(?<=crop=)(\d+:\d+:\d+:\d+).*/g;
-                spawnArgs = [];
-                // always hide banner and stats
-                spawnArgs.push('-hide_banner', '-nostats');
-                // set start offset
-                spawnArgs.push('-ss', '0:10:00');
-                // set sample length
-                spawnArgs.push('-to', '0:20:00');
-                // set input file
-                spawnArgs.push('-i', args.inputFileObj._id);
-                // set cropdetect settings
-                spawnArgs.push('-vf', 'fps=fps=0.1,mestimate,cropdetect=mode=mvedges,metadata=mode=print');
-                // no output file
-                spawnArgs.push('-f', 'null', '-');
-                cli = new cliUtils_1.CLI({
-                    cli: args.ffmpegPath,
-                    spawnArgs: spawnArgs,
-                    spawnOpts: {},
-                    jobLog: args.jobLog,
-                    outputFilePath: args.inputFileObj._id,
-                    inputFileObj: args.inputFileObj,
-                    logFullCliOutput: args.logFullCliOutput,
-                    updateWorker: args.updateWorker,
-                    args: args,
-                });
-                return [4 /*yield*/, cli.runCli()];
+                return [4 /*yield*/, (0, letterboxUtils_1.getCropInfo)(args)];
             case 1:
-                res = _a.sent();
-                cropValues = res.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); })
-                    .map(function (line) { var _a; return (_a = cropRegex.exec(line)) === null || _a === void 0 ? void 0 : _a[1]; })
-                    .filter(function (line) { return line; })
-                    .map(function (value) {
-                    var _a, _b, _c, _d;
-                    var split = String(value).split(':');
-                    return new CropInfo(Number((_a = split[0]) !== null && _a !== void 0 ? _a : 0), Number((_b = split[1]) !== null && _b !== void 0 ? _b : 0), Number((_c = split[2]) !== null && _c !== void 0 ? _c : 0), Number((_d = split[3]) !== null && _d !== void 0 ? _d : 0));
-                });
+                cropValues = _a.sent();
                 cropValueFrequency = {};
                 cropValues.forEach(function (value) {
                     var _a;

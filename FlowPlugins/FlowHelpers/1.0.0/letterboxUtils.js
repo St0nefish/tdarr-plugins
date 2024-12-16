@@ -104,7 +104,7 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
                     .map(function (line) {
                     var match = cropRegex.exec(line);
                     if (match) {
-                        return match[1];
+                        return match[0];
                     }
                     unmatchedLines.push(line);
                     return undefined;

@@ -93,7 +93,7 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
     .map((line) => {
       const match: RegExpMatchArray | null = cropRegex.exec(line);
       if (match) {
-        return match[1];
+        return match[0];
       }
       unmatchedLines.push(line);
       return undefined;

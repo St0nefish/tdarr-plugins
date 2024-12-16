@@ -38,7 +38,7 @@ export interface CropInfoHeight {
 
 export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => {
   // regex to find cropdetect settings
-  const cropRegex: RegExp = /.*(?<=crop=)(\d+:\d+:\d+:\d+)\n(?:.*\n?)+/gm;
+  const cropRegex: RegExp = /(\d+:\d+:\d+:\d+)/gm;
   // determine input video duration
   const totalDuration: number = Math.round(Number(args.inputFileObj.ffProbeData.format?.duration ?? 0));
   args.jobLog(`will scan ${Math.round(totalDuration * 0.90)} seconds of the total ${totalDuration} seconds`);

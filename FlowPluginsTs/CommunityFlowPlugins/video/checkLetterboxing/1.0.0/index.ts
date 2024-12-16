@@ -137,13 +137,26 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   });
   // execute cli
   const res: { cliExitCode: number, errorLogFull: string[] } = await cli.runCli();
+  // get a list of crop settings
+  const cropValues: string[] = res.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_'))
+    .map((line) => cropRegex.exec(line)?.[1]).filter((line) => line).map((line) => String(line));
+  // get a list of objects split by measurement
+  const cropValuesSplit: { w: number, h: number, x: number, y: number; }[] = cropValues.map((value) => {
+    const split: string[] = value.split(':');
+    return {
+      w: Number(split[0] ?? 0),
+      h: Number(split[1] ?? 0),
+      x: Number(split[2] ?? 0),
+      y: Number(split[3] ?? 0),
+    };
+  });
   // logs
   args.jobLog('<========== scan complete ==========>');
-  res.errorLogFull.filter((line) => line.startsWith('[Parsed_cropdetect_')).forEach((line: string, index: number) => {
-    const match = cropRegex.exec(line);
-    if (match) {
-      args.jobLog(`[${index}] - ${match[1]}`);
-    }
+  cropValues.forEach((line: string, index: number) => {
+    args.jobLog(`[${index}] - ${line}`);
+  });
+  cropValuesSplit.forEach((value, index) => {
+    args.jobLog(`[${index}] - ${JSON.stringify(value)}`);
   });
   args.jobLog('<========== logs complete ==========>');
   return {

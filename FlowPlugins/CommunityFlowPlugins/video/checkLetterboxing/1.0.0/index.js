@@ -120,7 +120,7 @@ var details = function () { return ({
 }); };
 exports.details = details;
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, cropRegex, spawnArgs, cli, res;
+    var lib, cropRegex, spawnArgs, cli, res, cropValues, cropValuesSplit;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -155,13 +155,25 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 return [4 /*yield*/, cli.runCli()];
             case 1:
                 res = _a.sent();
+                cropValues = res.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); })
+                    .map(function (line) { var _a; return (_a = cropRegex.exec(line)) === null || _a === void 0 ? void 0 : _a[1]; }).filter(function (line) { return line; }).map(function (line) { return String(line); });
+                cropValuesSplit = cropValues.map(function (value) {
+                    var _a, _b, _c, _d;
+                    var split = value.split(':');
+                    return {
+                        w: Number((_a = split[0]) !== null && _a !== void 0 ? _a : 0),
+                        h: Number((_b = split[1]) !== null && _b !== void 0 ? _b : 0),
+                        x: Number((_c = split[2]) !== null && _c !== void 0 ? _c : 0),
+                        y: Number((_d = split[3]) !== null && _d !== void 0 ? _d : 0),
+                    };
+                });
                 // logs
                 args.jobLog('<========== scan complete ==========>');
-                res.errorLogFull.filter(function (line) { return line.startsWith('[Parsed_cropdetect_'); }).forEach(function (line, index) {
-                    var match = cropRegex.exec(line);
-                    if (match) {
-                        args.jobLog("[".concat(index, "] - ").concat(match[1]));
-                    }
+                cropValues.forEach(function (line, index) {
+                    args.jobLog("[".concat(index, "] - ").concat(line));
+                });
+                cropValuesSplit.forEach(function (value, index) {
+                    args.jobLog("[".concat(index, "] - ").concat(JSON.stringify(value)));
                 });
                 args.jobLog('<========== logs complete ==========>');
                 return [2 /*return*/, {

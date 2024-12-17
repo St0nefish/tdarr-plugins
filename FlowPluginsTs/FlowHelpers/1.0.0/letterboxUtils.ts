@@ -75,12 +75,13 @@ const getHwDecoder = (hardwareType: string): string | null => {
 
 // scan config object
 export interface ScanConfig {
-  enableHwDecoding?: boolean,
   cropMode?: string,
   startOffsetPct?: number,
   endOffsetPct?: number,
   samplesPerMinute?: number,
   minCropPct?: number,
+  enableHwDecoding?: boolean,
+  hwDecoder?: string,
 }
 
 // function to get crop info from a video file
@@ -91,12 +92,6 @@ export const getCropInfo = async (
   args: IpluginInputArgs,
   file: IFileObject,
   scanConfig: ScanConfig,
-  // enableHwDecoding: boolean = true,
-  // cropMode: string = 'conservative',
-  // startOffsetPct: number = 5,
-  // endOffsetPct: number = 5,
-  // samplesPerMinute: number = 2,
-  // minCropPct: number = 2,
 ): Promise<CropInfo> => {
   // import os for line feeds
   const os = require('os');
@@ -140,7 +135,7 @@ export const getCropInfo = async (
   // set end time
   spawnArgs.push('--stop-at', `seconds:${endTime}`);
   // handle hardware decoding
-  const hwDecoder = getHwDecoder(args.nodeHardwareType);
+  const hwDecoder = scanConfig.hwDecoder ?? getHwDecoder(args.nodeHardwareType);
   if (enableHwDecoding && hwDecoder) {
     spawnArgs.push('--enable-hw-decoding', hwDecoder);
   }
@@ -163,7 +158,9 @@ export const getCropInfo = async (
       args,
     })).runCli();
   // find line containing the key data
-  const resultLine: string = response.errorLogFull.filter((line: string) => line.includes('autocrop = '))[0];
+  const resultLine: string = response.errorLogFull
+    .filter((line: string) => line.includes('autocrop = '))
+    .map((line) => line.substring(line.indexOf('scan:')).substring(0, line.indexOf(os.EOL)))?.[0];
   // parse autocrop string from line
   const autocropRegex = /(\d+\/\d+\/\d+\/\d+)/;
   const match: RegExpExecArray | null = autocropRegex.exec(resultLine);
@@ -171,8 +168,8 @@ export const getCropInfo = async (
   if (match) {
     autocrop = match[0];
   }
-  args.jobLog(resultLine.substring(resultLine.indexOf(' ')).replace(os.EOL, ''));
-  args.jobLog(`autocrop: ${autocrop}`);
+  args.jobLog(`${resultLine.substring(resultLine.indexOf('scan:')).substring(0, resultLine.indexOf(os.EOL))}`);
+  args.jobLog(`autocrop: [${autocrop}]`);
   // convert string to object and return
   const cropInfo: CropInfo = getCropInfoFromString(autocrop);
   // ==== determine if we should zero some fields for being within ignore limits ==== //

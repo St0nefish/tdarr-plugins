@@ -118,12 +118,12 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 samplesPerMinute = Number(args.inputs.samplesPerMinute);
                 minCropPct = Number(args.inputs.minCropPct);
                 return [4 /*yield*/, (0, letterboxUtils_1.getCropInfo)(args, args.inputFileObj, {
-                        enableHwDecoding: true,
                         cropMode: 'conservative',
                         startOffsetPct: startOffsetPct,
                         endOffsetPct: endOffsetPct,
                         samplesPerMinute: samplesPerMinute,
                         minCropPct: minCropPct,
+                        enableHwDecoding: true,
                     })];
             case 1:
                 cropInfo = _a.sent();

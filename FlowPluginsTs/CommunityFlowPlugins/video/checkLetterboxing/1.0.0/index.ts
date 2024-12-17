@@ -95,12 +95,12 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     args,
     args.inputFileObj,
     {
-      enableHwDecoding: true,
       cropMode: 'conservative',
       startOffsetPct,
       endOffsetPct,
       samplesPerMinute,
       minCropPct,
+      enableHwDecoding: true,
     },
   );
   args.jobLog(`calculated crop info: ${JSON.stringify(cropInfo)}`);

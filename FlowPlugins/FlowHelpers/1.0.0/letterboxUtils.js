@@ -99,9 +99,9 @@ var getHwDecoder = function (hardwareType) {
 // scanConfig: ScanConfig object
 var getCropInfo = function (args, file, scanConfig) { return __awaiter(void 0, void 0, void 0, function () {
     var os, videoStream, cropMode, enableHwDecoding, minCropPct, totalDuration, startTime, endTime, scannedTime, numPreviews, spawnArgs, hwDecoder, response, resultLine, autocropRegex, match, autocrop, cropInfo;
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
-    return __generator(this, function (_l) {
-        switch (_l.label) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+    return __generator(this, function (_o) {
+        switch (_o.label) {
             case 0:
                 os = require('os');
                 // ToDo - remove
@@ -135,7 +135,7 @@ var getCropInfo = function (args, file, scanConfig) { return __awaiter(void 0, v
                 spawnArgs.push('--start-at', "seconds:".concat(startTime));
                 // set end time
                 spawnArgs.push('--stop-at', "seconds:".concat(endTime));
-                hwDecoder = getHwDecoder(args.nodeHardwareType);
+                hwDecoder = (_l = scanConfig.hwDecoder) !== null && _l !== void 0 ? _l : getHwDecoder(args.nodeHardwareType);
                 if (enableHwDecoding && hwDecoder) {
                     spawnArgs.push('--enable-hw-decoding', hwDecoder);
                 }
@@ -155,16 +155,18 @@ var getCropInfo = function (args, file, scanConfig) { return __awaiter(void 0, v
                         args: args,
                     })).runCli()];
             case 1:
-                response = _l.sent();
-                resultLine = response.errorLogFull.filter(function (line) { return line.includes('autocrop = '); })[0];
+                response = _o.sent();
+                resultLine = (_m = response.errorLogFull
+                    .filter(function (line) { return line.includes('autocrop = '); })
+                    .map(function (line) { return line.substring(line.indexOf('scan:')).substring(0, line.indexOf(os.EOL)); })) === null || _m === void 0 ? void 0 : _m[0];
                 autocropRegex = /(\d+\/\d+\/\d+\/\d+)/;
                 match = autocropRegex.exec(resultLine);
                 autocrop = '';
                 if (match) {
                     autocrop = match[0];
                 }
-                args.jobLog(resultLine.substring(resultLine.indexOf(' ')).replace(os.EOL, ''));
-                args.jobLog("autocrop: ".concat(autocrop));
+                args.jobLog("".concat(resultLine.substring(resultLine.indexOf('scan:')).substring(0, resultLine.indexOf(os.EOL))));
+                args.jobLog("autocrop: [".concat(autocrop, "]"));
                 cropInfo = (0, exports.getCropInfoFromString)(autocrop);
                 // ==== determine if we should zero some fields for being within ignore limits ==== //
                 // first check width

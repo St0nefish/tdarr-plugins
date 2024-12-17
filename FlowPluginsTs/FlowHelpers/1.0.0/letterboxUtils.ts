@@ -55,12 +55,15 @@ export const getCropInfo = async (
   const startTime: number = Math.round((startOffsetPct / 100) * totalDuration);
   const endTime: number = Math.round(((100 - endOffsetPct) / 100) * totalDuration);
   const scannedTime: number = endTime - startTime;
-  const fps: number = numSamples / scannedTime;
+  // find the video stream
+  const videoStream: Istreams | undefined = file?.ffProbeData?.streams?.filter(isVideo)[0];
+  if (!videoStream) {
+    throw new Error('Failed to find a video stream - why are you attempting to de-letterbox a non-video file?');
+  }
+  const framestep: number = Math.round((scannedTime / numSamples) * videoStream.meta.VideoFrameRate);
   // log some details
-  args.jobLog(
-    `will scan [${scannedTime}/${totalDuration}]s. start time:${startTime}s, end time:${endTime}s, `
-    + `framerate:${fps}fps`,
-  );
+  args.jobLog(`will scan [${scannedTime}/${totalDuration}]s. start time:${startTime}s, end time:${endTime}s, `
+    + `framestep:${framestep}`);
   // build ffmpeg command
   const spawnArgs: string[] = [];
   // always hide banner and stats
@@ -72,7 +75,7 @@ export const getCropInfo = async (
   // set input file
   spawnArgs.push('-i', file._id);
   // set cropdetect settings
-  spawnArgs.push('-vf', `fps=fps=${fps},mestimate,cropdetect=mode=mvedges,metadata=mode=print`);
+  spawnArgs.push('-vf', `framestep=${framestep},mestimate,cropdetect=mode=mvedges,metadata=mode=print`);
   // no output file
   spawnArgs.push('-f', 'null', '-');
   // execute cli
@@ -90,7 +93,7 @@ export const getCropInfo = async (
     })).runCli();
   // logs
   await sleep(100);
-  args.jobLog('<========== cropdata scan complete ==========>');
+  args.jobLog('<========== cropdetect scan complete ==========>');
   await sleep(100);
   args.jobLog(`parsing [${response.errorLogFull.length}] total lines of log data`);
   // build a list of crop settings
@@ -138,11 +141,6 @@ export const getCropInfo = async (
   let returnInfo: CropInfo;
   if (numValues > 1) {
     args.jobLog(`detected ${numValues} unique cropdetect values - calculating best result`);
-    // pull values from input file - first get the video stream
-    const videoStream: Istreams | undefined = file?.ffProbeData?.streams?.filter(isVideo)[0];
-    if (!videoStream) {
-      throw new Error('Failed to find a video stream - why are you attempting to de-letterbox a non-video file?');
-    }
     // ==== determine width and X offset ====
     const inputWidth: number = Number(videoStream.width);
     let outputWidth: number = 0;

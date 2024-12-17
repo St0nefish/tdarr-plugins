@@ -75,7 +75,7 @@ var getCropInfo = function (args_1, file_1) {
         args_2[_i - 2] = arguments[_i];
     }
     return __awaiter(void 0, __spreadArray([args_1, file_1], args_2, true), void 0, function (args, file, startOffsetPct, endOffsetPct, numSamples, relevantPct) {
-        var os, totalDuration, startTime, endTime, scannedTime, fps, spawnArgs, response, cropValues, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency, numValues, returnInfo, videoStream, inputWidth, outputWidth_1, outputX_1, xOffsetCount_1, inputHeight, outputHeight_1, outputY_1, yOffsetCount_1;
+        var os, totalDuration, startTime, endTime, scannedTime, videoStream, framestep, spawnArgs, response, cropValues, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency, numValues, returnInfo, inputWidth, outputWidth_1, outputX_1, xOffsetCount_1, inputHeight, outputHeight_1, outputY_1, yOffsetCount_1;
         var _a, _b, _c, _d, _e, _f, _g, _h;
         if (startOffsetPct === void 0) { startOffsetPct = 5; }
         if (endOffsetPct === void 0) { endOffsetPct = 5; }
@@ -89,10 +89,14 @@ var getCropInfo = function (args_1, file_1) {
                     startTime = Math.round((startOffsetPct / 100) * totalDuration);
                     endTime = Math.round(((100 - endOffsetPct) / 100) * totalDuration);
                     scannedTime = endTime - startTime;
-                    fps = numSamples / scannedTime;
+                    videoStream = (_d = (_c = file === null || file === void 0 ? void 0 : file.ffProbeData) === null || _c === void 0 ? void 0 : _c.streams) === null || _d === void 0 ? void 0 : _d.filter(metadataUtils_1.isVideo)[0];
+                    if (!videoStream) {
+                        throw new Error('Failed to find a video stream - why are you attempting to de-letterbox a non-video file?');
+                    }
+                    framestep = Math.round((scannedTime / numSamples) * videoStream.meta.VideoFrameRate);
                     // log some details
                     args.jobLog("will scan [".concat(scannedTime, "/").concat(totalDuration, "]s. start time:").concat(startTime, "s, end time:").concat(endTime, "s, ")
-                        + "framerate:".concat(fps, "fps"));
+                        + "framestep:".concat(framestep));
                     spawnArgs = [];
                     // always hide banner and stats
                     spawnArgs.push('-hide_banner', '-nostats');
@@ -103,7 +107,7 @@ var getCropInfo = function (args_1, file_1) {
                     // set input file
                     spawnArgs.push('-i', file._id);
                     // set cropdetect settings
-                    spawnArgs.push('-vf', "fps=fps=".concat(fps, ",mestimate,cropdetect=mode=mvedges,metadata=mode=print"));
+                    spawnArgs.push('-vf', "framestep=".concat(framestep, ",mestimate,cropdetect=mode=mvedges,metadata=mode=print"));
                     // no output file
                     spawnArgs.push('-f', 'null', '-');
                     return [4 /*yield*/, (new cliUtils_1.CLI({
@@ -124,7 +128,7 @@ var getCropInfo = function (args_1, file_1) {
                 case 2:
                     // logs
                     _j.sent();
-                    args.jobLog('<========== cropdata scan complete ==========>');
+                    args.jobLog('<========== cropdetect scan complete ==========>');
                     return [4 /*yield*/, (0, exports.sleep)(100)];
                 case 3:
                     _j.sent();
@@ -177,10 +181,6 @@ var getCropInfo = function (args_1, file_1) {
                     numValues = cropValueFrequency.size;
                     if (numValues > 1) {
                         args.jobLog("detected ".concat(numValues, " unique cropdetect values - calculating best result"));
-                        videoStream = (_d = (_c = file === null || file === void 0 ? void 0 : file.ffProbeData) === null || _c === void 0 ? void 0 : _c.streams) === null || _d === void 0 ? void 0 : _d.filter(metadataUtils_1.isVideo)[0];
-                        if (!videoStream) {
-                            throw new Error('Failed to find a video stream - why are you attempting to de-letterbox a non-video file?');
-                        }
                         inputWidth = Number(videoStream.width);
                         outputWidth_1 = 0;
                         outputX_1 = 0;

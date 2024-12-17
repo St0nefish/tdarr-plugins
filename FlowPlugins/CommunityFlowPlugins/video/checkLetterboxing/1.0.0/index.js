@@ -73,24 +73,24 @@ var details = function () { return ({
             tooltip: 'Offset (in percent of runtime) from the end of the video to avoid scanning the outro.',
         },
         {
-            label: 'Sample Count',
-            name: 'sampleCount',
+            label: 'Samples Per Minute',
+            name: 'samplesPerMinute',
             type: 'number',
-            defaultValue: '5',
+            defaultValue: '2',
             inputUI: {
                 type: 'text',
             },
-            tooltip: 'Specify the number of randomly-distributed samples to take',
+            tooltip: 'Specify the number of samples to take per minute of scanned video',
         },
         {
-            label: 'Relevant Sample Percentage',
-            name: 'relevantPct',
+            label: 'Minimum Crop Percentage',
+            name: 'minCropPct',
             type: 'number',
-            defaultValue: '5',
+            defaultValue: '2',
             inputUI: {
                 type: 'text',
             },
-            tooltip: 'Percent of the sampled frames with a given framerate detected for it to be considered relevant',
+            tooltip: 'Percent change in dimension in order to justify cropping',
         },
     ],
     outputs: [
@@ -106,7 +106,7 @@ var details = function () { return ({
 }); };
 exports.details = details;
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, startOffsetPct, endOffsetPct, sampleCount, relevantPct, cropInfo;
+    var lib, startOffsetPct, endOffsetPct, samplesPerMinute, minCropPct, cropInfo, outputNumber;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -115,15 +115,23 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
                 startOffsetPct = Number(args.inputs.startOffsetPct);
                 endOffsetPct = Number(args.inputs.endOffsetPct);
-                sampleCount = Number(args.inputs.sampleCount);
-                relevantPct = Number(args.inputs.relevantPct);
-                return [4 /*yield*/, (0, letterboxUtils_1.getCropInfo)(args, args.inputFileObj, true, 'conservative', startOffsetPct, endOffsetPct, 2, 2)];
+                samplesPerMinute = Number(args.inputs.samplesPerMinute);
+                minCropPct = Number(args.inputs.minCropPct);
+                return [4 /*yield*/, (0, letterboxUtils_1.getCropInfo)(args, args.inputFileObj, {
+                        enableHwDecoding: true,
+                        cropMode: 'conservative',
+                        startOffsetPct: startOffsetPct,
+                        endOffsetPct: endOffsetPct,
+                        samplesPerMinute: samplesPerMinute,
+                        minCropPct: minCropPct,
+                    })];
             case 1:
                 cropInfo = _a.sent();
                 args.jobLog("calculated crop info: ".concat(JSON.stringify(cropInfo)));
+                outputNumber = cropInfo.shouldCrop() ? 1 : 2;
                 return [2 /*return*/, {
                         outputFileObj: args.inputFileObj,
-                        outputNumber: 1,
+                        outputNumber: outputNumber,
                         variables: args.variables,
                     }];
         }

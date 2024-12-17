@@ -49,24 +49,24 @@ const details = (): IpluginDetails => ({
       tooltip: 'Offset (in percent of runtime) from the end of the video to avoid scanning the outro.',
     },
     {
-      label: 'Sample Count',
-      name: 'sampleCount',
+      label: 'Samples Per Minute',
+      name: 'samplesPerMinute',
       type: 'number',
-      defaultValue: '5',
+      defaultValue: '2',
       inputUI: {
         type: 'text',
       },
-      tooltip: 'Specify the number of randomly-distributed samples to take',
+      tooltip: 'Specify the number of samples to take per minute of scanned video',
     },
     {
-      label: 'Relevant Sample Percentage',
-      name: 'relevantPct',
+      label: 'Minimum Crop Percentage',
+      name: 'minCropPct',
       type: 'number',
-      defaultValue: '5',
+      defaultValue: '2',
       inputUI: {
         type: 'text',
       },
-      tooltip: 'Percent of the sampled frames with a given framerate detected for it to be considered relevant',
+      tooltip: 'Percent change in dimension in order to justify cropping',
     },
   ],
   outputs: [
@@ -88,24 +88,28 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // get a list of crop settings
   const startOffsetPct: number = Number(args.inputs.startOffsetPct);
   const endOffsetPct: number = Number(args.inputs.endOffsetPct);
-  const sampleCount: number = Number(args.inputs.sampleCount);
-  const relevantPct: number = Number(args.inputs.relevantPct);
+  const samplesPerMinute: number = Number(args.inputs.samplesPerMinute);
+  const minCropPct: number = Number(args.inputs.minCropPct);
   // execute cropdetect
   const cropInfo: CropInfo = await getCropInfo(
     args,
     args.inputFileObj,
-    true,
-    'conservative',
-    startOffsetPct,
-    endOffsetPct,
-    2,
-    2,
+    {
+      enableHwDecoding: true,
+      cropMode: 'conservative',
+      startOffsetPct,
+      endOffsetPct,
+      samplesPerMinute,
+      minCropPct,
+    },
   );
   args.jobLog(`calculated crop info: ${JSON.stringify(cropInfo)}`);
+  // determine output number
+  const outputNumber = cropInfo.shouldCrop() ? 1 : 2;
 
   return {
     outputFileObj: args.inputFileObj,
-    outputNumber: 1,
+    outputNumber,
     variables: args.variables,
   };
 };

@@ -58,6 +58,7 @@ export const getCropInfo = async (
   const os = require('os');
   // for executing commands
   const exec = require('util').promisify(require('child_process').exec);
+  const execSync = require('child_process').execSync;
 
   // ToDo - remove
   args.jobLog(`hardware type: ${args.nodeHardwareType}`);
@@ -109,8 +110,23 @@ export const getCropInfo = async (
   // log command
   args.jobLog(`scan command: ${commandStr}`);
   // execute scan command
+  // try {
+  //   await exec(commandStr, (error: string, stdout: string, stderr: string) => {
+  //     if (error) {
+  //       args.jobLog(`command threw error: ${error}`);
+  //     }
+  //     if (stdout) {
+  //       args.jobLog(`stdout: ${stdout}`);
+  //     }
+  //     if (stderr) {
+  //       args.jobLog(`stderr: ${stderr}`);
+  //     }
+  //   });
+  // } catch (e) {
+  //   args.jobLog(`command threw exception: ${e}`);
+  // }
   try {
-    await exec(commandStr, (error: string, stdout: string, stderr: string) => {
+    execSync(commandStr, (error: string, stdout: string, stderr: string) => {
       if (error) {
         args.jobLog(`command threw error: ${error}`);
       }

@@ -53,28 +53,24 @@ var details = function () { return ({
     icon: 'faQuestion',
     inputs: [
         {
-            label: 'Detection Method',
-            name: 'detectMethod',
-            type: 'string',
-            defaultValue: 'mvedges',
-            inputUI: {
-                type: 'dropdown',
-                options: [
-                    'mvedges',
-                    'black_borders',
-                ],
-            },
-            tooltip: "\n        Specify the ffmpeg method to use to detect if the video is letterboxed. \n        \n\n\n        \n\n\n        mvedges - generate motion vectors and use those to detect the active region. \n        \n\n\n        black_borders - detect the regions that are solid black. \n        \n\n\n        \n\n\n        While testing this I found 'mvedges' to be slower, but more consistent. \n        ",
-        },
-        {
-            label: 'Sample Length',
-            name: 'sampleLength',
+            label: 'Start Offset Percentage',
+            name: 'startOffsetPct',
             type: 'number',
-            defaultValue: '60',
+            defaultValue: '5',
             inputUI: {
                 type: 'text',
             },
-            tooltip: 'Specify the length (in seconds) of each sample to take when running the ffmpeg scans.',
+            tooltip: 'Offset (in percent of runtime) from the beginning of the video to avoid scanning the intro.',
+        },
+        {
+            label: 'End Offset Percentage',
+            name: 'endOffsetPct',
+            type: 'number',
+            defaultValue: '5',
+            inputUI: {
+                type: 'text',
+            },
+            tooltip: 'Offset (in percent of runtime) from the end of the video to avoid scanning the outro.',
         },
         {
             label: 'Sample Count',
@@ -87,49 +83,44 @@ var details = function () { return ({
             tooltip: 'Specify the number of randomly-distributed samples to take',
         },
         {
-            label: 'Start Offset',
-            name: 'startOffset',
+            label: 'Relevant Sample Percentage',
+            name: 'relevantPct',
             type: 'number',
-            defaultValue: '300',
+            defaultValue: '5',
             inputUI: {
                 type: 'text',
             },
-            tooltip: 'Offset (in seconds) from the beginning of the video to avoid scanning the intro.',
-        },
-        {
-            label: 'End Offset',
-            name: 'endOffset',
-            type: 'number',
-            defaultValue: '300',
-            inputUI: {
-                type: 'text',
-            },
-            tooltip: 'Offset (in seconds) from the end of the video to avoid scanning the outro.',
+            tooltip: 'Percent of the sampled frames with a given framerate detected for it to be considered relevant',
         },
     ],
     outputs: [
         {
             number: 1,
-            tooltip: 'File is HDR',
+            tooltip: 'File requires cropping',
         },
         {
             number: 2,
-            tooltip: 'File is not HDR',
+            tooltip: 'File does not require cropping',
         },
     ],
 }); };
 exports.details = details;
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, cropInfo;
+    var lib, startOffsetPct, endOffsetPct, sampleCount, relevantPct, cropInfo;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 lib = require('../../../../../methods/lib')();
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
-                return [4 /*yield*/, (0, letterboxUtils_1.getCropInfo)(args)];
+                startOffsetPct = Number(args.inputs.startOffsetPct);
+                endOffsetPct = Number(args.inputs.endOffsetPct);
+                sampleCount = Number(args.inputs.sampleCount);
+                relevantPct = Number(args.inputs.relevantPct);
+                return [4 /*yield*/, (0, letterboxUtils_1.getCropInfo)(args, args.inputFileObj, startOffsetPct, endOffsetPct, sampleCount, relevantPct)];
             case 1:
                 cropInfo = _a.sent();
+                args.jobLog("calculated crop info: ".concat(JSON.stringify(cropInfo)));
                 return [2 /*return*/, {
                         outputFileObj: args.inputFileObj,
                         outputNumber: 1,

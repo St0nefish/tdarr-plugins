@@ -3,10 +3,9 @@ import {
   IpluginInputArgs,
   IpluginOutputArgs,
 } from '../../../../FlowHelpers/1.0.0/interfaces/interfaces';
-import { CLI } from '../../../../FlowHelpers/1.0.0/cliUtils';
 import {
   CropInfo,
-  getCropInfo
+  getCropInfo,
 } from '../../../../FlowHelpers/1.0.0/letterboxUtils';
 
 /* eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }] */
@@ -30,39 +29,24 @@ const details = (): IpluginDetails => ({
   icon: 'faQuestion',
   inputs: [
     {
-      label: 'Detection Method',
-      name: 'detectMethod',
-      type: 'string',
-      defaultValue: 'mvedges',
-      inputUI: {
-        type: 'dropdown',
-        options: [
-          'mvedges',
-          'black_borders',
-        ],
-      },
-      tooltip:
-        `
-        Specify the ffmpeg method to use to detect if the video is letterboxed. 
-        \n\n
-        \n\n
-        mvedges - generate motion vectors and use those to detect the active region. 
-        \n\n
-        black_borders - detect the regions that are solid black. 
-        \n\n
-        \n\n
-        While testing this I found 'mvedges' to be slower, but more consistent. 
-        `,
-    },
-    {
-      label: 'Sample Length',
-      name: 'sampleLength',
+      label: 'Start Offset Percentage',
+      name: 'startOffsetPct',
       type: 'number',
-      defaultValue: '60',
+      defaultValue: '5',
       inputUI: {
         type: 'text',
       },
-      tooltip: 'Specify the length (in seconds) of each sample to take when running the ffmpeg scans.',
+      tooltip: 'Offset (in percent of runtime) from the beginning of the video to avoid scanning the intro.',
+    },
+    {
+      label: 'End Offset Percentage',
+      name: 'endOffsetPct',
+      type: 'number',
+      defaultValue: '5',
+      inputUI: {
+        type: 'text',
+      },
+      tooltip: 'Offset (in percent of runtime) from the end of the video to avoid scanning the outro.',
     },
     {
       label: 'Sample Count',
@@ -75,34 +59,24 @@ const details = (): IpluginDetails => ({
       tooltip: 'Specify the number of randomly-distributed samples to take',
     },
     {
-      label: 'Start Offset',
-      name: 'startOffset',
+      label: 'Relevant Sample Percentage',
+      name: 'relevantPct',
       type: 'number',
-      defaultValue: '300',
+      defaultValue: '5',
       inputUI: {
         type: 'text',
       },
-      tooltip: 'Offset (in seconds) from the beginning of the video to avoid scanning the intro.',
-    },
-    {
-      label: 'End Offset',
-      name: 'endOffset',
-      type: 'number',
-      defaultValue: '300',
-      inputUI: {
-        type: 'text',
-      },
-      tooltip: 'Offset (in seconds) from the end of the video to avoid scanning the outro.',
+      tooltip: 'Percent of the sampled frames with a given framerate detected for it to be considered relevant',
     },
   ],
   outputs: [
     {
       number: 1,
-      tooltip: 'File is HDR',
+      tooltip: 'File requires cropping',
     },
     {
       number: 2,
-      tooltip: 'File is not HDR',
+      tooltip: 'File does not require cropping',
     },
   ],
 });
@@ -112,7 +86,20 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
   args.inputs = lib.loadDefaultValues(args.inputs, details);
   // get a list of crop settings
-  const cropInfo: CropInfo = await getCropInfo(args);
+  const startOffsetPct: number = Number(args.inputs.startOffsetPct);
+  const endOffsetPct: number = Number(args.inputs.endOffsetPct);
+  const sampleCount: number = Number(args.inputs.sampleCount);
+  const relevantPct: number = Number(args.inputs.relevantPct);
+  // execute cropdetect
+  const cropInfo: CropInfo = await getCropInfo(
+    args,
+    args.inputFileObj,
+    startOffsetPct,
+    endOffsetPct,
+    sampleCount,
+    relevantPct,
+  );
+  args.jobLog(`calculated crop info: ${JSON.stringify(cropInfo)}`);
 
   return {
     outputFileObj: args.inputFileObj,

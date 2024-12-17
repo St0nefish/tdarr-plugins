@@ -7,30 +7,26 @@ import {
 import { isVideo } from './metadataUtils';
 
 export interface CropInfo {
-  // width
-  w: number;
-  // height
-  h: number;
-  // x offset
-  x: number;
-  // y offset
-  y: number;
+  top: number,
+  bottom: number,
+  left: number,
+  right: number,
 }
 
 export const getCropInfoFromString = (cropInfoStr: string): CropInfo => {
-  const split: string[] = String(cropInfoStr).split(':');
+  const split: string[] = String(cropInfoStr).split('/');
   return {
-    w: Number(split[0] ?? 0),
-    h: Number(split[1] ?? 0),
-    x: Number(split[2] ?? 0),
-    y: Number(split[3] ?? 0),
+    top: Number(split[0] ?? 0),
+    bottom: Number(split[1] ?? 0),
+    left: Number(split[2] ?? 0),
+    right: Number(split[3] ?? 0),
   };
 };
 
 // get the crop info string
-export const getCropInfoString = (cropInfo: CropInfo): string => (
-  `${cropInfo.w}:${cropInfo.h}:${cropInfo.x}:${cropInfo.y}`
-);
+// export const getCropInfoString = (cropInfo: CropInfo): string => (
+//   `${cropInfo.w}:${cropInfo.h}:${cropInfo.x}:${cropInfo.y}`
+// );
 
 // eslint-disable-next-line require-await
 export const sleep = async (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -54,14 +50,6 @@ export const getCropInfo = async (
   samplesPerMinute: number = 2,
   minCropPct: number = 2,
 ): Promise<CropInfo> => {
-  // load os info - used for line splits later
-  const os = require('os');
-  // for executing commands
-  const childProcess = require('child_process');
-  const exec = require('util').promisify(childProcess.exec);
-  const execSync = childProcess.execSync;
-  const spawnSync = childProcess.spawnSync;
-
   // ToDo - remove
   args.jobLog(`hardware type: ${args.nodeHardwareType}`);
   args.jobLog(`worker type: ${args.workerType}`);
@@ -119,129 +107,17 @@ export const getCropInfo = async (
       updateWorker: args.updateWorker,
       args,
     })).runCli();
-  const outputLine: string = response.errorLogFull.filter((line: string) => line.includes('autocrop = '))[0];
-  args.jobLog(`scan result: ${outputLine}`);
-
-  // // logs
-  // await sleep(100);
-  // args.jobLog('<========== cropdetect scan complete ==========>');
-  // await sleep(100);
-  // args.jobLog(`parsing [${response.errorLogFull.length}] total lines of log data`);
-  // // build a list of crop settings
-  // const cropValues: CropInfo[] = response.errorLogFull
-  //   .filter((line) => line.startsWith('[Parsed_cropdetect_'))
-  //   .map((line) => line.split(os.EOL)[0])
-  //   .map((line) => line.split('crop=').pop())
-  //   .map((line) => getCropInfoFromString(String(line)));
-  // // determine number of samples we're working with
-  // args.jobLog(`parsing [${cropValues.length}] lines containing cropdetect data`);
-  // // build a map of frequency for overall w:h:x:y
-  // const cropValueFrequency = new Map<string, number>();
-  // // build arrays separately tracking width and height
-  // const cropWidthFrequency = new Map<number, number>();
-  // const cropXOffsetFrequency = new Map<number, Map<number, number>>();
-  // const cropHeightFrequency = new Map<number, number>();
-  // const cropYOffsetFrequency = new Map<number, Map<number, number>>();
-  // // iterate to parse
-  // cropValues.forEach((cropInfo) => {
-  //   const cropInfoString = getCropInfoString(cropInfo);
-  //   cropValueFrequency.set(cropInfoString, (cropValueFrequency.get(cropInfoString) ?? 0) + 1);
-  //   // track width and x-offset frequencies
-  //   cropWidthFrequency.set(cropInfo.w, (cropWidthFrequency.get(cropInfo.w) ?? 0) + 1);
-  //   if (!cropXOffsetFrequency.get(cropInfo.w)) cropXOffsetFrequency.set(cropInfo.w, new Map<number, number>());
-  //   cropXOffsetFrequency.get(cropInfo.w)?.set(
-  //     cropInfo.x, (cropXOffsetFrequency.get(cropInfo.w)?.get(cropInfo.x) ?? 0) + 1,
-  //   );
-  //   // track height and y-offset frequencies
-  //   cropHeightFrequency.set(cropInfo.h, (cropHeightFrequency.get(cropInfo.h) ?? 0) + 1);
-  //   if (!cropYOffsetFrequency.get(cropInfo.h)) cropYOffsetFrequency.set(cropInfo.h, new Map<number, number>());
-  //   cropYOffsetFrequency.get(cropInfo.h)?.set(
-  //     cropInfo.y, (cropYOffsetFrequency.get(cropInfo.h)?.get(cropInfo.y) ?? 0) + 1,
-  //   );
-  // });
-  // // frequency logs
-  // await sleep(100);
-  // args.jobLog('<============ frequency data ============>');
-  // await sleep(100);
-  // args.jobLog(`detected crop info frequencies: ${JSON.stringify(cropValueFrequency)}`);
-  // await sleep(100);
-  // args.jobLog('<============ frequency data ============>');
-  // await sleep(100);
-  // // determine if we can just return the top value or if we need to parse
-  // const numValues = cropValueFrequency.size;
-  // let returnInfo: CropInfo;
-  // if (numValues > 1) {
-  //   args.jobLog(`detected ${numValues} unique cropdetect values - calculating best result`);
-  //   // ==== determine width and X offset ====
-  //   const inputWidth: number = Number(videoStream.width);
-  //   let outputWidth: number = 0;
-  //   let outputX: number = 0;
-  //   // check for an easy exit - is the native width a meaningful percent of total samples
-  //   if ((cropWidthFrequency.get(inputWidth) ?? 0) > (numValues * (relevantPct / 100))) {
-  //     // video appears to be native width
-  //     outputWidth = inputWidth;
-  //     outputX = 0;
-  //   } else {
-  //     // video appears to be pillarboxed
-  //     // find the maximum value representing at least {relevantPct}% of sampled frames
-  //     cropWidthFrequency.forEach((widthVal: number, widthFrequency: number) => {
-  //       if ((widthVal > outputWidth) && (widthFrequency >= (numValues * (relevantPct / 100)))) {
-  //         outputWidth = widthVal;
-  //       }
-  //     });
-  //     // now grab the most frequent x-offset for the selected width value
-  //     let xOffsetCount: number = 0;
-  //     cropXOffsetFrequency.get(outputWidth)?.forEach((offsetVal: number, offsetFrequency: number) => {
-  //       if (offsetFrequency > xOffsetCount) {
-  //         outputX = offsetVal;
-  //         xOffsetCount = offsetFrequency;
-  //       }
-  //     });
-  //   }
-  //   // ==== determine height and Y offset ====
-  //   const inputHeight: number = Number(videoStream.height);
-  //   let outputHeight: number = 0;
-  //   let outputY: number = 0;
-  //   // check for an easy exit - is the native height a meaningful percent of total samples
-  //   if ((cropHeightFrequency.get(inputHeight) ?? 0) > (numValues * (relevantPct / 100))) {
-  //     outputHeight = inputHeight;
-  //     outputY = 0;
-  //   } else {
-  //     // video appears to be letterboxed
-  //     // find the maximum value representing at least {relevantPct}% of sampled frames
-  //     cropHeightFrequency.forEach((heightVal: number, heightFrequency: number) => {
-  //       if ((heightVal > outputHeight) && (heightFrequency >= (numValues * (relevantPct / 100)))) {
-  //         outputHeight = heightVal;
-  //       }
-  //     });
-  //     // now grab the most frequent y-offset for the selected height value
-  //     let yOffsetCount: number = 0;
-  //     cropYOffsetFrequency.get(outputHeight)?.forEach((offsetVal: number, offsetFrequency: number) => {
-  //       if (offsetFrequency >= yOffsetCount) {
-  //         outputY = offsetVal;
-  //         yOffsetCount = offsetFrequency;
-  //       }
-  //     });
-  //   }
-  //   // build the return CropInfo object from our selected values
-  //   returnInfo = {
-  //     w: outputWidth,
-  //     h: outputHeight,
-  //     x: outputX,
-  //     y: outputY,
-  //   };
-  // } else {
-  //   // return the only detected value
-  //   returnInfo = cropValues[0];
-  // }
-  // args.jobLog(`returning crop info: ${JSON.stringify(returnInfo)}`);
-  // await sleep(100);
-  // args.jobLog('<=================== end ===================>');
-  // return returnInfo;
-  return {
-    w: 0,
-    h: 0,
-    x: 0,
-    y: 0,
-  };
+  // find line containing the key data
+  const resultLine: string = response.errorLogFull.filter((line: string) => line.includes('autocrop = '))[0];
+  args.jobLog(`scan result details: ${resultLine}`);
+  // parse autocrop string from line
+  const autocropRegex = /(\d+\/\d+\/\d+\/\d+)/;
+  const match: RegExpExecArray | null = autocropRegex.exec(resultLine);
+  let autocrop: string = '';
+  if (match) {
+    autocrop = match[1];
+  }
+  args.jobLog(`autocrop: ${autocrop}`);
+  // convert string to object and return
+  return getCropInfoFromString(autocrop);
 };

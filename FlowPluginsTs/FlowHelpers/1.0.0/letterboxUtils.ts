@@ -83,64 +83,77 @@ export const getCropInfo = async (
   args.jobLog(`will scan [${scannedTime}/${totalDuration}]s (start:[${startTime}s], end:[${endTime}s]), `
     + `mode:[${cropMode}], previews:[${numPreviews}]`);
   // build command
-  const command: string[] = [];
+  const spawnArgs: string[] = [];
   // input file
-  command.push('-i', `'${file._id}'`);
+  spawnArgs.push('-i', `${file._id}`);
   // only scan main feature
-  command.push('--main-feature');
+  spawnArgs.push('--main-feature');
   // crop mode
-  command.push('--crop-mode', cropMode);
+  spawnArgs.push('--crop-mode', cropMode);
   // number of previews (persist to disk)
-  command.push('--previews', `${numPreviews}:1`);
+  spawnArgs.push('--previews', `${numPreviews}:1`);
   // set start time
-  command.push('--start-at', `seconds:${startTime}`);
+  spawnArgs.push('--start-at', `seconds:${startTime}`);
   // set end time
-  command.push('--stop-at', `seconds:${endTime}`);
+  spawnArgs.push('--stop-at', `seconds:${endTime}`);
   // handle hardware decoding
   if (enableHwDecoding) {
     // ToDo - determine decoder
-    // command.push('--enable-hw-decoding', 'nvdec');
+    spawnArgs.push('--enable-hw-decoding', 'nvdec');
   }
   // scan only
-  command.push('--scan');
+  spawnArgs.push('--scan');
   // log command
-  args.jobLog(`scan command: ${args.handbrakePath} ${command.join(' ')}`);
+  args.jobLog(`scan command: ${args.handbrakePath} ${spawnArgs.join(' ')}`);
   // execute scan command
-  const output: string[] = [];
-  const cliExitCode: number = await new Promise((resolve) => {
-    try {
-      const spawnArgs = command.map((row: string) => row.trim()).filter((row: string) => row !== '');
-      const thread = childProcess.spawn(args.handbrakePath, spawnArgs, {});
-
-      thread.stdout.on('data', (data: string) => {
-        output.push(data.toString());
-      });
-
-      thread.stderr.on('data', (data: string) => {
-        // eslint-disable-next-line no-console
-        output.push(data.toString());
-      });
-
-      thread.on('error', () => {
-        // catches execution error (bad file)
-        args.jobLog(`Error executing binary: ${args.handbrakePath}`);
-        resolve(1);
-      });
-
-      thread.on('close', (code: number) => {
-        if (code !== 0) {
-          args.jobLog(`CLI error code: ${code}`);
-        }
-        resolve(code);
-      });
-    } catch (err) {
-      // catches execution error (no file)
-      args.jobLog(`Error executing binary: ${args.handbrakePath}: ${err}`);
-      resolve(1);
-    }
-  });
-
-  args.jobLog(`handbrake completed with code [${cliExitCode}] and output: ${output.join('')}`);
+  // execute cli
+  const response: { cliExitCode: number, errorLogFull: string[] } = await (
+    new CLI({
+      cli: args.ffmpegPath,
+      spawnArgs,
+      spawnOpts: {},
+      jobLog: args.jobLog,
+      outputFilePath: file._id,
+      inputFileObj: file,
+      logFullCliOutput: true, // require full logs to ensure access to all cropdetect data
+      updateWorker: args.updateWorker,
+      args,
+    })).runCli();
+  args.jobLog(`response: ${response.errorLogFull}`);
+  // const output: string[] = [];
+  // const cliExitCode: number = await new Promise((resolve) => {
+  //   try {
+  //     const spawnArgs = command.map((row: string) => row.trim()).filter((row: string) => row !== '');
+  //     const thread = childProcess.spawn(args.handbrakePath, spawnArgs, {});
+  //
+  //     thread.stdout.on('data', (data: string) => {
+  //       output.push(data.toString());
+  //     });
+  //
+  //     thread.stderr.on('data', (data: string) => {
+  //       // eslint-disable-next-line no-console
+  //       output.push(data.toString());
+  //     });
+  //
+  //     thread.on('error', () => {
+  //       // catches execution error (bad file)
+  //       args.jobLog(`Error executing binary: ${args.handbrakePath}`);
+  //       resolve(1);
+  //     });
+  //
+  //     thread.on('close', (code: number) => {
+  //       if (code !== 0) {
+  //         args.jobLog(`CLI error code: ${code}`);
+  //       }
+  //       resolve(code);
+  //     });
+  //   } catch (err) {
+  //     // catches execution error (no file)
+  //     args.jobLog(`Error executing binary: ${args.handbrakePath}: ${err}`);
+  //     resolve(1);
+  //   }
+  // });
+  // args.jobLog(`handbrake completed with code [${cliExitCode}] and output: ${output.join('')}`);
 
   // // logs
   // await sleep(100);

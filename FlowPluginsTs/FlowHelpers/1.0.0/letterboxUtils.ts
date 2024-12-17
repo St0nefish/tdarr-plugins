@@ -84,7 +84,7 @@ export const getCropInfo = async (
   // use handbrake
   command.push(args.handbrakePath);
   // input file
-  command.push('-i', file._id);
+  command.push('-i', `'${file._id}'`);
   // only scan main feature
   command.push('--main-feature');
   // crop mode

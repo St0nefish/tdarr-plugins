@@ -113,7 +113,7 @@ var getCropInfo = function (args_1, file_1) {
                     // use handbrake
                     command.push(args.handbrakePath);
                     // input file
-                    command.push('-i', file._id);
+                    command.push('-i', "'".concat(file._id, "'"));
                     // only scan main feature
                     command.push('--main-feature');
                     // crop mode

@@ -95,7 +95,8 @@ var getCropInfo = function (args_1, file_1) {
                     os = require('os');
                     exec = require('util').promisify(require('child_process').exec);
                     // ToDo - remove
-                    args.jobLog("".concat(JSON.stringify(args)));
+                    args.jobLog("hardware type: ".concat(args.nodeHardwareType));
+                    args.jobLog("worker type: ".concat(args.workerType));
                     videoStream = (_b = (_a = file === null || file === void 0 ? void 0 : file.ffProbeData) === null || _a === void 0 ? void 0 : _a.streams) === null || _b === void 0 ? void 0 : _b.filter(metadataUtils_1.isVideo)[0];
                     if (!videoStream) {
                         throw new Error('Failed to find a video stream - why are you attempting to de-letterbox a non-video file?');

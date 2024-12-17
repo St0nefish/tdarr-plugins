@@ -60,7 +60,8 @@ export const getCropInfo = async (
   const exec = require('util').promisify(require('child_process').exec);
 
   // ToDo - remove
-  args.jobLog(`${JSON.stringify(args)}`);
+  args.jobLog(`hardware type: ${args.nodeHardwareType}`);
+  args.jobLog(`worker type: ${args.workerType}`);
   // ToDo - remove
 
   // find the video stream

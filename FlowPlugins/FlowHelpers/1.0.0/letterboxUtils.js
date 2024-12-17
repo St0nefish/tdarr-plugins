@@ -45,23 +45,24 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCropInfo = exports.sleep = exports.getCropInfoString = exports.getCropInfoFromString = void 0;
+exports.getCropInfo = exports.sleep = exports.getCropInfoFromString = void 0;
 var cliUtils_1 = require("./cliUtils");
 var metadataUtils_1 = require("./metadataUtils");
 var getCropInfoFromString = function (cropInfoStr) {
     var _a, _b, _c, _d;
-    var split = String(cropInfoStr).split(':');
+    var split = String(cropInfoStr).split('/');
     return {
-        w: Number((_a = split[0]) !== null && _a !== void 0 ? _a : 0),
-        h: Number((_b = split[1]) !== null && _b !== void 0 ? _b : 0),
-        x: Number((_c = split[2]) !== null && _c !== void 0 ? _c : 0),
-        y: Number((_d = split[3]) !== null && _d !== void 0 ? _d : 0),
+        top: Number((_a = split[0]) !== null && _a !== void 0 ? _a : 0),
+        bottom: Number((_b = split[1]) !== null && _b !== void 0 ? _b : 0),
+        left: Number((_c = split[2]) !== null && _c !== void 0 ? _c : 0),
+        right: Number((_d = split[3]) !== null && _d !== void 0 ? _d : 0),
     };
 };
 exports.getCropInfoFromString = getCropInfoFromString;
 // get the crop info string
-var getCropInfoString = function (cropInfo) { return ("".concat(cropInfo.w, ":").concat(cropInfo.h, ":").concat(cropInfo.x, ":").concat(cropInfo.y)); };
-exports.getCropInfoString = getCropInfoString;
+// export const getCropInfoString = (cropInfo: CropInfo): string => (
+//   `${cropInfo.w}:${cropInfo.h}:${cropInfo.x}:${cropInfo.y}`
+// );
 // eslint-disable-next-line require-await
 var sleep = function (ms) { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
     return [2 /*return*/, new Promise(function (resolve) { return setTimeout(resolve, ms); })];
@@ -82,7 +83,7 @@ var getCropInfo = function (args_1, file_1) {
         args_2[_i - 2] = arguments[_i];
     }
     return __awaiter(void 0, __spreadArray([args_1, file_1], args_2, true), void 0, function (args, file, enableHwDecoding, cropMode, startOffsetPct, endOffsetPct, samplesPerMinute, minCropPct) {
-        var os, childProcess, exec, execSync, spawnSync, videoStream, totalDuration, startTime, endTime, scannedTime, numPreviews, spawnArgs, response, outputLine;
+        var videoStream, totalDuration, startTime, endTime, scannedTime, numPreviews, spawnArgs, response, resultLine, autocropRegex, match, autocrop;
         var _a, _b, _c, _d;
         if (enableHwDecoding === void 0) { enableHwDecoding = true; }
         if (cropMode === void 0) { cropMode = 'conservative'; }
@@ -93,11 +94,6 @@ var getCropInfo = function (args_1, file_1) {
         return __generator(this, function (_e) {
             switch (_e.label) {
                 case 0:
-                    os = require('os');
-                    childProcess = require('child_process');
-                    exec = require('util').promisify(childProcess.exec);
-                    execSync = childProcess.execSync;
-                    spawnSync = childProcess.spawnSync;
                     // ToDo - remove
                     args.jobLog("hardware type: ".concat(args.nodeHardwareType));
                     args.jobLog("worker type: ".concat(args.workerType));
@@ -148,130 +144,17 @@ var getCropInfo = function (args_1, file_1) {
                         })).runCli()];
                 case 1:
                     response = _e.sent();
-                    outputLine = response.errorLogFull.filter(function (line) { return line.includes('autocrop = '); })[0];
-                    args.jobLog("scan result: ".concat(outputLine));
-                    // // logs
-                    // await sleep(100);
-                    // args.jobLog('<========== cropdetect scan complete ==========>');
-                    // await sleep(100);
-                    // args.jobLog(`parsing [${response.errorLogFull.length}] total lines of log data`);
-                    // // build a list of crop settings
-                    // const cropValues: CropInfo[] = response.errorLogFull
-                    //   .filter((line) => line.startsWith('[Parsed_cropdetect_'))
-                    //   .map((line) => line.split(os.EOL)[0])
-                    //   .map((line) => line.split('crop=').pop())
-                    //   .map((line) => getCropInfoFromString(String(line)));
-                    // // determine number of samples we're working with
-                    // args.jobLog(`parsing [${cropValues.length}] lines containing cropdetect data`);
-                    // // build a map of frequency for overall w:h:x:y
-                    // const cropValueFrequency = new Map<string, number>();
-                    // // build arrays separately tracking width and height
-                    // const cropWidthFrequency = new Map<number, number>();
-                    // const cropXOffsetFrequency = new Map<number, Map<number, number>>();
-                    // const cropHeightFrequency = new Map<number, number>();
-                    // const cropYOffsetFrequency = new Map<number, Map<number, number>>();
-                    // // iterate to parse
-                    // cropValues.forEach((cropInfo) => {
-                    //   const cropInfoString = getCropInfoString(cropInfo);
-                    //   cropValueFrequency.set(cropInfoString, (cropValueFrequency.get(cropInfoString) ?? 0) + 1);
-                    //   // track width and x-offset frequencies
-                    //   cropWidthFrequency.set(cropInfo.w, (cropWidthFrequency.get(cropInfo.w) ?? 0) + 1);
-                    //   if (!cropXOffsetFrequency.get(cropInfo.w)) cropXOffsetFrequency.set(cropInfo.w, new Map<number, number>());
-                    //   cropXOffsetFrequency.get(cropInfo.w)?.set(
-                    //     cropInfo.x, (cropXOffsetFrequency.get(cropInfo.w)?.get(cropInfo.x) ?? 0) + 1,
-                    //   );
-                    //   // track height and y-offset frequencies
-                    //   cropHeightFrequency.set(cropInfo.h, (cropHeightFrequency.get(cropInfo.h) ?? 0) + 1);
-                    //   if (!cropYOffsetFrequency.get(cropInfo.h)) cropYOffsetFrequency.set(cropInfo.h, new Map<number, number>());
-                    //   cropYOffsetFrequency.get(cropInfo.h)?.set(
-                    //     cropInfo.y, (cropYOffsetFrequency.get(cropInfo.h)?.get(cropInfo.y) ?? 0) + 1,
-                    //   );
-                    // });
-                    // // frequency logs
-                    // await sleep(100);
-                    // args.jobLog('<============ frequency data ============>');
-                    // await sleep(100);
-                    // args.jobLog(`detected crop info frequencies: ${JSON.stringify(cropValueFrequency)}`);
-                    // await sleep(100);
-                    // args.jobLog('<============ frequency data ============>');
-                    // await sleep(100);
-                    // // determine if we can just return the top value or if we need to parse
-                    // const numValues = cropValueFrequency.size;
-                    // let returnInfo: CropInfo;
-                    // if (numValues > 1) {
-                    //   args.jobLog(`detected ${numValues} unique cropdetect values - calculating best result`);
-                    //   // ==== determine width and X offset ====
-                    //   const inputWidth: number = Number(videoStream.width);
-                    //   let outputWidth: number = 0;
-                    //   let outputX: number = 0;
-                    //   // check for an easy exit - is the native width a meaningful percent of total samples
-                    //   if ((cropWidthFrequency.get(inputWidth) ?? 0) > (numValues * (relevantPct / 100))) {
-                    //     // video appears to be native width
-                    //     outputWidth = inputWidth;
-                    //     outputX = 0;
-                    //   } else {
-                    //     // video appears to be pillarboxed
-                    //     // find the maximum value representing at least {relevantPct}% of sampled frames
-                    //     cropWidthFrequency.forEach((widthVal: number, widthFrequency: number) => {
-                    //       if ((widthVal > outputWidth) && (widthFrequency >= (numValues * (relevantPct / 100)))) {
-                    //         outputWidth = widthVal;
-                    //       }
-                    //     });
-                    //     // now grab the most frequent x-offset for the selected width value
-                    //     let xOffsetCount: number = 0;
-                    //     cropXOffsetFrequency.get(outputWidth)?.forEach((offsetVal: number, offsetFrequency: number) => {
-                    //       if (offsetFrequency > xOffsetCount) {
-                    //         outputX = offsetVal;
-                    //         xOffsetCount = offsetFrequency;
-                    //       }
-                    //     });
-                    //   }
-                    //   // ==== determine height and Y offset ====
-                    //   const inputHeight: number = Number(videoStream.height);
-                    //   let outputHeight: number = 0;
-                    //   let outputY: number = 0;
-                    //   // check for an easy exit - is the native height a meaningful percent of total samples
-                    //   if ((cropHeightFrequency.get(inputHeight) ?? 0) > (numValues * (relevantPct / 100))) {
-                    //     outputHeight = inputHeight;
-                    //     outputY = 0;
-                    //   } else {
-                    //     // video appears to be letterboxed
-                    //     // find the maximum value representing at least {relevantPct}% of sampled frames
-                    //     cropHeightFrequency.forEach((heightVal: number, heightFrequency: number) => {
-                    //       if ((heightVal > outputHeight) && (heightFrequency >= (numValues * (relevantPct / 100)))) {
-                    //         outputHeight = heightVal;
-                    //       }
-                    //     });
-                    //     // now grab the most frequent y-offset for the selected height value
-                    //     let yOffsetCount: number = 0;
-                    //     cropYOffsetFrequency.get(outputHeight)?.forEach((offsetVal: number, offsetFrequency: number) => {
-                    //       if (offsetFrequency >= yOffsetCount) {
-                    //         outputY = offsetVal;
-                    //         yOffsetCount = offsetFrequency;
-                    //       }
-                    //     });
-                    //   }
-                    //   // build the return CropInfo object from our selected values
-                    //   returnInfo = {
-                    //     w: outputWidth,
-                    //     h: outputHeight,
-                    //     x: outputX,
-                    //     y: outputY,
-                    //   };
-                    // } else {
-                    //   // return the only detected value
-                    //   returnInfo = cropValues[0];
-                    // }
-                    // args.jobLog(`returning crop info: ${JSON.stringify(returnInfo)}`);
-                    // await sleep(100);
-                    // args.jobLog('<=================== end ===================>');
-                    // return returnInfo;
-                    return [2 /*return*/, {
-                            w: 0,
-                            h: 0,
-                            x: 0,
-                            y: 0,
-                        }];
+                    resultLine = response.errorLogFull.filter(function (line) { return line.includes('autocrop = '); })[0];
+                    args.jobLog("scan result details: ".concat(resultLine));
+                    autocropRegex = /(\d+\/\d+\/\d+\/\d+)/;
+                    match = autocropRegex.exec(resultLine);
+                    autocrop = '';
+                    if (match) {
+                        autocrop = match[1];
+                    }
+                    args.jobLog("autocrop: ".concat(autocrop));
+                    // convert string to object and return
+                    return [2 /*return*/, (0, exports.getCropInfoFromString)(autocrop)];
             }
         });
     });

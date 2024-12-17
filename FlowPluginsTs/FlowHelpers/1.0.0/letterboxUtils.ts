@@ -119,41 +119,8 @@ export const getCropInfo = async (
       updateWorker: args.updateWorker,
       args,
     })).runCli();
-  args.jobLog(`response: ${response.errorLogFull}`);
-  // const output: string[] = [];
-  // const cliExitCode: number = await new Promise((resolve) => {
-  //   try {
-  //     const spawnArgs = command.map((row: string) => row.trim()).filter((row: string) => row !== '');
-  //     const thread = childProcess.spawn(args.handbrakePath, spawnArgs, {});
-  //
-  //     thread.stdout.on('data', (data: string) => {
-  //       output.push(data.toString());
-  //     });
-  //
-  //     thread.stderr.on('data', (data: string) => {
-  //       // eslint-disable-next-line no-console
-  //       output.push(data.toString());
-  //     });
-  //
-  //     thread.on('error', () => {
-  //       // catches execution error (bad file)
-  //       args.jobLog(`Error executing binary: ${args.handbrakePath}`);
-  //       resolve(1);
-  //     });
-  //
-  //     thread.on('close', (code: number) => {
-  //       if (code !== 0) {
-  //         args.jobLog(`CLI error code: ${code}`);
-  //       }
-  //       resolve(code);
-  //     });
-  //   } catch (err) {
-  //     // catches execution error (no file)
-  //     args.jobLog(`Error executing binary: ${args.handbrakePath}: ${err}`);
-  //     resolve(1);
-  //   }
-  // });
-  // args.jobLog(`handbrake completed with code [${cliExitCode}] and output: ${output.join('')}`);
+  const outputLine: string = response.errorLogFull.filter((line: string) => line.includes('autocrop = '))[0];
+  args.jobLog(`scan result: ${outputLine}`);
 
   // // logs
   // await sleep(100);

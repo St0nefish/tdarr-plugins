@@ -132,13 +132,7 @@ var getCropInfo = function (args_1, file_1) {
             commandStr = command.join(' ');
             // log command
             args.jobLog("scan command: ".concat(commandStr));
-            result = '';
-            try {
-                result = execSync(commandStr).toString();
-            }
-            catch (e) {
-                args.jobLog("command failed: ".concat(e));
-            }
+            result = execSync(commandStr).toString();
             // log result
             args.jobLog("scan result: ".concat(result));
             // // logs

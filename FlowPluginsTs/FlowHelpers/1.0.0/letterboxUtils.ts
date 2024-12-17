@@ -57,7 +57,7 @@ export const getCropInfo = async (
   // load os info - used for line splits later
   const os = require('os');
   // for executing commands
-  const execSync = require('child_process').execSync;
+  const exec = require('util').promisify(require('child_process').exec);
 
   // ToDo - remove
   args.jobLog(`hardware type: ${args.nodeHardwareType}`);
@@ -109,9 +109,12 @@ export const getCropInfo = async (
   // log command
   args.jobLog(`scan command: ${commandStr}`);
   // execute scan command
-  const result: string = execSync(commandStr).toString();
-  // log result
-  args.jobLog(`scan result: ${result}`);
+  try {
+    const result: string = await exec(commandStr).toString();
+    args.jobLog(`scan result: ${result}`);
+  } catch (e) {
+    args.jobLog(`scan failed: ${e}`);
+  }
 
   // // logs
   // await sleep(100);

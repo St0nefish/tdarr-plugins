@@ -81,7 +81,7 @@ var getCropInfo = function (args_1, file_1) {
         args_2[_i - 2] = arguments[_i];
     }
     return __awaiter(void 0, __spreadArray([args_1, file_1], args_2, true), void 0, function (args, file, enableHwDecoding, cropMode, startOffsetPct, endOffsetPct, samplesPerMinute, minCropPct) {
-        var os, exec, execSync, videoStream, totalDuration, startTime, endTime, scannedTime, numPreviews, command, commandStr;
+        var os, exec, execSync, spawnSync, videoStream, totalDuration, startTime, endTime, scannedTime, numPreviews, command, commandStr, result;
         var _a, _b, _c, _d;
         if (enableHwDecoding === void 0) { enableHwDecoding = true; }
         if (cropMode === void 0) { cropMode = 'conservative'; }
@@ -93,6 +93,7 @@ var getCropInfo = function (args_1, file_1) {
             os = require('os');
             exec = require('util').promisify(require('child_process').exec);
             execSync = require('child_process').execSync;
+            spawnSync = require('child_process').spawnSync;
             // ToDo - remove
             args.jobLog("hardware type: ".concat(args.nodeHardwareType));
             args.jobLog("worker type: ".concat(args.workerType));
@@ -149,18 +150,24 @@ var getCropInfo = function (args_1, file_1) {
             // } catch (e) {
             //   args.jobLog(`command threw exception: ${e}`);
             // }
+            // try {
+            //   execSync(commandStr, (error: string, stdout: string, stderr: string) => {
+            //     if (error) {
+            //       args.jobLog(`command threw error: ${error}`);
+            //     }
+            //     if (stdout) {
+            //       args.jobLog(`stdout: ${stdout}`);
+            //     }
+            //     if (stderr) {
+            //       args.jobLog(`stderr: ${stderr}`);
+            //     }
+            //   });
+            // } catch (e) {
+            //   args.jobLog(`command threw exception: ${e}`);
+            // }
             try {
-                execSync(commandStr, function (error, stdout, stderr) {
-                    if (error) {
-                        args.jobLog("command threw error: ".concat(error));
-                    }
-                    if (stdout) {
-                        args.jobLog("stdout: ".concat(stdout));
-                    }
-                    if (stderr) {
-                        args.jobLog("stderr: ".concat(stderr));
-                    }
-                });
+                result = spawnSync(commandStr);
+                args.jobLog("spawn sync result: ".concat(result.toString()));
             }
             catch (e) {
                 args.jobLog("command threw exception: ".concat(e));

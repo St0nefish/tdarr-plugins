@@ -59,6 +59,7 @@ export const getCropInfo = async (
   // for executing commands
   const exec = require('util').promisify(require('child_process').exec);
   const execSync = require('child_process').execSync;
+  const spawnSync = require('child_process').spawnSync;
 
   // ToDo - remove
   args.jobLog(`hardware type: ${args.nodeHardwareType}`);
@@ -125,18 +126,24 @@ export const getCropInfo = async (
   // } catch (e) {
   //   args.jobLog(`command threw exception: ${e}`);
   // }
+  // try {
+  //   execSync(commandStr, (error: string, stdout: string, stderr: string) => {
+  //     if (error) {
+  //       args.jobLog(`command threw error: ${error}`);
+  //     }
+  //     if (stdout) {
+  //       args.jobLog(`stdout: ${stdout}`);
+  //     }
+  //     if (stderr) {
+  //       args.jobLog(`stderr: ${stderr}`);
+  //     }
+  //   });
+  // } catch (e) {
+  //   args.jobLog(`command threw exception: ${e}`);
+  // }
   try {
-    execSync(commandStr, (error: string, stdout: string, stderr: string) => {
-      if (error) {
-        args.jobLog(`command threw error: ${error}`);
-      }
-      if (stdout) {
-        args.jobLog(`stdout: ${stdout}`);
-      }
-      if (stderr) {
-        args.jobLog(`stderr: ${stderr}`);
-      }
-    });
+    const result = spawnSync(commandStr);
+    args.jobLog(`spawn sync result: ${result.toString()}`);
   } catch (e) {
     args.jobLog(`command threw exception: ${e}`);
   }

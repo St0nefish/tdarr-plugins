@@ -104,6 +104,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     },
   );
   args.jobLog(`calculated crop info: ${JSON.stringify(cropInfo)}`);
+  args.jobLog(`would use ffmpeg crop: [${cropInfo.ffmpegCropString(args.inputFileObj)}]`);
   // determine output number
   const outputNumber = cropInfo.shouldCrop() ? 1 : 2;
 

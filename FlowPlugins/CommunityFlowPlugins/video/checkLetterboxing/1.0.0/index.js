@@ -128,6 +128,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
             case 1:
                 cropInfo = _a.sent();
                 args.jobLog("calculated crop info: ".concat(JSON.stringify(cropInfo)));
+                args.jobLog("would use ffmpeg crop: [".concat(cropInfo.ffmpegCropString(args.inputFileObj), "]"));
                 outputNumber = cropInfo.shouldCrop() ? 1 : 2;
                 return [2 /*return*/, {
                         outputFileObj: args.inputFileObj,

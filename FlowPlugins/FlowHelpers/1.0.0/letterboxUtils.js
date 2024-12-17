@@ -128,7 +128,7 @@ var getCropInfo = function (args_1, file_1) {
                     // handle hardware decoding
                     if (enableHwDecoding) {
                         // ToDo - determine decoder
-                        command.push('--enable-hw-decoding', 'nvdec');
+                        // command.push('--enable-hw-decoding', 'nvdec');
                     }
                     // scan only
                     command.push('--scan');

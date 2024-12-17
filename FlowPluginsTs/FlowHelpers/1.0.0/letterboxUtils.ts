@@ -99,7 +99,7 @@ export const getCropInfo = async (
   // handle hardware decoding
   if (enableHwDecoding) {
     // ToDo - determine decoder
-    command.push('--enable-hw-decoding', 'nvdec');
+    // command.push('--enable-hw-decoding', 'nvdec');
   }
   // scan only
   command.push('--scan');

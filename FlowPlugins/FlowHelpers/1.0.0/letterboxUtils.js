@@ -36,15 +36,21 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCropInfo = exports.sleep = exports.getCropInfoFromString = exports.CropInfo = void 0;
+exports.getCropInfo = exports.getCropInfoFromString = exports.CropInfo = void 0;
 var cliUtils_1 = require("./cliUtils");
 var metadataUtils_1 = require("./metadataUtils");
+// class to hold crop info data
 var CropInfo = /** @class */ (function () {
+    // constructor to create a CropInfo object from raw inputs
     function CropInfo(top, bottom, left, right) {
         var _this = this;
+        // determine if this object determines that the video should be cropped
         this.shouldCrop = function () { return _this.top > 0 || _this.bottom > 0 || _this.right > 0 || _this.left > 0; };
+        // get total vertical crop
         this.verticalCrop = function () { return _this.top + _this.bottom; };
+        // get total  horizontal crop
         this.horizontalCrop = function () { return _this.left + _this.right; };
+        // get the string used as an input to ffmpeg crop
         this.ffmpegCropString = function (file) {
             var _a, _b, _c, _d, _e;
             // first grab the video stream from the file
@@ -59,7 +65,7 @@ var CropInfo = /** @class */ (function () {
             var newWidth = inputWidth - _this.horizontalCrop();
             var newHeight = inputHeight - _this.verticalCrop();
             // build string
-            return "".concat(newWidth, ":").concat(newHeight, ":").concat(_this.top, ":").concat(_this.left);
+            return "w=".concat(newWidth, ":h=").concat(newHeight, ":x=").concat(_this.left, ":y=").concat(_this.top);
         };
         this.top = top;
         this.bottom = bottom;
@@ -69,23 +75,30 @@ var CropInfo = /** @class */ (function () {
     return CropInfo;
 }());
 exports.CropInfo = CropInfo;
+// create a crop info object from the string output by Handbrake
 var getCropInfoFromString = function (cropInfoStr) {
     var _a, _b, _c, _d;
     var split = String(cropInfoStr).split('/');
     return new CropInfo(Number((_a = split[0]) !== null && _a !== void 0 ? _a : 0), Number((_b = split[1]) !== null && _b !== void 0 ? _b : 0), Number((_c = split[2]) !== null && _c !== void 0 ? _c : 0), Number((_d = split[3]) !== null && _d !== void 0 ? _d : 0));
 };
 exports.getCropInfoFromString = getCropInfoFromString;
-// eslint-disable-next-line require-await
-var sleep = function (ms) { return __awaiter(void 0, void 0, void 0, function () { return __generator(this, function (_a) {
-    return [2 /*return*/, new Promise(function (resolve) { return setTimeout(resolve, ms); })];
-}); }); };
-exports.sleep = sleep;
+// function to get hardware decoder from configured hardware type
+var getHwDecoder = function (hardwareType) {
+    switch (hardwareType) {
+        case 'nvenc':
+            return 'nvdec';
+        case 'qsv':
+            return 'qsv';
+        default:
+            return null;
+    }
+};
 // function to get crop info from a video file
 // args: input plugin argument object
 // file: file to detect letterboxing for
 // scanConfig: ScanConfig object
 var getCropInfo = function (args, file, scanConfig) { return __awaiter(void 0, void 0, void 0, function () {
-    var os, videoStream, cropMode, enableHwDecoding, minCropPct, totalDuration, startTime, endTime, scannedTime, numPreviews, spawnArgs, response, resultLine, autocropRegex, match, autocrop, cropInfo;
+    var os, videoStream, cropMode, enableHwDecoding, minCropPct, totalDuration, startTime, endTime, scannedTime, numPreviews, spawnArgs, hwDecoder, response, resultLine, autocropRegex, match, autocrop, cropInfo;
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
     return __generator(this, function (_l) {
         switch (_l.label) {
@@ -122,10 +135,9 @@ var getCropInfo = function (args, file, scanConfig) { return __awaiter(void 0, v
                 spawnArgs.push('--start-at', "seconds:".concat(startTime));
                 // set end time
                 spawnArgs.push('--stop-at', "seconds:".concat(endTime));
-                // handle hardware decoding
-                if (enableHwDecoding) {
-                    // ToDo - determine decoder
-                    spawnArgs.push('--enable-hw-decoding', 'nvdec');
+                hwDecoder = getHwDecoder(args.nodeHardwareType);
+                if (enableHwDecoding && hwDecoder) {
+                    spawnArgs.push('--enable-hw-decoding', hwDecoder);
                 }
                 // scan only
                 spawnArgs.push('--scan');

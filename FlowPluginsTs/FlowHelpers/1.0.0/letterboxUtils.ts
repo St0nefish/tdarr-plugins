@@ -6,15 +6,21 @@ import {
 } from './interfaces/synced/IFileObject';
 import { isVideo } from './metadataUtils';
 
+// class to hold crop info data
 export class CropInfo {
+  // number of pixels to crop off the top of the video
   top: number;
 
+  // number of pixels to crop off the bottom of the video
   bottom: number;
 
+  // number of pixels to crop off the left of the video
   left: number;
 
+  // number of pixels to crop off the right of the video
   right: number;
 
+  // constructor to create a CropInfo object from raw inputs
   constructor(top: number, bottom: number, left: number, right: number) {
     this.top = top;
     this.bottom = bottom;
@@ -22,12 +28,16 @@ export class CropInfo {
     this.right = right;
   }
 
+  // determine if this object determines that the video should be cropped
   shouldCrop = (): boolean => this.top > 0 || this.bottom > 0 || this.right > 0 || this.left > 0;
 
+  // get total vertical crop
   verticalCrop = (): number => this.top + this.bottom;
 
+  // get total  horizontal crop
   horizontalCrop = (): number => this.left + this.right;
 
+  // get the string used as an input to ffmpeg crop
   ffmpegCropString = (file: IFileObject): string => {
     // first grab the video stream from the file
     const videoStream: Istreams | undefined = file?.ffProbeData?.streams?.filter(isVideo)?.[0];
@@ -41,17 +51,27 @@ export class CropInfo {
     const newWidth: number = inputWidth - this.horizontalCrop();
     const newHeight: number = inputHeight - this.verticalCrop();
     // build string
-    return `${newWidth}:${newHeight}:${this.top}:${this.left}`;
+    return `w=${newWidth}:h=${newHeight}:x=${this.left}:y=${this.top}`;
   };
 }
 
+// create a crop info object from the string output by Handbrake
 export const getCropInfoFromString = (cropInfoStr: string): CropInfo => {
   const split: string[] = String(cropInfoStr).split('/');
   return new CropInfo(Number(split[0] ?? 0), Number(split[1] ?? 0), Number(split[2] ?? 0), Number(split[3] ?? 0));
 };
 
-// eslint-disable-next-line require-await
-export const sleep = async (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+// function to get hardware decoder from configured hardware type
+const getHwDecoder = (hardwareType: string): string | null => {
+  switch (hardwareType) {
+    case 'nvenc':
+      return 'nvdec';
+    case 'qsv':
+      return 'qsv';
+    default:
+      return null;
+  }
+};
 
 // scan config object
 export interface ScanConfig {
@@ -120,9 +140,9 @@ export const getCropInfo = async (
   // set end time
   spawnArgs.push('--stop-at', `seconds:${endTime}`);
   // handle hardware decoding
-  if (enableHwDecoding) {
-    // ToDo - determine decoder
-    spawnArgs.push('--enable-hw-decoding', 'nvdec');
+  const hwDecoder = getHwDecoder(args.nodeHardwareType);
+  if (enableHwDecoding && hwDecoder) {
+    spawnArgs.push('--enable-hw-decoding', hwDecoder);
   }
   // scan only
   spawnArgs.push('--scan');

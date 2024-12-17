@@ -88,7 +88,7 @@ var getCropInfo = function (args_1, file_1) {
                     totalDuration = Math.round(Number((_b = (_a = file.ffProbeData.format) === null || _a === void 0 ? void 0 : _a.duration) !== null && _b !== void 0 ? _b : 0));
                     startOffset = Math.round((startOffsetPct / 100) * totalDuration);
                     endOffset = Math.round(((100 - endOffsetPct) / 100) * totalDuration);
-                    scannedTime = totalDuration - (startOffset + endOffset);
+                    scannedTime = totalDuration * ((100 - (startOffset + endOffset)) / 100);
                     fps = numSamples / scannedTime;
                     // log some details
                     args.jobLog("will scan [".concat(scannedTime, "/").concat(totalDuration, "]s. start offset:").concat(startOffset, "s, end offset:").concat(endOffset, "s, ")

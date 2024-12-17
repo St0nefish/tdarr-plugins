@@ -54,7 +54,7 @@ export const getCropInfo = async (
   // given the scanned duration and aim for about 250 total samples across this time
   const startOffset: number = Math.round((startOffsetPct / 100) * totalDuration);
   const endOffset: number = Math.round(((100 - endOffsetPct) / 100) * totalDuration);
-  const scannedTime: number = totalDuration - (startOffset + endOffset);
+  const scannedTime: number = totalDuration * ((100 - (startOffset + endOffset)) / 100);
   const fps: number = numSamples / scannedTime;
   // log some details
   args.jobLog(

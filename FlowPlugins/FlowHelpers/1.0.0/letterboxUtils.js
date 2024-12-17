@@ -116,7 +116,7 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
                     .map(function (line) { return line.split('crop=').pop(); })
                     .map(function (line) { return (0, exports.getCropInfoFromString)(String(line)); });
                 numSamples = cropValues.length;
-                args.jobLog("parsing ".concat(numSamples, " lines containing cropdetect data"));
+                args.jobLog("parsing [".concat(numSamples, "] lines containing cropdetect data"));
                 cropValueFrequency = {};
                 cropWidthFrequency = {};
                 cropXOffsetFrequency = {};
@@ -147,16 +147,28 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
             case 5:
                 _f.sent();
                 args.jobLog("crop info frequencies: ".concat(JSON.stringify(cropValueFrequency)));
+                return [4 /*yield*/, (0, exports.sleep)(20)];
+            case 6:
+                _f.sent();
                 args.jobLog("crop info width frequencies: ".concat(JSON.stringify(cropWidthFrequency)));
+                return [4 /*yield*/, (0, exports.sleep)(20)];
+            case 7:
+                _f.sent();
                 args.jobLog("crop info x-offset frequencies: ".concat(JSON.stringify(cropXOffsetFrequency)));
+                return [4 /*yield*/, (0, exports.sleep)(20)];
+            case 8:
+                _f.sent();
                 args.jobLog("crop info height frequencies: ".concat(JSON.stringify(cropHeightFrequency)));
+                return [4 /*yield*/, (0, exports.sleep)(20)];
+            case 9:
+                _f.sent();
                 args.jobLog("crop info y-offset frequencies: ".concat(JSON.stringify(cropYOffsetFrequency)));
                 return [4 /*yield*/, (0, exports.sleep)(100)];
-            case 6:
+            case 10:
                 _f.sent();
                 args.jobLog('<=========== end frequency data ===========>');
                 return [4 /*yield*/, (0, exports.sleep)(100)];
-            case 7:
+            case 11:
                 _f.sent();
                 numValues = Object.keys(cropValueFrequency).length;
                 if (numValues > 1) {
@@ -229,7 +241,7 @@ var getCropInfo = function (args) { return __awaiter(void 0, void 0, void 0, fun
                 }
                 args.jobLog("returning crop info: ".concat(JSON.stringify(returnInfo)));
                 return [4 /*yield*/, (0, exports.sleep)(100)];
-            case 8:
+            case 12:
                 _f.sent();
                 args.jobLog('<=================== end ===================>');
                 return [2 /*return*/, returnInfo];

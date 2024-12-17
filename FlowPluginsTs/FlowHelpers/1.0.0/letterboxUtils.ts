@@ -104,7 +104,7 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
     .map((line) => getCropInfoFromString(String(line)));
   // determine number of samples we're working with
   const numSamples: number = cropValues.length;
-  args.jobLog(`parsing ${numSamples} lines containing cropdetect data`);
+  args.jobLog(`parsing [${numSamples}] lines containing cropdetect data`);
   // build a map of frequency for overall w:h:x:y
   const cropValueFrequency: { [key: string]: number } = {};
   // build arrays separately tracking width and height
@@ -130,9 +130,13 @@ export const getCropInfo = async (args: IpluginInputArgs): Promise<CropInfo> => 
   args.jobLog('<========== start frequency data ==========>');
   await sleep(100);
   args.jobLog(`crop info frequencies: ${JSON.stringify(cropValueFrequency)}`);
+  await sleep(20);
   args.jobLog(`crop info width frequencies: ${JSON.stringify(cropWidthFrequency)}`);
+  await sleep(20);
   args.jobLog(`crop info x-offset frequencies: ${JSON.stringify(cropXOffsetFrequency)}`);
+  await sleep(20);
   args.jobLog(`crop info height frequencies: ${JSON.stringify(cropHeightFrequency)}`);
+  await sleep(20);
   args.jobLog(`crop info y-offset frequencies: ${JSON.stringify(cropYOffsetFrequency)}`);
   await sleep(100);
   args.jobLog('<=========== end frequency data ===========>');

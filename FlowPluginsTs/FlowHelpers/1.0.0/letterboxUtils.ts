@@ -103,7 +103,7 @@ export const getCropInfo = async (
   // scan only
   command.push('--scan');
   // pipe to grep to limit log volume to only the line containing scan results
-  command.push('|', 'grep', 'autocrop = ');
+  command.push('|', 'grep', '\'autocrop = \'');
   // build full command
   const commandStr = command.join(' ');
   // log command

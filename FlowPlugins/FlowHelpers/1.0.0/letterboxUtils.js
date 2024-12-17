@@ -132,7 +132,7 @@ var getCropInfo = function (args_1, file_1) {
                     // scan only
                     command.push('--scan');
                     // pipe to grep to limit log volume to only the line containing scan results
-                    command.push('|', 'grep', 'autocrop = ');
+                    command.push('|', 'grep', '\'autocrop = \'');
                     commandStr = command.join(' ');
                     // log command
                     args.jobLog("scan command: ".concat(commandStr));

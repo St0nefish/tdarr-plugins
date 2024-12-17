@@ -57,9 +57,10 @@ export const getCropInfo = async (
   // load os info - used for line splits later
   const os = require('os');
   // for executing commands
-  const exec = require('util').promisify(require('child_process').exec);
-  const execSync = require('child_process').execSync;
-  const spawnSync = require('child_process').spawnSync;
+  const childProcess = require('child_process');
+  const exec = require('util').promisify(childProcess.exec);
+  const execSync = childProcess.execSync;
+  const spawnSync = childProcess.spawnSync;
 
   // ToDo - remove
   args.jobLog(`hardware type: ${args.nodeHardwareType}`);
@@ -82,44 +83,64 @@ export const getCropInfo = async (
   args.jobLog(`will scan [${scannedTime}/${totalDuration}]s (start:[${startTime}s], end:[${endTime}s]), `
     + `mode:[${cropMode}], previews:[${numPreviews}]`);
   // build command
-  const spawnArgs: string[] = [];
+  const command: string[] = [];
   // input file
-  spawnArgs.push('-i', `'${file._id}'`);
+  command.push('-i', `'${file._id}'`);
   // only scan main feature
-  spawnArgs.push('--main-feature');
+  command.push('--main-feature');
   // crop mode
-  spawnArgs.push('--crop-mode', cropMode);
+  command.push('--crop-mode', cropMode);
   // number of previews (persist to disk)
-  spawnArgs.push('--previews', `${numPreviews}:1`);
+  command.push('--previews', `${numPreviews}:1`);
   // set start time
-  spawnArgs.push('--start-at', `seconds:${startTime}`);
+  command.push('--start-at', `seconds:${startTime}`);
   // set end time
-  spawnArgs.push('--stop-at', `seconds:${endTime}`);
+  command.push('--stop-at', `seconds:${endTime}`);
   // handle hardware decoding
   if (enableHwDecoding) {
     // ToDo - determine decoder
-    spawnArgs.push('--enable-hw-decoding', 'nvdec');
+    command.push('--enable-hw-decoding', 'nvdec');
   }
   // scan only
-  spawnArgs.push('--scan');
+  command.push('--scan');
   // log command
-  args.jobLog(`scan command: ${args.handbrakePath} ${spawnArgs.join(' ')}`);
+  args.jobLog(`scan command: ${args.handbrakePath} ${command.join(' ')}`);
   // execute scan command
-  // execute cli
-  const response: { cliExitCode: number, errorLogFull: string[] } = await (
-    new CLI({
-      cli: args.handbrakePath,
-      spawnArgs,
-      spawnOpts: {},
-      jobLog: args.jobLog,
-      outputFilePath: file._id,
-      inputFileObj: file,
-      logFullCliOutput: true, // require full logs to ensure access to all cropdetect data
-      updateWorker: args.updateWorker,
-      args,
-    })).runCli();
+  const output: string[] = [];
+  const cliExitCode: number = await new Promise((resolve) => {
+    try {
+      const spawnArgs = command.map((row: string) => row.trim()).filter((row: string) => row !== '');
+      const thread = childProcess.spawn(args.handbrakePath, spawnArgs, {});
 
-  args.jobLog(`result: ${response}`);
+      thread.stdout.on('data', (data: string) => {
+        output.push(data.toString());
+      });
+
+      thread.stderr.on('data', (data: string) => {
+        // eslint-disable-next-line no-console
+        output.push(data.toString());
+      });
+
+      thread.on('error', () => {
+        // catches execution error (bad file)
+        args.jobLog(`Error executing binary: ${args.handbrakePath}`);
+        resolve(1);
+      });
+
+      thread.on('close', (code: number) => {
+        if (code !== 0) {
+          args.jobLog(`CLI error code: ${code}`);
+        }
+        resolve(code);
+      });
+    } catch (err) {
+      // catches execution error (no file)
+      args.jobLog(`Error executing binary: ${args.handbrakePath}: ${err}`);
+      resolve(1);
+    }
+  });
+
+  args.jobLog(`handbrake completed with code [${cliExitCode}] and output: ${output.join('')}`);
 
   // // logs
   // await sleep(100);

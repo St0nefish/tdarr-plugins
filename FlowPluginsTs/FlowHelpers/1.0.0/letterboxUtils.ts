@@ -165,7 +165,7 @@ export const getCropInfo = async (
   // parse out the key parts of the line - sometimes has line feed
   resultLine = resultLine.substring(resultLine.indexOf('scan: '), resultLine.lastIndexOf(os.EOL) || resultLine.length);
   // parse autocrop string from line
-  const autocropRegex = /(\d+\/\d+\/\d+\/\d+)/;
+  const autocropRegex = /(?<=autocrop = )(\d+\/\d+\/\d+\/\d+)/;
   const match: RegExpExecArray | null = autocropRegex.exec(resultLine);
   let autocrop: string = '';
   if (match) {

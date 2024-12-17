@@ -52,13 +52,13 @@ export const getCropInfo = async (
   // calculate scan framerate
   // determine duration of scanned time as total - (start offset + end offset)
   // given the scanned duration and aim for about 250 total samples across this time
-  const startOffset: number = Math.round((startOffsetPct / 100) * totalDuration);
-  const endOffset: number = Math.round(((100 - endOffsetPct) / 100) * totalDuration);
-  const scannedTime: number = totalDuration * ((100 - (startOffsetPct + endOffsetPct)) / 100);
+  const startTime: number = Math.round((startOffsetPct / 100) * totalDuration);
+  const endTime: number = Math.round(((100 - endOffsetPct) / 100) * totalDuration);
+  const scannedTime: number = endTime - startTime;
   const fps: number = numSamples / scannedTime;
   // log some details
   args.jobLog(
-    `will scan [${scannedTime}/${totalDuration}]s. start offset:${startOffset}s, end offset:${endOffset}s, `
+    `will scan [${scannedTime}/${totalDuration}]s. start time:${startTime}s, end time:${endTime}s, `
     + `framerate:${fps}fps`,
   );
   // build ffmpeg command
@@ -66,9 +66,9 @@ export const getCropInfo = async (
   // always hide banner and stats
   spawnArgs.push('-hide_banner', '-nostats');
   // set start offset
-  spawnArgs.push('-ss', `${startOffset}`);
+  spawnArgs.push('-ss', `${startTime}`);
   // set sample length
-  spawnArgs.push('-to', `${endOffset}`);
+  spawnArgs.push('-to', `${endTime}`);
   // set input file
   spawnArgs.push('-i', file._id);
   // set cropdetect settings

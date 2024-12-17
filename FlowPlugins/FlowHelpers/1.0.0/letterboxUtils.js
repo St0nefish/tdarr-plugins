@@ -75,7 +75,7 @@ var getCropInfo = function (args_1, file_1) {
         args_2[_i - 2] = arguments[_i];
     }
     return __awaiter(void 0, __spreadArray([args_1, file_1], args_2, true), void 0, function (args, file, startOffsetPct, endOffsetPct, numSamples, relevantPct) {
-        var os, totalDuration, startOffset, endOffset, scannedTime, fps, spawnArgs, response, cropValues, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency, numValues, returnInfo, videoStream, inputWidth, outputWidth_1, outputX_1, xOffsetCount_1, inputHeight, outputHeight_1, outputY_1, yOffsetCount_1;
+        var os, totalDuration, startTime, endTime, scannedTime, fps, spawnArgs, response, cropValues, cropValueFrequency, cropWidthFrequency, cropXOffsetFrequency, cropHeightFrequency, cropYOffsetFrequency, numValues, returnInfo, videoStream, inputWidth, outputWidth_1, outputX_1, xOffsetCount_1, inputHeight, outputHeight_1, outputY_1, yOffsetCount_1;
         var _a, _b, _c, _d, _e, _f, _g, _h;
         if (startOffsetPct === void 0) { startOffsetPct = 5; }
         if (endOffsetPct === void 0) { endOffsetPct = 5; }
@@ -86,20 +86,20 @@ var getCropInfo = function (args_1, file_1) {
                 case 0:
                     os = require('os');
                     totalDuration = Math.round(Number((_b = (_a = file.ffProbeData.format) === null || _a === void 0 ? void 0 : _a.duration) !== null && _b !== void 0 ? _b : 0));
-                    startOffset = Math.round((startOffsetPct / 100) * totalDuration);
-                    endOffset = Math.round(((100 - endOffsetPct) / 100) * totalDuration);
-                    scannedTime = totalDuration * ((100 - (startOffsetPct + endOffsetPct)) / 100);
+                    startTime = Math.round((startOffsetPct / 100) * totalDuration);
+                    endTime = Math.round(((100 - endOffsetPct) / 100) * totalDuration);
+                    scannedTime = endTime - startTime;
                     fps = numSamples / scannedTime;
                     // log some details
-                    args.jobLog("will scan [".concat(scannedTime, "/").concat(totalDuration, "]s. start offset:").concat(startOffset, "s, end offset:").concat(endOffset, "s, ")
+                    args.jobLog("will scan [".concat(scannedTime, "/").concat(totalDuration, "]s. start time:").concat(startTime, "s, end time:").concat(endTime, "s, ")
                         + "framerate:".concat(fps, "fps"));
                     spawnArgs = [];
                     // always hide banner and stats
                     spawnArgs.push('-hide_banner', '-nostats');
                     // set start offset
-                    spawnArgs.push('-ss', "".concat(startOffset));
+                    spawnArgs.push('-ss', "".concat(startTime));
                     // set sample length
-                    spawnArgs.push('-to', "".concat(endOffset));
+                    spawnArgs.push('-to', "".concat(endTime));
                     // set input file
                     spawnArgs.push('-i', file._id);
                     // set cropdetect settings

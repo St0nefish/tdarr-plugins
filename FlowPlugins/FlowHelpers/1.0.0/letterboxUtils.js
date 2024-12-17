@@ -136,7 +136,7 @@ var getCropInfo = function (args_1, file_1) {
                     // log command
                     args.jobLog("scan command: ".concat(args.handbrakePath, " ").concat(spawnArgs.join(' ')));
                     return [4 /*yield*/, (new cliUtils_1.CLI({
-                            cli: args.ffmpegPath,
+                            cli: args.handbrakePath,
                             spawnArgs: spawnArgs,
                             spawnOpts: {},
                             jobLog: args.jobLog,

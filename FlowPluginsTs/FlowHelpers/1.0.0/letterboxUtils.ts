@@ -109,7 +109,7 @@ export const getCropInfo = async (
   // execute cli
   const response: { cliExitCode: number, errorLogFull: string[] } = await (
     new CLI({
-      cli: args.ffmpegPath,
+      cli: args.handbrakePath,
       spawnArgs,
       spawnOpts: {},
       jobLog: args.jobLog,

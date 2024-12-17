@@ -158,7 +158,10 @@ export const getCropInfo = async (
       args,
     })).runCli();
   // find line containing the key data
-  let resultLine: string = response.errorLogFull.filter((line: string) => line.includes('autocrop = '))[0];
+  const resultLine: string = response.errorLogFull
+    .filter((line: string) => line.includes('autocrop = '))
+    .map((line) => line.substring(resultLine.indexOf('scan:')))
+    .map((line) => line.substring(0, resultLine.indexOf(os.EOL)))[0];
   // parse autocrop string from line
   const autocropRegex = /(\d+\/\d+\/\d+\/\d+)/;
   const match: RegExpExecArray | null = autocropRegex.exec(resultLine);
@@ -166,8 +169,6 @@ export const getCropInfo = async (
   if (match) {
     autocrop = match[0];
   }
-  resultLine = resultLine.substring(resultLine.indexOf('scan:'));
-  resultLine = resultLine.substring(0, resultLine.indexOf(os.EOL));
   args.jobLog(`${resultLine}`);
   args.jobLog(`autocrop: [${autocrop}]`);
   // convert string to object and return

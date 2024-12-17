@@ -99,9 +99,9 @@ var getHwDecoder = function (hardwareType) {
 // scanConfig: ScanConfig object
 var getCropInfo = function (args, file, scanConfig) { return __awaiter(void 0, void 0, void 0, function () {
     var os, videoStream, cropMode, enableHwDecoding, minCropPct, totalDuration, startTime, endTime, scannedTime, numPreviews, spawnArgs, hwDecoder, response, resultLine, autocropRegex, match, autocrop, cropInfo;
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
-    return __generator(this, function (_o) {
-        switch (_o.label) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+    return __generator(this, function (_m) {
+        switch (_m.label) {
             case 0:
                 os = require('os');
                 // ToDo - remove
@@ -155,17 +155,17 @@ var getCropInfo = function (args, file, scanConfig) { return __awaiter(void 0, v
                         args: args,
                     })).runCli()];
             case 1:
-                response = _o.sent();
-                resultLine = (_m = response.errorLogFull
-                    .filter(function (line) { return line.includes('autocrop = '); })
-                    .map(function (line) { return line.substring(line.indexOf('scan:')).substring(0, line.indexOf(os.EOL)); })) === null || _m === void 0 ? void 0 : _m[0];
+                response = _m.sent();
+                resultLine = response.errorLogFull.filter(function (line) { return line.includes('autocrop = '); })[0];
                 autocropRegex = /(\d+\/\d+\/\d+\/\d+)/;
                 match = autocropRegex.exec(resultLine);
                 autocrop = '';
                 if (match) {
                     autocrop = match[0];
                 }
-                args.jobLog("".concat(resultLine.substring(resultLine.indexOf('scan:')).substring(0, resultLine.indexOf(os.EOL))));
+                resultLine = resultLine.substring(resultLine.indexOf('scan:'));
+                resultLine = resultLine.substring(0, resultLine.indexOf(os.EOL));
+                args.jobLog("".concat(resultLine));
                 args.jobLog("autocrop: [".concat(autocrop, "]"));
                 cropInfo = (0, exports.getCropInfoFromString)(autocrop);
                 // ==== determine if we should zero some fields for being within ignore limits ==== //

@@ -82,71 +82,44 @@ export const getCropInfo = async (
   args.jobLog(`will scan [${scannedTime}/${totalDuration}]s (start:[${startTime}s], end:[${endTime}s]), `
     + `mode:[${cropMode}], previews:[${numPreviews}]`);
   // build command
-  const command: string[] = [];
-  // use handbrake
-  command.push(args.handbrakePath);
+  const spawnArgs: string[] = [];
   // input file
-  command.push('-i', `'${file._id}'`);
+  spawnArgs.push('-i', `'${file._id}'`);
   // only scan main feature
-  command.push('--main-feature');
+  spawnArgs.push('--main-feature');
   // crop mode
-  command.push('--crop-mode', cropMode);
+  spawnArgs.push('--crop-mode', cropMode);
   // number of previews (persist to disk)
-  command.push('--previews', `${numPreviews}:1`);
+  spawnArgs.push('--previews', `${numPreviews}:1`);
   // set start time
-  command.push('--start-at', `seconds:${startTime}`);
+  spawnArgs.push('--start-at', `seconds:${startTime}`);
   // set end time
-  command.push('--stop-at', `seconds:${endTime}`);
+  spawnArgs.push('--stop-at', `seconds:${endTime}`);
   // handle hardware decoding
   if (enableHwDecoding) {
     // ToDo - determine decoder
-    command.push('--enable-hw-decoding', 'nvdec');
+    spawnArgs.push('--enable-hw-decoding', 'nvdec');
   }
   // scan only
-  command.push('--scan');
-  // pipe to grep to limit log volume to only the line containing scan results
-  // command.push('|', 'grep', '\'autocrop = \'');
-  // build full command
-  const commandStr = command.join(' ');
+  spawnArgs.push('--scan');
   // log command
-  args.jobLog(`scan command: ${commandStr}`);
+  args.jobLog(`scan command: ${args.handbrakePath} ${spawnArgs.join(' ')}`);
   // execute scan command
-  // try {
-  //   await exec(commandStr, (error: string, stdout: string, stderr: string) => {
-  //     if (error) {
-  //       args.jobLog(`command threw error: ${error}`);
-  //     }
-  //     if (stdout) {
-  //       args.jobLog(`stdout: ${stdout}`);
-  //     }
-  //     if (stderr) {
-  //       args.jobLog(`stderr: ${stderr}`);
-  //     }
-  //   });
-  // } catch (e) {
-  //   args.jobLog(`command threw exception: ${e}`);
-  // }
-  // try {
-  //   execSync(commandStr, (error: string, stdout: string, stderr: string) => {
-  //     if (error) {
-  //       args.jobLog(`command threw error: ${error}`);
-  //     }
-  //     if (stdout) {
-  //       args.jobLog(`stdout: ${stdout}`);
-  //     }
-  //     if (stderr) {
-  //       args.jobLog(`stderr: ${stderr}`);
-  //     }
-  //   });
-  // } catch (e) {
-  //   args.jobLog(`command threw exception: ${e}`);
-  // }
-  try {
-    const result = spawnSync(commandStr);
-    args.jobLog(`spawn sync result: ${JSON.stringify(result)}`);
-  } catch (e) {
-    args.jobLog(`command threw exception: ${e}`);
-  }
+  // execute cli
+  const response: { cliExitCode: number, errorLogFull: string[] } = await (
+    new CLI({
+      cli: args.handbrakePath,
+      spawnArgs,
+      spawnOpts: {},
+      jobLog: args.jobLog,
+      outputFilePath: file._id,
+      inputFileObj: file,
+      logFullCliOutput: true, // require full logs to ensure access to all cropdetect data
+      updateWorker: args.updateWorker,
+      args,
+    })).runCli();
+
+  args.jobLog(`result: ${response}`);
 
   // // logs
   // await sleep(100);

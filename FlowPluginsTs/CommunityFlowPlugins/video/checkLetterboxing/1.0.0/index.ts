@@ -94,10 +94,12 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const cropInfo: CropInfo = await getCropInfo(
     args,
     args.inputFileObj,
+    true,
+    'conservative',
     startOffsetPct,
     endOffsetPct,
-    sampleCount,
-    relevantPct,
+    2,
+    2,
   );
   args.jobLog(`calculated crop info: ${JSON.stringify(cropInfo)}`);
 

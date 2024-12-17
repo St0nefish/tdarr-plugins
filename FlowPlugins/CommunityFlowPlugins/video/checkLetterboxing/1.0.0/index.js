@@ -117,7 +117,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 endOffsetPct = Number(args.inputs.endOffsetPct);
                 sampleCount = Number(args.inputs.sampleCount);
                 relevantPct = Number(args.inputs.relevantPct);
-                return [4 /*yield*/, (0, letterboxUtils_1.getCropInfo)(args, args.inputFileObj, startOffsetPct, endOffsetPct, sampleCount, relevantPct)];
+                return [4 /*yield*/, (0, letterboxUtils_1.getCropInfo)(args, args.inputFileObj, true, 'conservative', startOffsetPct, endOffsetPct, 2, 2)];
             case 1:
                 cropInfo = _a.sent();
                 args.jobLog("calculated crop info: ".concat(JSON.stringify(cropInfo)));

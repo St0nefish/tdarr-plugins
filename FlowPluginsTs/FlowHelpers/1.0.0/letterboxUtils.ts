@@ -143,7 +143,7 @@ export const getCropInfo = async (
   // }
   try {
     const result = spawnSync(commandStr);
-    args.jobLog(`spawn sync result: ${result.toString()}`);
+    args.jobLog(`spawn sync result: ${result.stderr.toString()}`);
   } catch (e) {
     args.jobLog(`command threw exception: ${e}`);
   }

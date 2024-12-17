@@ -167,7 +167,7 @@ var getCropInfo = function (args_1, file_1) {
             // }
             try {
                 result = spawnSync(commandStr);
-                args.jobLog("spawn sync result: ".concat(result.toString()));
+                args.jobLog("spawn sync result: ".concat(result.stderr.toString()));
             }
             catch (e) {
                 args.jobLog("command threw exception: ".concat(e));

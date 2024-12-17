@@ -111,7 +111,7 @@ export const getCropInfo = async (
   // execute scan command
   let result: string = '';
   try {
-    result = execSync(commandStr);
+    result = execSync(commandStr).toString();
   } catch (e) {
     args.jobLog(`command failed: ${e}`);
   }

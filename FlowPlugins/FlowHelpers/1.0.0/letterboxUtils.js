@@ -156,10 +156,12 @@ var getCropInfo = function (args, file, scanConfig) { return __awaiter(void 0, v
                     })).runCli()];
             case 1:
                 response = _m.sent();
-                resultLine = response.errorLogFull
-                    .filter(function (line) { return line.includes('autocrop = '); })
-                    .map(function (line) { return line.substring(resultLine.indexOf('scan:')); })
-                    .map(function (line) { return line.substring(0, resultLine.indexOf(os.EOL)); })[0];
+                resultLine = response.errorLogFull.filter(function (line) { return line.includes('autocrop = '); })[0];
+                if (!resultLine) {
+                    throw new Error('failed to get autocrop results from Handbrake scan');
+                }
+                // parse out the key parts of the line - sometimes has line feed
+                resultLine = resultLine.substring(resultLine.indexOf('scan: '), resultLine.lastIndexOf(os.EOL) || resultLine.length);
                 autocropRegex = /(\d+\/\d+\/\d+\/\d+)/;
                 match = autocropRegex.exec(resultLine);
                 autocrop = '';

@@ -60,10 +60,15 @@ export const getCropInfo = async (
   if (!videoStream) {
     throw new Error('Failed to find a video stream - why are you attempting to de-letterbox a non-video file?');
   }
-  const framestep: number = Math.round((scannedTime / numSamples) * videoStream.meta.VideoFrameRate);
+  // calculate framerate - stream seems to store it as a fraction in text
+  const avgFramerateStr: string = videoStream.avg_frame_rate ?? '';
+  const framerateParts: string[] = avgFramerateStr.split('/');
+  // if unable to calculate, assume 24fps
+  const framerate: number = Math.round(Number(framerateParts[0]) / Number(framerateParts[1])) ?? 24;
+  const framestep: number = Math.round((scannedTime / numSamples) * framerate);
   // log some details
-  args.jobLog(`will scan [${scannedTime}/${totalDuration}]s. start time:${startTime}s, end time:${endTime}s, `
-    + `framestep:${framestep}`);
+  args.jobLog(`will scan [${scannedTime}/${totalDuration}]s. start time:[${startTime}s], end time:[${endTime}s], `
+    + `framestep:[${framestep}] (input framerate:[${framerate}])`);
   // build ffmpeg command
   const spawnArgs: string[] = [];
   // always hide banner and stats

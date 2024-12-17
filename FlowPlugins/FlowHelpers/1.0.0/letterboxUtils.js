@@ -81,7 +81,7 @@ var getCropInfo = function (args_1, file_1) {
         args_2[_i - 2] = arguments[_i];
     }
     return __awaiter(void 0, __spreadArray([args_1, file_1], args_2, true), void 0, function (args, file, enableHwDecoding, cropMode, startOffsetPct, endOffsetPct, samplesPerMinute, minCropPct) {
-        var os, exec, videoStream, totalDuration, startTime, endTime, scannedTime, numPreviews, command, commandStr, result, e_1;
+        var os, exec, videoStream, totalDuration, startTime, endTime, scannedTime, numPreviews, command, commandStr, e_1;
         var _a, _b, _c, _d;
         if (enableHwDecoding === void 0) { enableHwDecoding = true; }
         if (cropMode === void 0) { cropMode = 'conservative'; }
@@ -137,14 +137,23 @@ var getCropInfo = function (args_1, file_1) {
                     _e.label = 1;
                 case 1:
                     _e.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, exec(commandStr).toString()];
+                    return [4 /*yield*/, exec(commandStr, function (error, stdout, stderr) {
+                            if (error) {
+                                args.jobLog("command threw error: ".concat(error));
+                            }
+                            if (stdout) {
+                                args.jobLog("stdout: ".concat(stdout));
+                            }
+                            if (stderr) {
+                                args.jobLog("stderr: ".concat(stderr));
+                            }
+                        })];
                 case 2:
-                    result = _e.sent();
-                    args.jobLog("scan result: ".concat(result));
+                    _e.sent();
                     return [3 /*break*/, 4];
                 case 3:
                     e_1 = _e.sent();
-                    args.jobLog("scan failed: ".concat(e_1));
+                    args.jobLog("command threw exception: ".concat(e_1));
                     return [3 /*break*/, 4];
                 case 4: 
                 // // logs

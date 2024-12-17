@@ -110,10 +110,19 @@ export const getCropInfo = async (
   args.jobLog(`scan command: ${commandStr}`);
   // execute scan command
   try {
-    const result: string = await exec(commandStr).toString();
-    args.jobLog(`scan result: ${result}`);
+    await exec(commandStr, (error: string, stdout: string, stderr: string) => {
+      if (error) {
+        args.jobLog(`command threw error: ${error}`);
+      }
+      if (stdout) {
+        args.jobLog(`stdout: ${stdout}`);
+      }
+      if (stderr) {
+        args.jobLog(`stderr: ${stderr}`);
+      }
+    });
   } catch (e) {
-    args.jobLog(`scan failed: ${e}`);
+    args.jobLog(`command threw exception: ${e}`);
   }
 
   // // logs

@@ -156,13 +156,13 @@ var getCropInfo = function (args, file, scanConfig) { return __awaiter(void 0, v
                 cropInfo = (0, exports.getCropInfoFromString)(autocrop);
                 // ==== determine if we should zero some fields for being within ignore limits ==== //
                 // first check width
-                if (cropInfo.horizontalCrop() > (Number(videoStream.width) * (minCropPct / 100))) {
+                if (cropInfo.horizontalCrop() < (Number(videoStream.width) * (minCropPct / 100))) {
                     // total horizontal crop is less than ignore percentile - zero them out
                     cropInfo.left = 0;
                     cropInfo.right = 0;
                 }
                 // then check height
-                if (cropInfo.verticalCrop() > (Number(videoStream.height) * (minCropPct / 100))) {
+                if (cropInfo.verticalCrop() < (Number(videoStream.height) * (minCropPct / 100))) {
                     // total vertical crop is less tan ignore percentile - zero them out
                     cropInfo.top = 0;
                     cropInfo.bottom = 0;

@@ -158,12 +158,14 @@ export const getCropInfo = async (
       args,
     })).runCli();
   // find line containing the key data
-  let resultLine: string = response.errorLogFull.filter((line: string) => line.includes('autocrop = '))[0];
+  const resultLine: string = response.errorLogFull
+    .filter((line: string) => line.includes('autocrop = '))
+    .map((line) => line.substring(line.indexOf('scan: '), line.lastIndexOf(os.EOL) || line.length))[0];
   if (!resultLine) {
     throw new Error('failed to get autocrop results from Handbrake scan');
   }
-  // parse out the key parts of the line - sometimes has line feed
-  resultLine = resultLine.substring(resultLine.indexOf('scan: '), resultLine.lastIndexOf(os.EOL) || resultLine.length);
+  // parse out the key parts of the line
+  // resultLine = resultLine.substring(resultLine.indexOf('scan: '), resultLine.lastIndexOf(os.EOL) || resultLine.length);
   // parse autocrop string from line
   const autocropRegex = /(?<=autocrop = )(\d+\/\d+\/\d+\/\d+)/;
   const match: RegExpExecArray | null = autocropRegex.exec(resultLine);

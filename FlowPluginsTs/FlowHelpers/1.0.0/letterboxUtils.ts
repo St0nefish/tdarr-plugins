@@ -23,6 +23,7 @@ const getHwDecoder = (hardwareType: string): string | null => {
 // hwDecoder: specify hardware decoder - 'auto', 'nvdec', 'qsv', 'vaapi'
 export interface HandBrakeCropScanConfig {
   cropMode?: string,
+  minCropPct?: number,
   secondsPerPreview?: number,
   startOffsetPct?: number,
   endOffsetPct?: number,
@@ -65,6 +66,73 @@ export class CropInfo {
     this.outputHeight = outputHeight;
     this.outputX = outputX;
     this.outputY = outputY;
+  }
+
+  // get total vertical crop
+  public getVerticalCrop(): number {
+    return this.inputHeight - this.outputHeight;
+  }
+
+  // get total  horizontal crop
+  public getHorizontalCrop(): number {
+    return this.inputWidth - this.outputWidth;
+  }
+
+  // set minimum dimensional crop percentage - will zero out a dimensional crop if less than that minimum
+  public updateForMinimumCropPercentage(minCropPct: number): void {
+    const minCropMulti = minCropPct / 100;
+    if (this.getHorizontalCrop() < (this.inputWidth * minCropMulti)) {
+      // total horizontal crop is less than minimum - zero it out
+      this.outputWidth = this.inputWidth;
+      this.outputX = 0;
+    }
+    if (this.getVerticalCrop() < (this.inputHeight * minCropMulti)) {
+      // total vertical crop is less than minimum - zero it out
+      this.outputHeight = this.inputHeight;
+      this.outputY = 0;
+    }
+  }
+
+  // get the string used as an input to ffmpeg crop
+  public getFfmpegCropString(): string {
+    return `w=${this.outputWidth}:h=${this.outputHeight}:x=${this.outputX}:y=${this.outputY}`;
+  }
+
+  // get the string used as an input to handbrake crop
+  public getHandBrakeCropString(): string {
+    // calculate top/bottom/left/right
+    const cBottom = this.inputHeight - this.outputHeight - this.outputY;
+    const cRight = this.inputWidth - this.outputWidth - this.outputX;
+    return `${this.outputY}/${cBottom}/${this.outputX}/${cRight}`;
+  }
+
+  // determine if a crop should be executed given the input minimum percentage
+  public shouldCrop(minCropPct?: number): boolean {
+    // convert percentage to decimal
+    const minCropMultiplier = (minCropPct ?? 0) / 100;
+    // first check height - it's more likely to require cropping
+    if (this.getVerticalCrop() >= (this.inputHeight * minCropMultiplier)) {
+      // total vertical crop meets minimum - return true
+      return true;
+    }
+    // then check width - less likely to require cropping
+    if (this.getHorizontalCrop() >= (this.inputWidth * minCropMultiplier)) {
+      // total horizontal crop meets minimum - return true
+      return true;
+    }
+    // neither dimension met minimums - return false
+    return false;
+  }
+
+  // determine if this CropInfo is relevant to the input file
+  public isRelevant(file: IFileObject): boolean {
+    const videoStream: Istreams | undefined = file?.ffProbeData?.streams?.filter(isVideo)[0];
+    if (!videoStream) {
+      // if the input file doesn't even have a video stream assume it's not relevant
+      return false;
+    }
+    // check if file dimensions match this object's input dimensions
+    return this.inputWidth === videoStream.width && this.inputHeight === videoStream.height;
   }
 
   // create a crop info object from the string output by Handbrake
@@ -181,6 +249,7 @@ export class CropInfo {
     if (!resultLine) {
       throw new Error('failed to get autocrop results from Handbrake scan');
     }
+    args.jobLog(`scan result: ${resultLine}`);
     // parse autocrop string from line
     const autocropRegex = /(?<=autocrop = )(\d+\/\d+\/\d+\/\d+)/;
     const match: RegExpExecArray | null = autocropRegex.exec(resultLine);
@@ -188,61 +257,14 @@ export class CropInfo {
     if (match) {
       autocropStr = match[0];
     }
-    args.jobLog(`scan result: ${resultLine}`);
     args.jobLog(`autocrop: ${autocropStr}`);
     // parse string to CropInfo object and return object
-    return CropInfo.fromHandBrakeAutocropString(videoStream, autocropStr);
-  }
-
-  // get total vertical crop
-  public getVerticalCrop(): number {
-    return this.inputHeight - this.outputHeight;
-  }
-
-  // get total  horizontal crop
-  public getHorizontalCrop(): number {
-    return this.inputWidth - this.outputWidth;
-  }
-
-  // get the string used as an input to ffmpeg crop
-  public getFfmpegCropString(): string {
-    return `w=${this.outputWidth}:h=${this.outputHeight}:x=${this.outputX}:y=${this.outputY}`;
-  }
-
-  // get the string used as an input to handbrake crop
-  public getHandBrakeCropString(): string {
-    // calculate top/bottom/left/right
-    const cBottom = this.inputHeight - this.outputHeight - this.outputY;
-    const cRight = this.inputWidth - this.outputWidth - this.outputX;
-    return `${this.outputY}/${cBottom}/${this.outputX}/${cRight}`;
-  }
-
-  // determine if a crop should be executed given the input minimum percentage
-  public shouldCrop(minCropPct: number): boolean {
-    // convert percentage to decimal
-    const minCropMultiplier = minCropPct / 100;
-    // first check height - it's more likely to require cropping
-    if (this.getVerticalCrop() >= (this.inputHeight * minCropMultiplier)) {
-      // total vertical crop meets minimum - return true
-      return true;
+    const cropInfo = CropInfo.fromHandBrakeAutocropString(videoStream, autocropStr);
+    // if configured handle minimum percentage
+    if (scanConfig.minCropPct) {
+      cropInfo.updateForMinimumCropPercentage(scanConfig.minCropPct);
     }
-    // then check width - less likely to require cropping
-    if (this.getHorizontalCrop() >= (this.inputWidth * minCropMultiplier)) {
-      // total horizontal crop meets minimum - return true
-      return true;
-    }
-    // neither dimension met minimums - return false
-    return false;
-  }
-
-  // determine if this CropInfo is relevant to the input file
-  public isRelevant(file: IFileObject): boolean {
-    const videoStream: Istreams | undefined = file?.ffProbeData?.streams?.filter(isVideo)[0];
-    if (!videoStream) {
-      // if the input file doesn't even have a video stream assume it's not relevant
-      return false;
-    }
-    // check if file dimensions match this object's input dimensions
-    return this.inputWidth === videoStream.width && this.inputHeight === videoStream.height;
+    // return final state
+    return cropInfo;
   }
 }

@@ -185,20 +185,22 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     secondsPerPreview: Number(args.inputs.secondsPerPreview),
                     startOffsetPct: Number(args.inputs.startOffsetPct),
                     endOffsetPct: Number(args.inputs.endOffsetPct),
+                    minCropPct: Number((_a = args.inputs.minCropPct) !== null && _a !== void 0 ? _a : 0),
                     enableHwDecoding: Boolean(args.inputs.enableHwDecoding),
                     hwDecoder: String(args.inputs.hwDecoder),
                 };
                 return [4 /*yield*/, letterboxUtils_1.CropInfo.fromHandBrakeScan(args, args.inputFileObj, scanConfig)];
             case 1:
                 cropInfo = _d.sent();
+                // log results
                 args.jobLog("calculated crop info: ".concat(JSON.stringify(cropInfo)));
-                args.jobLog("would use ffmpeg crop: [".concat(cropInfo.getFfmpegCropString(), "]"));
-                args.jobLog("would use handbrake crop: [".concat(cropInfo.getHandBrakeCropString(), "]"));
+                args.jobLog("ffmpeg crop string: [".concat(cropInfo.getFfmpegCropString(), "]"));
+                args.jobLog("handbrake crop string: [".concat(cropInfo.getHandBrakeCropString(), "]"));
                 // store result if specified
                 if (args.inputs.storeCropSettings) {
                     // ensure user variable object exists
                     // eslint-disable-next-line no-param-reassign
-                    (_a = (_c = args.variables).user) !== null && _a !== void 0 ? _a : (_c.user = {});
+                    (_b = (_c = args.variables).user) !== null && _b !== void 0 ? _b : (_c.user = {});
                     // then set our crop info details
                     // eslint-disable-next-line no-param-reassign
                     args.variables.user.crop_object = JSON.stringify(cropInfo);
@@ -207,7 +209,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     // eslint-disable-next-line no-param-reassign
                     args.variables.user.crop_handbrake = cropInfo.getHandBrakeCropString();
                 }
-                outputNumber = cropInfo.shouldCrop(Number((_b = args.inputs.minCropPct) !== null && _b !== void 0 ? _b : 0)) ? 1 : 2;
+                outputNumber = cropInfo.shouldCrop() ? 1 : 2;
                 // return
                 return [2 /*return*/, {
                         outputFileObj: args.inputFileObj,

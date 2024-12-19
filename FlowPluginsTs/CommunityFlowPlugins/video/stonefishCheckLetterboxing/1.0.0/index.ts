@@ -183,14 +183,16 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     secondsPerPreview: Number(args.inputs.secondsPerPreview),
     startOffsetPct: Number(args.inputs.startOffsetPct),
     endOffsetPct: Number(args.inputs.endOffsetPct),
+    minCropPct: Number(args.inputs.minCropPct ?? 0),
     enableHwDecoding: Boolean(args.inputs.enableHwDecoding),
     hwDecoder: String(args.inputs.hwDecoder),
   };
   // execute cropdetect
   const cropInfo: CropInfo = await CropInfo.fromHandBrakeScan(args, args.inputFileObj, scanConfig);
+  // log results
   args.jobLog(`calculated crop info: ${JSON.stringify(cropInfo)}`);
-  args.jobLog(`would use ffmpeg crop: [${cropInfo.getFfmpegCropString()}]`);
-  args.jobLog(`would use handbrake crop: [${cropInfo.getHandBrakeCropString()}]`);
+  args.jobLog(`ffmpeg crop string: [${cropInfo.getFfmpegCropString()}]`);
+  args.jobLog(`handbrake crop string: [${cropInfo.getHandBrakeCropString()}]`);
   // store result if specified
   if (args.inputs.storeCropSettings) {
     // ensure user variable object exists
@@ -205,7 +207,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     args.variables.user.crop_handbrake = cropInfo.getHandBrakeCropString();
   }
   // determine output number
-  const outputNumber = cropInfo.shouldCrop(Number(args.inputs.minCropPct ?? 0)) ? 1 : 2;
+  const outputNumber = cropInfo.shouldCrop() ? 1 : 2;
   // return
   return {
     outputFileObj: args.inputFileObj,

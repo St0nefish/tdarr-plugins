@@ -411,31 +411,6 @@ var details = function () { return ({
             tooltip: 'Percent change in dimension in order to justify cropping',
         },
         {
-            label: 'Enable Hardware Decoding',
-            name: 'enableHwDecoding',
-            type: 'boolean',
-            defaultValue: 'true',
-            inputUI: {
-                type: 'switch',
-                displayConditions: {
-                    logic: 'AND',
-                    sets: [
-                        {
-                            logic: 'AND',
-                            inputs: [
-                                {
-                                    name: 'enableLetterboxRemoval',
-                                    condition: '===',
-                                    value: 'true',
-                                },
-                            ],
-                        },
-                    ],
-                },
-            },
-            tooltip: 'Specify whether to use hardware decoding if available',
-        },
-        {
             label: 'Hardware Decoder',
             name: 'hwDecoder',
             type: 'string',
@@ -460,7 +435,7 @@ var details = function () { return ({
                                     value: 'true',
                                 },
                                 {
-                                    name: 'enableHwDecoding',
+                                    name: 'hardwareDecoding',
                                     condition: '===',
                                     value: 'true',
                                 },
@@ -534,7 +509,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         secondsPerPreview: Number(args.inputs.secondsPerPreview),
                         startOffsetPct: Number(args.inputs.startOffsetPct),
                         endOffsetPct: Number(args.inputs.endOffsetPct),
-                        enableHwDecoding: Boolean(args.inputs.enableHwDecoding),
+                        enableHwDecoding: Boolean(args.inputs.hardwareDecoding),
                         hwDecoder: String(args.inputs.hwDecoder),
                     })];
             case 1:

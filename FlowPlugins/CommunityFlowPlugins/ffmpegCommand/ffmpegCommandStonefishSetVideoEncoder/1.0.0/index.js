@@ -279,7 +279,7 @@ var details = function () { return ({
                     ],
                 },
             },
-            tooltip: "\n        Specify whether to load crop configuration from a flow variable. If the \"Stonefish Check Letterboxing\" plugin \n        is used earlier in the flow with the \"Save Crop Info to Flow Variables\" option enabled then enabling this \n        option will cause this plugin to grab that saved data from the flow variables and use it to avoid re-running \n        the HandBrake scan. Basic validation will be performed to check that the input dimensions match those of the \n        current file in case another transcode has happened between the detect plugin and this one rendering the prior \n        results invalid. \n        ",
+            tooltip: "\n        Specify whether to load crop configuration from a flow variable. If the \"Stonefish Check Letterboxing\" plugin \n        is used earlier in the flow with the \"Save Crop Info to Flow Variables\" option enabled then enabling this \n        option will cause this plugin to grab that saved data from the flow variables and use it to avoid re-running \n        the HandBrake scan. Basic validation will be performed to check that the input dimensions match those of the \n        current file in case another transcode has happened between the detect plugin and this one rendering the prior \n        results invalid. If prior results are not present or not still relevant then a new scan will be executed. \n        ",
         },
         {
             label: 'Crop Detection Mode',

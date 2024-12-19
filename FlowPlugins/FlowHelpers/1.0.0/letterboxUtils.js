@@ -79,7 +79,6 @@ var CropInfo = /** @class */ (function () {
     };
     // create a crop info object from a JSON string
     CropInfo.fromJsonString = function (json) {
-        var _a, _b, _c, _d;
         // parse json
         var parsedCropInfo = JSON.parse(json, function (key, value) {
             var _a;
@@ -90,16 +89,16 @@ var CropInfo = /** @class */ (function () {
             }
             return value;
         });
-        // ensure input dimensions are present
-        if (!parsedCropInfo.inputWidth || !parsedCropInfo.inputHeight) {
-            throw new Error('inputWidth and inputHeight are required');
+        // if any value is missing then this wasn't a proper CropInfo object so return null
+        if (parsedCropInfo.inputWidth === undefined
+            || parsedCropInfo.inputHeight === undefined
+            || parsedCropInfo.outputWidth === undefined
+            || parsedCropInfo.outputHeight === undefined
+            || parsedCropInfo.outputX === undefined
+            || parsedCropInfo.outputY === undefined) {
+            return null;
         }
-        // default output dimensions
-        (_a = parsedCropInfo.outputWidth) !== null && _a !== void 0 ? _a : (parsedCropInfo.outputWidth = parsedCropInfo.inputWidth);
-        (_b = parsedCropInfo.outputHeight) !== null && _b !== void 0 ? _b : (parsedCropInfo.outputHeight = parsedCropInfo.inputHeight);
-        (_c = parsedCropInfo.outputX) !== null && _c !== void 0 ? _c : (parsedCropInfo.outputX = 0);
-        (_d = parsedCropInfo.outputY) !== null && _d !== void 0 ? _d : (parsedCropInfo.outputY = 0);
-        // return
+        // otherwise this is valid, return it
         return parsedCropInfo;
     };
     // function to get crop info from a video file via HandBrake scan

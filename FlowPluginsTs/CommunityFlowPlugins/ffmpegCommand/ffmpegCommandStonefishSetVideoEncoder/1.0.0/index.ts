@@ -277,7 +277,7 @@ const details = (): IpluginDetails => ({
         option will cause this plugin to grab that saved data from the flow variables and use it to avoid re-running 
         the HandBrake scan. Basic validation will be performed to check that the input dimensions match those of the 
         current file in case another transcode has happened between the detect plugin and this one rendering the prior 
-        results invalid. 
+        results invalid. If prior results are not present or not still relevant then a new scan will be executed. 
         `,
     },
     {

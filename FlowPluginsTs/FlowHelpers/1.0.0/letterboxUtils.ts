@@ -88,7 +88,7 @@ export class CropInfo {
   }
 
   // create a crop info object from a JSON string
-  public static fromJsonString(json: string): CropInfo {
+  public static fromJsonString(json: string): CropInfo | null {
     // parse json
     const parsedCropInfo: CropInfo = JSON.parse(json, (key, value) => {
       // cast any keys expected to contain numeric values to numbers
@@ -98,16 +98,17 @@ export class CropInfo {
       }
       return value;
     });
-    // ensure input dimensions are present
-    if (!parsedCropInfo.inputWidth || !parsedCropInfo.inputHeight) {
-      throw new Error('inputWidth and inputHeight are required');
+    // if any value is missing then this wasn't a proper CropInfo object so return null
+    if (parsedCropInfo.inputWidth === undefined
+      || parsedCropInfo.inputHeight === undefined
+      || parsedCropInfo.outputWidth === undefined
+      || parsedCropInfo.outputHeight === undefined
+      || parsedCropInfo.outputX === undefined
+      || parsedCropInfo.outputY === undefined
+    ) {
+      return null;
     }
-    // default output dimensions
-    parsedCropInfo.outputWidth ??= parsedCropInfo.inputWidth;
-    parsedCropInfo.outputHeight ??= parsedCropInfo.inputHeight;
-    parsedCropInfo.outputX ??= 0;
-    parsedCropInfo.outputY ??= 0;
-    // return
+    // otherwise this is valid, return it
     return parsedCropInfo;
   }
 

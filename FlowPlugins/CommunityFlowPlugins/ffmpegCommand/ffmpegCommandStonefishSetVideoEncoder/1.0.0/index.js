@@ -502,8 +502,10 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 // if enabled attempt to load crop info from variable
                 if (args.inputs.loadCropSettings) {
                     cropInfo = letterboxUtils_1.CropInfo.fromJsonString(args.variables.user.crop_object);
+                    args.jobLog("loaded crop info from variable: ".concat(JSON.stringify(cropInfo)));
                 }
                 if (!!(cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.isRelevant(args.inputFileObj))) return [3 /*break*/, 2];
+                args.jobLog('crop info was not loaded from variable or not relevant - executing scan');
                 return [4 /*yield*/, letterboxUtils_1.CropInfo.fromHandBrakeScan(args, args.inputFileObj, {
                         cropMode: String(args.inputs.cropMode),
                         secondsPerPreview: Number(args.inputs.secondsPerPreview),
@@ -514,6 +516,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     })];
             case 1:
                 cropInfo = _a.sent();
+                args.jobLog("crop info scan result: ".concat(JSON.stringify(cropInfo)));
                 _a.label = 2;
             case 2: return [4 /*yield*/, (0, hardwareUtils_1.getEncoder)({
                     targetCodec: outputCodec,

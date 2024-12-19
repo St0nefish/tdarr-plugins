@@ -505,9 +505,11 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     // if enabled attempt to load crop info from variable
     if (args.inputs.loadCropSettings) {
       cropInfo = CropInfo.fromJsonString(args.variables.user.crop_object);
+      args.jobLog(`loaded crop info from variable: ${JSON.stringify(cropInfo)}`);
     }
     // if nothing was loaded or the loaded object isn't still relevant then run a scan
     if (!cropInfo?.isRelevant(args.inputFileObj)) {
+      args.jobLog('crop info was not loaded from variable or not relevant - executing scan');
       cropInfo = await CropInfo.fromHandBrakeScan(
         args,
         args.inputFileObj,
@@ -520,6 +522,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
           hwDecoder: String(args.inputs.hwDecoder),
         },
       );
+      args.jobLog(`crop info scan result: ${JSON.stringify(cropInfo)}`);
     }
   }
   // load encoder configuration

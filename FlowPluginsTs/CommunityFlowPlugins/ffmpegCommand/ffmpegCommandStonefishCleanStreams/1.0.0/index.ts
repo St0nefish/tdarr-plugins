@@ -32,7 +32,7 @@ import {
 
 /* eslint-disable no-param-reassign */
 const details = (): IpluginDetails => ({
-  name: 'Cleanup Streams',
+  name: 'Stonefish Clean Streams',
   description:
     `
     Remove unwanted streams. 

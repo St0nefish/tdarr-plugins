@@ -42,7 +42,7 @@ var metadataUtils_1 = require("../../../../FlowHelpers/1.0.0/metadataUtils");
 var IFileObject_1 = require("../../../../FlowHelpers/1.0.0/interfaces/synced/IFileObject");
 /* eslint-disable no-param-reassign */
 var details = function () { return ({
-    name: 'Cleanup Streams',
+    name: 'Stonefish Clean Streams',
     description: "\n    Remove unwanted streams. \n    \n\n\n    This plugin will iterate through all streams that are present and remove ones which are detected as unwanted after\n    applying the various configuration options below. \n    \n\n\n    I use this to purge anything not in my native language, remove duplicates if present, remove data & image streams,\n    and anything flagged as descriptive. There are additional options to remove commentary as well. \n    ",
     style: {
         borderColor: '#6efefc',

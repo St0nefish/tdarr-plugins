@@ -41,7 +41,7 @@ var flowUtils_1 = require("../../../../FlowHelpers/1.0.0/interfaces/flowUtils");
 var metadataUtils_1 = require("../../../../FlowHelpers/1.0.0/metadataUtils");
 /* eslint-disable no-param-reassign */
 var details = function () { return ({
-    name: 'Tag Streams',
+    name: 'Stonefish Tag Streams',
     description: "\n    Add missing tags. \n    \n\n\n    Checks all streams for missing titles, and optionally overwrites existing ones with new ones generated from current\n    title metadata. \n    ",
     style: {
         borderColor: '#6efefc',

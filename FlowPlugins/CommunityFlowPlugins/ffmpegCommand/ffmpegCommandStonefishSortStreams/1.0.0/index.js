@@ -41,7 +41,7 @@ var flowUtils_1 = require("../../../../FlowHelpers/1.0.0/interfaces/flowUtils");
 var metadataUtils_1 = require("../../../../FlowHelpers/1.0.0/metadataUtils");
 /* eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }] */
 var details = function () { return ({
-    name: 'Sort Streams',
+    name: 'Stonefish Sort Streams',
     description: "\n    Sort Streams. \n    \n\n\n    Sorts first by type - video, audio, subtitle, other. \n    \n\n \n    Within type follows this logic: \n    \n\n\n    Video: resolution (desc), then bitrate (desc). \n    \n\n\n    Audio: sorted by type (standard, commentary, descriptive), then channels (desc), bitrate (desc). \n    \n\n\n    Subtitle: sorted by type (standard, commentary, descriptive), then forced flag, then default flag. \n    \n\n\n    Other: left in input order. \n    \n\n\n    \n\n\n    Influenced by the standard ffmpegCommandRorderStreams plugin. However, I wasn't getting quite the result I wanted, \n    so I learned how to build a flow plugin to build exactly what I was looking for. No configuration, this one is \"my \n    way or the highway\". \n    ",
     style: {
         borderColor: '#6efefc',

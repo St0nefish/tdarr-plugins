@@ -42,9 +42,10 @@ var hardwareUtils_1 = require("../../../../FlowHelpers/1.0.0/hardwareUtils");
 var flowUtils_1 = require("../../../../FlowHelpers/1.0.0/interfaces/flowUtils");
 var metadataUtils_1 = require("../../../../FlowHelpers/1.0.0/metadataUtils");
 var fileUtils_1 = require("../../../../FlowHelpers/1.0.0/fileUtils");
+var letterboxUtils_1 = require("../../../../FlowHelpers/1.0.0/letterboxUtils");
 /* eslint-disable no-param-reassign */
 var details = function () { return ({
-    name: 'Set Video Encoder (stonefish)',
+    name: 'Stonefish Set Video Encoder',
     description: "\n     Configure the video encoder settings \n     \n\n\n     See the following resources for more details on what these settings do:\n     \n\n\n     - https://trac.ffmpeg.org/wiki/Encode/H.264\n     \n\n\n     - https://trac.ffmpeg.org/wiki/Encode/H.265\n     \n\n\n     - https://trac.ffmpeg.org/wiki/Encode/AV1\n     \n\n\n     Credit to the default ffmpegCommandSetVideoEncoder plugin. I forked it to add options to control the title \n     behavior and change default values to match my personal preference.\n     ",
     style: {
         borderColor: '#6efefc',
@@ -245,6 +246,231 @@ var details = function () { return ({
             },
             tooltip: "\n        Specify how to handle the title of the resulting stream\n        \n\n\n        - default : defer to the default ffmpeg behavior\n        \n\n\n        - clear : clear the title value\n        \n\n\n        - generate : generate a title from {codec}\n        ",
         },
+        {
+            label: 'Enable Letterbox Removal',
+            name: 'enableLetterboxRemoval',
+            type: 'boolean',
+            defaultValue: 'true',
+            inputUI: {
+                type: 'switch',
+            },
+            tooltip: 'Specify whether to enable letterbox removal',
+        },
+        {
+            label: 'Load Crop Info from Flow Variables',
+            name: 'loadCropSettings',
+            type: 'boolean',
+            defaultValue: 'true',
+            inputUI: {
+                type: 'switch',
+                displayConditions: {
+                    logic: 'AND',
+                    sets: [
+                        {
+                            logic: 'AND',
+                            inputs: [
+                                {
+                                    name: 'enableLetterboxRemoval',
+                                    condition: '===',
+                                    value: 'true',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+            tooltip: "\n        Specify whether to load crop configuration from a flow variable. If the \"Stonefish Check Letterboxing\" plugin \n        is used earlier in the flow with the \"Save Crop Info to Flow Variables\" option enabled then enabling this \n        option will cause this plugin to grab that saved data from the flow variables and use it to avoid re-running \n        the HandBrake scan. Basic validation will be performed to check that the input dimensions match those of the \n        current file in case another transcode has happened between the detect plugin and this one rendering the prior \n        results invalid. \n        ",
+        },
+        {
+            label: 'Crop Detection Mode',
+            name: 'cropMode',
+            type: 'string',
+            defaultValue: 'conservative',
+            inputUI: {
+                type: 'dropdown',
+                options: [
+                    'auto',
+                    'conservative',
+                ],
+                displayConditions: {
+                    logic: 'AND',
+                    sets: [
+                        {
+                            logic: 'AND',
+                            inputs: [
+                                {
+                                    name: 'enableLetterboxRemoval',
+                                    condition: '===',
+                                    value: 'true',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+            tooltip: 'Select Handbrake crop detection mode',
+        },
+        {
+            label: 'Seconds Per Preview',
+            name: 'secondsPerPreview',
+            type: 'number',
+            defaultValue: '30',
+            inputUI: {
+                type: 'text',
+                displayConditions: {
+                    logic: 'AND',
+                    sets: [
+                        {
+                            logic: 'AND',
+                            inputs: [
+                                {
+                                    name: 'enableLetterboxRemoval',
+                                    condition: '===',
+                                    value: 'true',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+            tooltip: 'Average number of seconds of video per preview',
+        },
+        {
+            label: 'Start Offset Percentage',
+            name: 'startOffsetPct',
+            type: 'number',
+            defaultValue: '5',
+            inputUI: {
+                type: 'text',
+                displayConditions: {
+                    logic: 'AND',
+                    sets: [
+                        {
+                            logic: 'AND',
+                            inputs: [
+                                {
+                                    name: 'enableLetterboxRemoval',
+                                    condition: '===',
+                                    value: 'true',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+            tooltip: 'Offset (in percent of runtime) from the beginning of the video to avoid scanning the intro.',
+        },
+        {
+            label: 'End Offset Percentage',
+            name: 'endOffsetPct',
+            type: 'number',
+            defaultValue: '5',
+            inputUI: {
+                type: 'text',
+                displayConditions: {
+                    logic: 'AND',
+                    sets: [
+                        {
+                            logic: 'AND',
+                            inputs: [
+                                {
+                                    name: 'enableLetterboxRemoval',
+                                    condition: '===',
+                                    value: 'true',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+            tooltip: 'Offset (in percent of runtime) from the end of the video to avoid scanning the outro.',
+        },
+        {
+            label: 'Minimum Crop Percentage',
+            name: 'minCropPct',
+            type: 'number',
+            defaultValue: '2',
+            inputUI: {
+                type: 'text',
+                displayConditions: {
+                    logic: 'AND',
+                    sets: [
+                        {
+                            logic: 'AND',
+                            inputs: [
+                                {
+                                    name: 'enableLetterboxRemoval',
+                                    condition: '===',
+                                    value: 'true',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+            tooltip: 'Percent change in dimension in order to justify cropping',
+        },
+        {
+            label: 'Enable Hardware Decoding',
+            name: 'enableHwDecoding',
+            type: 'boolean',
+            defaultValue: 'true',
+            inputUI: {
+                type: 'switch',
+                displayConditions: {
+                    logic: 'AND',
+                    sets: [
+                        {
+                            logic: 'AND',
+                            inputs: [
+                                {
+                                    name: 'enableLetterboxRemoval',
+                                    condition: '===',
+                                    value: 'true',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+            tooltip: 'Specify whether to use hardware decoding if available',
+        },
+        {
+            label: 'Hardware Decoder',
+            name: 'hwDecoder',
+            type: 'string',
+            defaultValue: 'auto',
+            inputUI: {
+                type: 'dropdown',
+                options: [
+                    'auto',
+                    'nvdec',
+                    'qsv',
+                    'vaapi',
+                ],
+                displayConditions: {
+                    logic: 'AND',
+                    sets: [
+                        {
+                            logic: 'AND',
+                            inputs: [
+                                {
+                                    name: 'enableLetterboxRemoval',
+                                    condition: '===',
+                                    value: 'true',
+                                },
+                                {
+                                    name: 'enableHwDecoding',
+                                    condition: '===',
+                                    value: 'true',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+            tooltip: "\n        Specify hardware encoder to use. Auto mode really just detects nvidia right now and enables nvdec, and \n        potentially qsv if the decoder shares the same name. I'm struggling to find available input options to populate\n        this.\n        ",
+        },
     ],
     outputs: [
         {
@@ -275,7 +501,7 @@ var getVfScaleArgs = function (targetResolution) {
 };
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, outputContainer, outputResolution, outputCodec, hardwareDecoding, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, encoderProperties, container;
+    var lib, outputContainer, outputResolution, outputCodec, hardwareDecoding, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, cropInfo, encoderProperties, container;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -296,13 +522,31 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 hardwareEncoding = Boolean(args.inputs.hardwareEncoding);
                 hardwareType = String(args.inputs.hardwareType);
                 titleMode = String(args.inputs.titleMode);
-                return [4 /*yield*/, (0, hardwareUtils_1.getEncoder)({
-                        targetCodec: outputCodec,
-                        hardwareEncoding: hardwareEncoding,
-                        hardwareType: hardwareType,
-                        args: args,
+                cropInfo = null;
+                if (!args.inputs.enableLetterboxRemoval) return [3 /*break*/, 2];
+                // if enabled attempt to load crop info from variable
+                if (args.inputs.loadCropSettings) {
+                    cropInfo = letterboxUtils_1.CropInfo.fromJsonString(args.variables.user.crop_object);
+                }
+                if (!!(cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.isRelevant(args.inputFileObj))) return [3 /*break*/, 2];
+                return [4 /*yield*/, letterboxUtils_1.CropInfo.fromHandBrakeScan(args, args.inputFileObj, {
+                        cropMode: String(args.inputs.cropMode),
+                        secondsPerPreview: Number(args.inputs.secondsPerPreview),
+                        startOffsetPct: Number(args.inputs.startOffsetPct),
+                        endOffsetPct: Number(args.inputs.endOffsetPct),
+                        enableHwDecoding: Boolean(args.inputs.enableHwDecoding),
+                        hwDecoder: String(args.inputs.hwDecoder),
                     })];
             case 1:
+                cropInfo = _a.sent();
+                _a.label = 2;
+            case 2: return [4 /*yield*/, (0, hardwareUtils_1.getEncoder)({
+                    targetCodec: outputCodec,
+                    hardwareEncoding: hardwareEncoding,
+                    hardwareType: hardwareType,
+                    args: args,
+                })];
+            case 3:
                 encoderProperties = _a.sent();
                 // first handle container if not already correct
                 if ((0, fileUtils_1.getContainer)(args.inputFileObj._id) !== outputContainer) {
@@ -312,6 +556,10 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     if (['ts', 'avi', 'mpg', 'mpeg'].includes(container)) {
                         args.variables.ffmpegCommand.overallOuputArguments.push('-fflags', '+genpts');
                     }
+                }
+                // handle cropping if required
+                if (cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.shouldCrop(Number(args.inputs.minCropPct))) {
+                    args.variables.ffmpegCommand.overallOuputArguments.push('-vf', "crop=".concat(cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.getFfmpegCropString()));
                 }
                 // iterate streams, filter to video, and configure encoding options
                 args.variables.ffmpegCommand.streams.filter(metadataUtils_1.isVideo).forEach(function (stream) {

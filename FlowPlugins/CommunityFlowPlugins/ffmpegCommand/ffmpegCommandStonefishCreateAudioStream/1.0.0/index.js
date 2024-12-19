@@ -6,7 +6,7 @@ var fileUtils_1 = require("../../../../FlowHelpers/1.0.0/fileUtils");
 var metadataUtils_1 = require("../../../../FlowHelpers/1.0.0/metadataUtils");
 /* eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }] */
 var details = function () { return ({
-    name: 'Create Audio Stream',
+    name: 'Stonefish Create Audio Stream',
     description: "\n    Create an audio stream matching the configured values. \n    \n\n\n    If a stream already exists matching the configured language, codec, and channel count then nothing will happen. If \n    no stream matches these then one will be created using default ffmpeg settings for that codec, or if specified the \n    optional bitrate and/or samplerate values. This can be used to ensure there is an audio stream with maximum \n    compatibility for your typical players. \n    \n\n\n    Credit to the standard ffmpegCommandEnsureAudioStream plugin for the starting code. I tweaked some things add a few\n    additional options to control the title of the resulting stream and ensure I never accidentally used a commentary or\n    descriptive stream as the encoding source. \n    ",
     style: {
         borderColor: '#6efefc',

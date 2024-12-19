@@ -17,7 +17,7 @@ import {
 
 /* eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }] */
 const details = (): IpluginDetails => ({
-  name: 'Create Audio Stream',
+  name: 'Stonefish Create Audio Stream',
   description:
     `
     Create an audio stream matching the configured values. 

@@ -28,7 +28,7 @@ import { ImediaInfo } from '../../../../FlowHelpers/1.0.0/interfaces/synced/IFil
 
 /* eslint-disable no-param-reassign */
 const details = (): IpluginDetails => ({
-  name: 'Tag Streams',
+  name: 'Stonefish Tag Streams',
   description:
     `
     Add missing tags. 

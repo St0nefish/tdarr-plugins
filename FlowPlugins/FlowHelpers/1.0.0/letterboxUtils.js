@@ -36,156 +36,196 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCropInfo = exports.getCropInfoFromString = exports.CropInfo = void 0;
+exports.CropInfo = void 0;
 var cliUtils_1 = require("./cliUtils");
 var metadataUtils_1 = require("./metadataUtils");
+// function to get hardware decoder from configured hardware type
+var getHwDecoder = function (hardwareType) {
+    if (hardwareType === 'nvenc') {
+        return 'nvdec';
+    }
+    return hardwareType;
+};
 // class to hold crop info data
 var CropInfo = /** @class */ (function () {
     // constructor to create a CropInfo object from raw inputs
-    function CropInfo(top, bottom, left, right) {
-        var _this = this;
-        // determine if this object determines that the video should be cropped
-        this.shouldCrop = function () { return _this.top > 0 || _this.bottom > 0 || _this.right > 0 || _this.left > 0; };
-        // get total vertical crop
-        this.verticalCrop = function () { return _this.top + _this.bottom; };
-        // get total  horizontal crop
-        this.horizontalCrop = function () { return _this.left + _this.right; };
-        // get the string used as an input to ffmpeg crop
-        this.ffmpegCropString = function (file) {
-            var _a, _b, _c, _d, _e;
-            // first grab the video stream from the file
-            var videoStream = (_c = (_b = (_a = file === null || file === void 0 ? void 0 : file.ffProbeData) === null || _a === void 0 ? void 0 : _a.streams) === null || _b === void 0 ? void 0 : _b.filter(metadataUtils_1.isVideo)) === null || _c === void 0 ? void 0 : _c[0];
-            if (!videoStream) {
-                throw new Error("Could not find stream in: ".concat(file._id));
-            }
-            // get input resolution
-            var inputWidth = (_d = videoStream.width) !== null && _d !== void 0 ? _d : 0;
-            var inputHeight = (_e = videoStream.height) !== null && _e !== void 0 ? _e : 0;
-            // calculate new width
-            var newWidth = inputWidth - _this.horizontalCrop();
-            var newHeight = inputHeight - _this.verticalCrop();
-            // build string
-            return "w=".concat(newWidth, ":h=").concat(newHeight, ":x=").concat(_this.left, ":y=").concat(_this.top);
-        };
-        this.top = top;
-        this.bottom = bottom;
-        this.left = left;
-        this.right = right;
+    function CropInfo(inputWidth, inputHeight, outputWidth, outputHeight, outputX, outputY) {
+        this.inputWidth = inputWidth;
+        this.inputHeight = inputHeight;
+        this.outputWidth = outputWidth;
+        this.outputHeight = outputHeight;
+        this.outputX = outputX;
+        this.outputY = outputY;
     }
+    // create a crop info object from the string output by Handbrake
+    CropInfo.fromHandBrakeAutocropString = function (videoStream, cropInfoStr) {
+        var _a, _b, _c, _d, _e;
+        if (!videoStream.width || !videoStream.height) {
+            throw new Error('input stream has no dimensions - unable to calculate crop info');
+        }
+        var inputWidth = videoStream.width;
+        var inputHeight = videoStream.height;
+        // split autocrop string to numeric values
+        var split = String(cropInfoStr).split('/');
+        var cTop = Number((_a = split[0]) !== null && _a !== void 0 ? _a : 0);
+        var cBottom = Number((_b = split[1]) !== null && _b !== void 0 ? _b : 0);
+        var cLeft = Number((_c = split[2]) !== null && _c !== void 0 ? _c : 0);
+        var cRight = Number((_d = split[3]) !== null && _d !== void 0 ? _d : 0);
+        // calculate new values
+        var newWidth = ((_e = videoStream.width) !== null && _e !== void 0 ? _e : 0) - (cLeft + cRight);
+        var newHeight = inputHeight - (cTop + cBottom);
+        // create and return object
+        return new CropInfo(inputWidth, inputHeight, newWidth, newHeight, cLeft, cTop);
+    };
+    // create a crop info object from a JSON string
+    CropInfo.fromJsonString = function (json) {
+        var _a, _b, _c, _d;
+        // parse json
+        var parsedCropInfo = JSON.parse(json, function (key, value) {
+            var _a;
+            // cast any keys expected to contain numeric values to numbers
+            if (['inputWidth', 'inputHeight', 'outputWidth', 'outputHeight', 'outputX', 'outputY'].includes(key)
+                && typeof value === 'string') {
+                return Number((_a = value.trim()) !== null && _a !== void 0 ? _a : 0);
+            }
+            return value;
+        });
+        // ensure input dimensions are present
+        if (!parsedCropInfo.inputWidth || !parsedCropInfo.inputHeight) {
+            throw new Error('inputWidth and inputHeight are required');
+        }
+        // default output dimensions
+        (_a = parsedCropInfo.outputWidth) !== null && _a !== void 0 ? _a : (parsedCropInfo.outputWidth = parsedCropInfo.inputWidth);
+        (_b = parsedCropInfo.outputHeight) !== null && _b !== void 0 ? _b : (parsedCropInfo.outputHeight = parsedCropInfo.inputHeight);
+        (_c = parsedCropInfo.outputX) !== null && _c !== void 0 ? _c : (parsedCropInfo.outputX = 0);
+        (_d = parsedCropInfo.outputY) !== null && _d !== void 0 ? _d : (parsedCropInfo.outputY = 0);
+        // return
+        return parsedCropInfo;
+    };
+    // function to get crop info from a video file via HandBrake scan
+    // args: input plugin argument object
+    // file: file to detect letterboxing for
+    // scanConfig: ScanConfig object
+    CropInfo.fromHandBrakeScan = function (args, file, scanConfig) {
+        return __awaiter(this, void 0, void 0, function () {
+            var videoStream, cropMode, enableHwDecoding, hwDecoder, totalDuration, startTime, endTime, scannedTime, numPreviews, spawnArgs, response, resultLine, autocropRegex, match, autocropStr;
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+            return __generator(this, function (_k) {
+                switch (_k.label) {
+                    case 0:
+                        videoStream = (_b = (_a = file === null || file === void 0 ? void 0 : file.ffProbeData) === null || _a === void 0 ? void 0 : _a.streams) === null || _b === void 0 ? void 0 : _b.filter(metadataUtils_1.isVideo)[0];
+                        if (!videoStream) {
+                            throw new Error('File does not have a video stream');
+                        }
+                        cropMode = (_c = scanConfig.cropMode) !== null && _c !== void 0 ? _c : 'conservative';
+                        enableHwDecoding = (_d = scanConfig.enableHwDecoding) !== null && _d !== void 0 ? _d : false;
+                        hwDecoder = (!scanConfig.hwDecoder || scanConfig.hwDecoder === 'auto')
+                            ? getHwDecoder(args.nodeHardwareType) : scanConfig.hwDecoder;
+                        totalDuration = Math.round(Number((_f = (_e = file.ffProbeData.format) === null || _e === void 0 ? void 0 : _e.duration) !== null && _f !== void 0 ? _f : 0));
+                        startTime = Math.round((((_g = scanConfig.startOffsetPct) !== null && _g !== void 0 ? _g : 0) / 100) * totalDuration);
+                        endTime = Math.round(((100 - ((_h = scanConfig.endOffsetPct) !== null && _h !== void 0 ? _h : 0)) / 100) * totalDuration);
+                        scannedTime = endTime - startTime;
+                        numPreviews = Math.round(scannedTime / ((_j = scanConfig.secondsPerPreview) !== null && _j !== void 0 ? _j : 30));
+                        // log execution details
+                        args.jobLog("will scan [".concat(scannedTime, "/").concat(totalDuration, "]s (start:[").concat(startTime, "s], end:[").concat(endTime, "s]), ")
+                            + "mode:[".concat(cropMode, "], previews:[").concat(numPreviews, "]"));
+                        spawnArgs = [];
+                        // input file
+                        spawnArgs.push('-i', "".concat(file._id));
+                        // set crop mode
+                        spawnArgs.push('--crop-mode', cropMode);
+                        // number of previews (persist to disk)
+                        spawnArgs.push('--previews', "".concat(numPreviews, ":1"));
+                        // set start time
+                        spawnArgs.push('--start-at', "seconds:".concat(startTime));
+                        // set end time
+                        spawnArgs.push('--stop-at', "seconds:".concat(endTime));
+                        // handle hardware decoding
+                        if (enableHwDecoding && hwDecoder) {
+                            spawnArgs.push('--enable-hw-decoding', hwDecoder);
+                        }
+                        // scan only
+                        spawnArgs.push('--scan');
+                        return [4 /*yield*/, (new cliUtils_1.CLI({
+                                cli: args.handbrakePath,
+                                spawnArgs: spawnArgs,
+                                spawnOpts: {},
+                                jobLog: args.jobLog,
+                                outputFilePath: file._id,
+                                inputFileObj: file,
+                                logFullCliOutput: true, // require full logs to ensure access to all cropdetect data
+                                updateWorker: args.updateWorker,
+                                args: args,
+                            })).runCli()];
+                    case 1:
+                        response = _k.sent();
+                        resultLine = response.errorLogFull
+                            .filter(function (line) { return line.includes('autocrop = '); })
+                            .map(function (line) { return line.substring(line.indexOf('scan: '), line.lastIndexOf(require('os').EOL) || line.length); })[0];
+                        if (!resultLine) {
+                            throw new Error('failed to get autocrop results from Handbrake scan');
+                        }
+                        autocropRegex = /(?<=autocrop = )(\d+\/\d+\/\d+\/\d+)/;
+                        match = autocropRegex.exec(resultLine);
+                        autocropStr = '';
+                        if (match) {
+                            autocropStr = match[0];
+                        }
+                        args.jobLog("scan result: ".concat(resultLine));
+                        args.jobLog("autocrop: ".concat(autocropStr));
+                        // parse string to CropInfo object and return object
+                        return [2 /*return*/, CropInfo.fromHandBrakeAutocropString(videoStream, autocropStr)];
+                }
+            });
+        });
+    };
+    // get total vertical crop
+    CropInfo.prototype.getVerticalCrop = function () {
+        return this.inputHeight - this.outputHeight;
+    };
+    // get total  horizontal crop
+    CropInfo.prototype.getHorizontalCrop = function () {
+        return this.inputWidth - this.outputWidth;
+    };
+    // get the string used as an input to ffmpeg crop
+    CropInfo.prototype.getFfmpegCropString = function () {
+        return "w=".concat(this.outputWidth, ":h=").concat(this.outputHeight, ":x=").concat(this.outputX, ":y=").concat(this.outputY);
+    };
+    // get the string used as an input to handbrake crop
+    CropInfo.prototype.getHandBrakeCropString = function () {
+        // calculate top/bottom/left/right
+        var cBottom = this.inputHeight - this.outputHeight - this.outputY;
+        var cRight = this.inputWidth - this.outputWidth - this.outputX;
+        return "".concat(this.outputY, "/").concat(cBottom, "/").concat(this.outputX, "/").concat(cRight);
+    };
+    // determine if a crop should be executed given the input minimum percentage
+    CropInfo.prototype.shouldCrop = function (minCropPct) {
+        // convert percentage to decimal
+        var minCropMultiplier = minCropPct / 100;
+        // first check height - it's more likely to require cropping
+        if (this.getVerticalCrop() >= (this.inputHeight * minCropMultiplier)) {
+            // total vertical crop meets minimum - return true
+            return true;
+        }
+        // then check width - less likely to require cropping
+        if (this.getHorizontalCrop() >= (this.inputWidth * minCropMultiplier)) {
+            // total horizontal crop meets minimum - return true
+            return true;
+        }
+        // neither dimension met minimums - return false
+        return false;
+    };
+    // determine if this CropInfo is relevant to the input file
+    CropInfo.prototype.isRelevant = function (file) {
+        var _a, _b;
+        var videoStream = (_b = (_a = file === null || file === void 0 ? void 0 : file.ffProbeData) === null || _a === void 0 ? void 0 : _a.streams) === null || _b === void 0 ? void 0 : _b.filter(metadataUtils_1.isVideo)[0];
+        if (!videoStream) {
+            // if the input file doesn't even have a video stream assume it's not relevant
+            return false;
+        }
+        // check if file dimensions match this object's input dimensions
+        return this.inputWidth === videoStream.width && this.inputHeight === videoStream.height;
+    };
     return CropInfo;
 }());
 exports.CropInfo = CropInfo;
-// create a crop info object from the string output by Handbrake
-var getCropInfoFromString = function (cropInfoStr) {
-    var _a, _b, _c, _d;
-    var split = String(cropInfoStr).split('/');
-    return new CropInfo(Number((_a = split[0]) !== null && _a !== void 0 ? _a : 0), Number((_b = split[1]) !== null && _b !== void 0 ? _b : 0), Number((_c = split[2]) !== null && _c !== void 0 ? _c : 0), Number((_d = split[3]) !== null && _d !== void 0 ? _d : 0));
-};
-exports.getCropInfoFromString = getCropInfoFromString;
-// function to get hardware decoder from configured hardware type
-var getHwDecoder = function (hardwareType) {
-    switch (hardwareType) {
-        case 'nvenc':
-            return 'nvdec';
-        case 'qsv':
-            return 'qsv';
-        default:
-            return null;
-    }
-};
-// function to get crop info from a video file
-// args: input plugin argument object
-// file: file to detect letterboxing for
-// scanConfig: ScanConfig object
-var getCropInfo = function (args, file, scanConfig) { return __awaiter(void 0, void 0, void 0, function () {
-    var os, videoStream, cropMode, enableHwDecoding, minCropPct, totalDuration, startTime, endTime, scannedTime, numPreviews, spawnArgs, hwDecoder, response, resultLine, autocropRegex, match, autocrop, cropInfo;
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
-    return __generator(this, function (_m) {
-        switch (_m.label) {
-            case 0:
-                os = require('os');
-                // ToDo - remove
-                args.jobLog("hardware type: ".concat(args.nodeHardwareType));
-                args.jobLog("worker type: ".concat(args.workerType));
-                videoStream = (_b = (_a = file === null || file === void 0 ? void 0 : file.ffProbeData) === null || _a === void 0 ? void 0 : _a.streams) === null || _b === void 0 ? void 0 : _b.filter(metadataUtils_1.isVideo)[0];
-                if (!videoStream) {
-                    throw new Error('Failed to find a video stream - why are you attempting to de-letterbox a non-video file?');
-                }
-                cropMode = (_c = scanConfig.cropMode) !== null && _c !== void 0 ? _c : 'conservative';
-                enableHwDecoding = (_d = scanConfig.enableHwDecoding) !== null && _d !== void 0 ? _d : false;
-                minCropPct = (_e = scanConfig.minCropPct) !== null && _e !== void 0 ? _e : 0;
-                totalDuration = Math.round(Number((_g = (_f = file.ffProbeData.format) === null || _f === void 0 ? void 0 : _f.duration) !== null && _g !== void 0 ? _g : 0));
-                startTime = Math.round((((_h = scanConfig.startOffsetPct) !== null && _h !== void 0 ? _h : 5) / 100) * totalDuration);
-                endTime = Math.round(((100 - ((_j = scanConfig.endOffsetPct) !== null && _j !== void 0 ? _j : 5)) / 100) * totalDuration);
-                scannedTime = endTime - startTime;
-                numPreviews = Math.round((scannedTime / 60) * ((_k = scanConfig.samplesPerMinute) !== null && _k !== void 0 ? _k : 2));
-                // log execution details
-                args.jobLog("will scan [".concat(scannedTime, "/").concat(totalDuration, "]s (start:[").concat(startTime, "s], end:[").concat(endTime, "s]), ")
-                    + "mode:[".concat(cropMode, "], previews:[").concat(numPreviews, "]"));
-                spawnArgs = [];
-                // input file
-                spawnArgs.push('-i', "".concat(file._id));
-                // only scan main feature
-                spawnArgs.push('--main-feature');
-                // crop mode
-                spawnArgs.push('--crop-mode', cropMode);
-                // number of previews (persist to disk)
-                spawnArgs.push('--previews', "".concat(numPreviews, ":1"));
-                // set start time
-                spawnArgs.push('--start-at', "seconds:".concat(startTime));
-                // set end time
-                spawnArgs.push('--stop-at', "seconds:".concat(endTime));
-                hwDecoder = (_l = scanConfig.hwDecoder) !== null && _l !== void 0 ? _l : getHwDecoder(args.nodeHardwareType);
-                if (enableHwDecoding && hwDecoder) {
-                    spawnArgs.push('--enable-hw-decoding', hwDecoder);
-                }
-                // scan only
-                spawnArgs.push('--scan');
-                // log command
-                args.jobLog("scan command: ".concat(args.handbrakePath, " ").concat(spawnArgs.join(' ')));
-                return [4 /*yield*/, (new cliUtils_1.CLI({
-                        cli: args.handbrakePath,
-                        spawnArgs: spawnArgs,
-                        spawnOpts: {},
-                        jobLog: args.jobLog,
-                        outputFilePath: file._id,
-                        inputFileObj: file,
-                        logFullCliOutput: true, // require full logs to ensure access to all cropdetect data
-                        updateWorker: args.updateWorker,
-                        args: args,
-                    })).runCli()];
-            case 1:
-                response = _m.sent();
-                resultLine = response.errorLogFull
-                    .filter(function (line) { return line.includes('autocrop = '); })
-                    .map(function (line) { return line.substring(line.indexOf('scan: '), line.lastIndexOf(os.EOL) || line.length); })[0];
-                if (!resultLine) {
-                    throw new Error('failed to get autocrop results from Handbrake scan');
-                }
-                autocropRegex = /(?<=autocrop = )(\d+\/\d+\/\d+\/\d+)/;
-                match = autocropRegex.exec(resultLine);
-                autocrop = '';
-                if (match) {
-                    autocrop = match[0];
-                }
-                args.jobLog("".concat(resultLine));
-                args.jobLog("autocrop: [".concat(autocrop, "]"));
-                cropInfo = (0, exports.getCropInfoFromString)(autocrop);
-                // ==== determine if we should zero some fields for being within ignore limits ==== //
-                // first check width
-                if (cropInfo.horizontalCrop() < (Number(videoStream.width) * (minCropPct / 100))) {
-                    // total horizontal crop is less than ignore percentile - zero them out
-                    cropInfo.left = 0;
-                    cropInfo.right = 0;
-                }
-                // then check height
-                if (cropInfo.verticalCrop() < (Number(videoStream.height) * (minCropPct / 100))) {
-                    // total vertical crop is less tan ignore percentile - zero them out
-                    cropInfo.top = 0;
-                    cropInfo.bottom = 0;
-                }
-                return [2 /*return*/, cropInfo];
-        }
-    });
-}); };
-exports.getCropInfo = getCropInfo;

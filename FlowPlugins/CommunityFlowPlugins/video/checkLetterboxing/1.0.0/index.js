@@ -92,6 +92,47 @@ var details = function () { return ({
             },
             tooltip: 'Percent change in dimension in order to justify cropping',
         },
+        {
+            label: 'Hardware Decoding',
+            name: 'hardwareDecoding',
+            type: 'boolean',
+            defaultValue: 'true',
+            inputUI: {
+                type: 'switch',
+            },
+            tooltip: 'Specify whether to use hardware decoding if available',
+        },
+        {
+            label: 'Hardware Decoder',
+            name: 'hardwareDecoder',
+            type: 'string',
+            defaultValue: 'auto',
+            inputUI: {
+                type: 'dropdown',
+                options: [
+                    'auto',
+                    'nvdec',
+                    'qsv',
+                    'vaapi',
+                ],
+                displayConditions: {
+                    logic: 'AND',
+                    sets: [
+                        {
+                            logic: 'AND',
+                            inputs: [
+                                {
+                                    name: 'hardwareDecoding',
+                                    condition: '===',
+                                    value: 'true',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+            tooltip: "\n        Specify hardware encoder to use. Auto mode really just detects nvidia right now and enables nvdec, and \n        potentially qsv if the decoder shares the same name. I'm struggling to find available input options to populate\n        this.\n        ",
+        },
     ],
     outputs: [
         {

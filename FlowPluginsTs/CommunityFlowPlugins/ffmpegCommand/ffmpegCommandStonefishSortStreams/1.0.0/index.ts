@@ -16,7 +16,7 @@ import { ImediaInfo } from '../../../../FlowHelpers/1.0.0/interfaces/synced/IFil
 
 /* eslint no-plusplus: ["error", { "allowForLoopAfterthoughts": true }] */
 const details = (): IpluginDetails => ({
-  name: 'Sort Streams',
+  name: 'Stonefish Sort Streams',
   description:
     `
     Sort Streams. 

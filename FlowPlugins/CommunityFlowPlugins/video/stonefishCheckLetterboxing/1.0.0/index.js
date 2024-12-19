@@ -172,9 +172,10 @@ var details = function () { return ({
 exports.details = details;
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
     var lib, scanConfig, cropInfo, outputNumber;
-    var _a;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
+    var _a, _b;
+    var _c;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
             case 0:
                 lib = require('../../../../../methods/lib')();
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
@@ -189,12 +190,16 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 };
                 return [4 /*yield*/, letterboxUtils_1.CropInfo.fromHandBrakeScan(args, args.inputFileObj, scanConfig)];
             case 1:
-                cropInfo = _b.sent();
+                cropInfo = _d.sent();
                 args.jobLog("calculated crop info: ".concat(JSON.stringify(cropInfo)));
                 args.jobLog("would use ffmpeg crop: [".concat(cropInfo.getFfmpegCropString(), "]"));
                 args.jobLog("would use handbrake crop: [".concat(cropInfo.getHandBrakeCropString(), "]"));
                 // store result if specified
                 if (args.inputs.storeCropSettings) {
+                    // ensure user variable object exists
+                    // eslint-disable-next-line no-param-reassign
+                    (_a = (_c = args.variables).user) !== null && _a !== void 0 ? _a : (_c.user = {});
+                    // then set our crop info details
                     // eslint-disable-next-line no-param-reassign
                     args.variables.user.crop_object = JSON.stringify(cropInfo);
                     // eslint-disable-next-line no-param-reassign
@@ -202,7 +207,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     // eslint-disable-next-line no-param-reassign
                     args.variables.user.crop_handbrake = cropInfo.getHandBrakeCropString();
                 }
-                outputNumber = cropInfo.shouldCrop(Number((_a = args.inputs.minCropPct) !== null && _a !== void 0 ? _a : 0)) ? 1 : 2;
+                outputNumber = cropInfo.shouldCrop(Number((_b = args.inputs.minCropPct) !== null && _b !== void 0 ? _b : 0)) ? 1 : 2;
                 // return
                 return [2 /*return*/, {
                         outputFileObj: args.inputFileObj,

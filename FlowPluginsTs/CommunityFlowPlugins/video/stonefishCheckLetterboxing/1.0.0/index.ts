@@ -193,6 +193,10 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   args.jobLog(`would use handbrake crop: [${cropInfo.getHandBrakeCropString()}]`);
   // store result if specified
   if (args.inputs.storeCropSettings) {
+    // ensure user variable object exists
+    // eslint-disable-next-line no-param-reassign
+    args.variables.user ??= {};
+    // then set our crop info details
     // eslint-disable-next-line no-param-reassign
     args.variables.user.crop_object = JSON.stringify(cropInfo);
     // eslint-disable-next-line no-param-reassign

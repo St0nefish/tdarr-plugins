@@ -180,10 +180,10 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // create configuration object for running Handbrake cropdetect scan
   const scanConfig: HandBrakeCropScanConfig = {
     cropMode: String(args.inputs.cropMode),
-    secondsPerPreview: Number(args.inputs.secondsPerPreview),
-    startOffsetPct: Number(args.inputs.startOffsetPct),
-    endOffsetPct: Number(args.inputs.endOffsetPct),
-    minCropPct: Number(args.inputs.minCropPct ?? 0),
+    secondsPerPreview: Number(args.inputs.secondsPerPreview) || 0,
+    startOffsetPct: Number(args.inputs.startOffsetPct) || 0,
+    endOffsetPct: Number(args.inputs.endOffsetPct) || 0,
+    minCropPct: Number(args.inputs.minCropPct) || 0,
     enableHwDecoding: Boolean(args.inputs.enableHwDecoding),
     hwDecoder: String(args.inputs.hwDecoder),
   };

@@ -172,26 +172,26 @@ var details = function () { return ({
 exports.details = details;
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
     var lib, scanConfig, cropInfo, outputNumber;
-    var _a, _b;
-    var _c;
-    return __generator(this, function (_d) {
-        switch (_d.label) {
+    var _a;
+    var _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
             case 0:
                 lib = require('../../../../../methods/lib')();
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
                 scanConfig = {
                     cropMode: String(args.inputs.cropMode),
-                    secondsPerPreview: Number(args.inputs.secondsPerPreview),
-                    startOffsetPct: Number(args.inputs.startOffsetPct),
-                    endOffsetPct: Number(args.inputs.endOffsetPct),
-                    minCropPct: Number((_a = args.inputs.minCropPct) !== null && _a !== void 0 ? _a : 0),
+                    secondsPerPreview: Number(args.inputs.secondsPerPreview) || 0,
+                    startOffsetPct: Number(args.inputs.startOffsetPct) || 0,
+                    endOffsetPct: Number(args.inputs.endOffsetPct) || 0,
+                    minCropPct: Number(args.inputs.minCropPct) || 0,
                     enableHwDecoding: Boolean(args.inputs.enableHwDecoding),
                     hwDecoder: String(args.inputs.hwDecoder),
                 };
                 return [4 /*yield*/, letterboxUtils_1.CropInfo.fromHandBrakeScan(args, args.inputFileObj, scanConfig)];
             case 1:
-                cropInfo = _d.sent();
+                cropInfo = _c.sent();
                 // log results
                 args.jobLog("calculated crop info: ".concat(JSON.stringify(cropInfo)));
                 args.jobLog("ffmpeg crop string: [".concat(cropInfo.getFfmpegCropString(), "]"));
@@ -200,7 +200,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 if (args.inputs.storeCropSettings) {
                     // ensure user variable object exists
                     // eslint-disable-next-line no-param-reassign
-                    (_b = (_c = args.variables).user) !== null && _b !== void 0 ? _b : (_c.user = {});
+                    (_a = (_b = args.variables).user) !== null && _a !== void 0 ? _a : (_b.user = {});
                     // then set our crop info details
                     // eslint-disable-next-line no-param-reassign
                     args.variables.user.crop_object = JSON.stringify(cropInfo);

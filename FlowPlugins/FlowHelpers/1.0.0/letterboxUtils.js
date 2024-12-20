@@ -157,7 +157,7 @@ var CropInfo = /** @class */ (function () {
             || parsedCropInfo.outputHeight === undefined
             || parsedCropInfo.outputX === undefined
             || parsedCropInfo.outputY === undefined) {
-            return null;
+            throw new Error('input JSON did not represent a valid CropInfo object');
         }
         // otherwise this is valid, return it
         return parsedCropInfo;
@@ -240,6 +240,34 @@ var CropInfo = /** @class */ (function () {
                         }
                         // return final state
                         return [2 /*return*/, cropInfo];
+                }
+            });
+        });
+    };
+    CropInfo.fromJsonOrElseScan = function (json, args, file, scanConfig) {
+        return __awaiter(this, void 0, void 0, function () {
+            var parseResult;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        try {
+                            parseResult = CropInfo.fromJsonString(json);
+                            args.jobLog("parse result: ".concat(JSON.stringify(parseResult)));
+                            if (parseResult.isRelevant(file)) {
+                                // result still relevant - return object
+                                return [2 /*return*/, parseResult];
+                            }
+                            // otherwise log
+                            args.jobLog('parsed file is not relevant to current file - will execute scan');
+                        }
+                        catch (e) {
+                            args.jobLog("error parsing input JSON: ".concat(e));
+                        }
+                        return [4 /*yield*/, CropInfo.fromHandBrakeScan(args, file, scanConfig)];
+                    case 1: 
+                    // if we got here we need to scan
+                    // eslint-disable-next-line no-return-await
+                    return [2 /*return*/, _a.sent()];
                 }
             });
         });

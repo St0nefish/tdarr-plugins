@@ -258,7 +258,7 @@ var details = function () { return ({
         },
         {
             label: 'Load Crop Info from Flow Variables',
-            name: 'loadCropSettings',
+            name: 'loadCropSettingsFromVar',
             type: 'boolean',
             defaultValue: 'true',
             inputUI: {
@@ -476,7 +476,7 @@ var getVfScaleArgs = function (targetResolution) {
 };
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, outputContainer, outputResolution, outputCodec, hardwareDecoding, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, cropInfo, encoderProperties, container;
+    var lib, outputContainer, outputResolution, outputCodec, hardwareDecoding, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, enableLetterboxRemoval, loadCropSettingsFromVar, encoderProperties, container, cropInfo;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -497,34 +497,15 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 hardwareEncoding = Boolean(args.inputs.hardwareEncoding);
                 hardwareType = String(args.inputs.hardwareType);
                 titleMode = String(args.inputs.titleMode);
-                cropInfo = null;
-                if (!args.inputs.enableLetterboxRemoval) return [3 /*break*/, 2];
-                // if enabled attempt to load crop info from variable
-                if (args.inputs.loadCropSettings) {
-                    cropInfo = letterboxUtils_1.CropInfo.fromJsonString(args.variables.user.crop_object);
-                    args.jobLog("loaded crop info from variable: ".concat(JSON.stringify(cropInfo)));
-                }
-                if (!!(cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.isRelevant(args.inputFileObj))) return [3 /*break*/, 2];
-                args.jobLog('crop info was not loaded from variable or not relevant - executing scan');
-                return [4 /*yield*/, letterboxUtils_1.CropInfo.fromHandBrakeScan(args, args.inputFileObj, {
-                        cropMode: String(args.inputs.cropMode),
-                        secondsPerPreview: Number(args.inputs.secondsPerPreview),
-                        startOffsetPct: Number(args.inputs.startOffsetPct),
-                        endOffsetPct: Number(args.inputs.endOffsetPct),
-                        enableHwDecoding: Boolean(args.inputs.hardwareDecoding),
-                        hwDecoder: String(args.inputs.hwDecoder),
+                enableLetterboxRemoval = Boolean(args.inputs.enableLetterboxRemoval);
+                loadCropSettingsFromVar = Boolean(args.inputs.loadCropSettingsFromVar);
+                return [4 /*yield*/, (0, hardwareUtils_1.getEncoder)({
+                        targetCodec: outputCodec,
+                        hardwareEncoding: hardwareEncoding,
+                        hardwareType: hardwareType,
+                        args: args,
                     })];
             case 1:
-                cropInfo = _a.sent();
-                args.jobLog("crop info scan result: ".concat(JSON.stringify(cropInfo)));
-                _a.label = 2;
-            case 2: return [4 /*yield*/, (0, hardwareUtils_1.getEncoder)({
-                    targetCodec: outputCodec,
-                    hardwareEncoding: hardwareEncoding,
-                    hardwareType: hardwareType,
-                    args: args,
-                })];
-            case 3:
                 encoderProperties = _a.sent();
                 // first handle container if not already correct
                 if ((0, fileUtils_1.getContainer)(args.inputFileObj._id) !== outputContainer) {
@@ -535,10 +516,28 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         args.variables.ffmpegCommand.overallOuputArguments.push('-fflags', '+genpts');
                     }
                 }
-                // handle cropping if required
-                if (cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.shouldCrop(Number(args.inputs.minCropPct))) {
-                    args.variables.ffmpegCommand.overallOuputArguments.push('-vf', "crop=".concat(cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.getFfmpegCropString()));
+                if (!enableLetterboxRemoval) return [3 /*break*/, 4];
+                cropInfo = void 0;
+                if (loadCropSettingsFromVar) {
+                    cropInfo = letterboxUtils_1.CropInfo.fromJsonString(String(args.variables.user.crop_object || ''));
                 }
+                if (!!(cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.isRelevant(args.inputFileObj))) return [3 /*break*/, 3];
+                return [4 /*yield*/, letterboxUtils_1.CropInfo.fromHandBrakeScan(args, args.inputFileObj, {
+                        cropMode: String(args.inputs.cropMode),
+                        secondsPerPreview: Number(args.inputs.secondsPerPreview),
+                        startOffsetPct: Number(args.inputs.startOffsetPct),
+                        endOffsetPct: Number(args.inputs.endOffsetPct),
+                        enableHwDecoding: Boolean(args.inputs.hardwareDecoding),
+                        hwDecoder: String(args.inputs.hwDecoder),
+                    })];
+            case 2:
+                cropInfo = _a.sent();
+                _a.label = 3;
+            case 3:
+                // add crop command
+                args.variables.ffmpegCommand.overallOuputArguments.push('-vf', "crop=".concat(cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.getFfmpegCropString()));
+                _a.label = 4;
+            case 4:
                 // iterate streams, filter to video, and configure encoding options
                 args.variables.ffmpegCommand.streams.filter(metadataUtils_1.isVideo).forEach(function (stream) {
                     var _a, _b, _c;

@@ -9,7 +9,10 @@ import {
 } from '../../../../FlowHelpers/1.0.0/interfaces/interfaces';
 import { isVideo } from '../../../../FlowHelpers/1.0.0/metadataUtils';
 import { getContainer } from '../../../../FlowHelpers/1.0.0/fileUtils';
-import { CropInfo } from '../../../../FlowHelpers/1.0.0/letterboxUtils';
+import {
+  CropInfo,
+  HandBrakeCropScanConfig,
+} from '../../../../FlowHelpers/1.0.0/letterboxUtils';
 
 /* eslint-disable no-param-reassign */
 const details = (): IpluginDetails => ({
@@ -249,7 +252,7 @@ const details = (): IpluginDetails => ({
     },
     {
       label: 'Load Crop Info from Flow Variables',
-      name: 'loadCropSettings',
+      name: 'loadCropSettingsFromVar',
       type: 'boolean',
       defaultValue: 'true',
       inputUI: {
@@ -499,32 +502,8 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const hardwareEncoding: boolean = Boolean(args.inputs.hardwareEncoding);
   const hardwareType: string = String(args.inputs.hardwareType);
   const titleMode: string = String(args.inputs.titleMode);
-  // and load letterbox crop settings if enabled
-  let cropInfo: CropInfo | null = null;
-  if (args.inputs.enableLetterboxRemoval) {
-    // if enabled attempt to load crop info from variable
-    if (args.inputs.loadCropSettings) {
-      cropInfo = CropInfo.fromJsonString(args.variables.user.crop_object);
-      args.jobLog(`loaded crop info from variable: ${JSON.stringify(cropInfo)}`);
-    }
-    // if nothing was loaded or the loaded object isn't still relevant then run a scan
-    if (!cropInfo?.isRelevant(args.inputFileObj)) {
-      args.jobLog('crop info was not loaded from variable or not relevant - executing scan');
-      cropInfo = await CropInfo.fromHandBrakeScan(
-        args,
-        args.inputFileObj,
-        {
-          cropMode: String(args.inputs.cropMode),
-          secondsPerPreview: Number(args.inputs.secondsPerPreview),
-          startOffsetPct: Number(args.inputs.startOffsetPct),
-          endOffsetPct: Number(args.inputs.endOffsetPct),
-          enableHwDecoding: Boolean(args.inputs.hardwareDecoding),
-          hwDecoder: String(args.inputs.hwDecoder),
-        },
-      );
-      args.jobLog(`crop info scan result: ${JSON.stringify(cropInfo)}`);
-    }
-  }
+  const enableLetterboxRemoval = Boolean(args.inputs.enableLetterboxRemoval);
+  const loadCropSettingsFromVar = Boolean(args.inputs.loadCropSettingsFromVar);
   // load encoder configuration
   const encoderProperties = await getEncoder({
     targetCodec: outputCodec,
@@ -543,7 +522,27 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     }
   }
   // handle cropping if required
-  if (cropInfo?.shouldCrop(Number(args.inputs.minCropPct))) {
+  if (enableLetterboxRemoval) {
+    // check if config should be loaded
+    let cropInfo: CropInfo | undefined;
+    if (loadCropSettingsFromVar) {
+      cropInfo = CropInfo.fromJsonString(String(args.variables.user.crop_object || ''));
+    }
+    if (!cropInfo?.isRelevant(args.inputFileObj)) {
+      cropInfo = await CropInfo.fromHandBrakeScan(
+        args,
+        args.inputFileObj,
+        {
+          cropMode: String(args.inputs.cropMode),
+          secondsPerPreview: Number(args.inputs.secondsPerPreview),
+          startOffsetPct: Number(args.inputs.startOffsetPct),
+          endOffsetPct: Number(args.inputs.endOffsetPct),
+          enableHwDecoding: Boolean(args.inputs.hardwareDecoding),
+          hwDecoder: String(args.inputs.hwDecoder),
+        },
+      );
+    }
+    // add crop command
     args.variables.ffmpegCommand.overallOuputArguments.push('-vf', `crop=${cropInfo?.getFfmpegCropString()}`);
   }
   // iterate streams, filter to video, and configure encoding options

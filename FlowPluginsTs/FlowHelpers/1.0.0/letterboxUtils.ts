@@ -156,7 +156,7 @@ export class CropInfo {
   }
 
   // create a crop info object from a JSON string
-  public static fromJsonString(json: string): CropInfo | null {
+  public static fromJsonString(json: string): CropInfo {
     // parse json
     const parsedCropInfo: CropInfo = JSON.parse(json, (key, value) => {
       // cast any keys expected to contain numeric values to numbers
@@ -174,7 +174,7 @@ export class CropInfo {
       || parsedCropInfo.outputX === undefined
       || parsedCropInfo.outputY === undefined
     ) {
-      return null;
+      throw new Error('input JSON did not represent a valid CropInfo object');
     }
     // otherwise this is valid, return it
     return parsedCropInfo;
@@ -266,5 +266,28 @@ export class CropInfo {
     }
     // return final state
     return cropInfo;
+  }
+
+  public static async fromJsonOrElseScan(
+    json: string,
+    args: IpluginInputArgs,
+    file: IFileObject,
+    scanConfig: HandBrakeCropScanConfig,
+  ): Promise<CropInfo> {
+    try {
+      const parseResult: CropInfo = CropInfo.fromJsonString(json);
+      args.jobLog(`parse result: ${JSON.stringify(parseResult)}`);
+      if (parseResult.isRelevant(file)) {
+        // result still relevant - return object
+        return parseResult;
+      }
+      // otherwise log
+      args.jobLog('parsed file is not relevant to current file - will execute scan');
+    } catch (e) {
+      args.jobLog(`error parsing input JSON: ${e}`);
+    }
+    // if we got here we need to scan
+    // eslint-disable-next-line no-return-await
+    return await CropInfo.fromHandBrakeScan(args, file, scanConfig);
   }
 }

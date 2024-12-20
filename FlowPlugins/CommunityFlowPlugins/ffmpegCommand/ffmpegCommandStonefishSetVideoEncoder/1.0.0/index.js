@@ -80,6 +80,7 @@ var details = function () { return ({
                 type: 'dropdown',
                 options: [
                     '480p',
+                    '576p',
                     '720p',
                     '1080p',
                     '1440p',
@@ -476,7 +477,7 @@ var getVfScaleArgs = function (targetResolution) {
 };
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, outputContainer, outputResolution, outputCodec, hardwareDecoding, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, enableLetterboxRemoval, loadCropSettingsFromVar, encoderProperties, container, cropInfo;
+    var lib, outputContainer, outputResolution, outputCodec, hardwareDecoding, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, enableLetterboxRemoval, loadCropSettingsFromVar, cropMode, secondsPerPreview, startOffsetPct, endOffsetPct, minCropPct, enableHwDecoding, hwDecoder, encoderProperties, container, cropInfo;
     var _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
@@ -500,6 +501,13 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 titleMode = String(args.inputs.titleMode);
                 enableLetterboxRemoval = Boolean(args.inputs.enableLetterboxRemoval);
                 loadCropSettingsFromVar = Boolean(args.inputs.loadCropSettingsFromVar);
+                cropMode = String(args.inputs.cropMode);
+                secondsPerPreview = Number(args.inputs.secondsPerPreview);
+                startOffsetPct = Number(args.inputs.startOffsetPct);
+                endOffsetPct = Number(args.inputs.endOffsetPct);
+                minCropPct = Number(args.inputs.minCropPct);
+                enableHwDecoding = Boolean(args.inputs.hardwareDecoding);
+                hwDecoder = String(args.inputs.hwDecoder);
                 return [4 /*yield*/, (0, hardwareUtils_1.getEncoder)({
                         targetCodec: outputCodec,
                         hardwareEncoding: hardwareEncoding,
@@ -521,22 +529,28 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 cropInfo = null;
                 if (loadCropSettingsFromVar && ((_b = (_a = args.variables) === null || _a === void 0 ? void 0 : _a.user) === null || _b === void 0 ? void 0 : _b.crop_object)) {
                     cropInfo = letterboxUtils_1.CropInfo.fromJsonString(String(args.variables.user.crop_object || ''));
+                    args.jobLog("parsed crop info from JSON: ".concat(JSON.stringify(cropInfo)));
                 }
                 if (!!(cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.isRelevant(args.inputFileObj))) return [3 /*break*/, 3];
+                args.jobLog('crop info not loaded or no longer relevant - executing scan to calculate');
                 return [4 /*yield*/, letterboxUtils_1.CropInfo.fromHandBrakeScan(args, args.inputFileObj, {
-                        cropMode: String(args.inputs.cropMode),
-                        secondsPerPreview: Number(args.inputs.secondsPerPreview),
-                        startOffsetPct: Number(args.inputs.startOffsetPct),
-                        endOffsetPct: Number(args.inputs.endOffsetPct),
-                        enableHwDecoding: Boolean(args.inputs.hardwareDecoding),
-                        hwDecoder: String(args.inputs.hwDecoder),
+                        cropMode: cropMode,
+                        minCropPct: minCropPct,
+                        secondsPerPreview: secondsPerPreview,
+                        startOffsetPct: startOffsetPct,
+                        endOffsetPct: endOffsetPct,
+                        enableHwDecoding: enableHwDecoding,
+                        hwDecoder: hwDecoder,
                     })];
             case 2:
                 cropInfo = _c.sent();
+                args.jobLog("crop info scan returned: ".concat(JSON.stringify(cropInfo)));
                 _c.label = 3;
             case 3:
-                // add crop command
-                args.variables.ffmpegCommand.overallOuputArguments.push('-vf', "crop=".concat(cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.getFfmpegCropString()));
+                if (cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.shouldCrop(minCropPct)) {
+                    // add crop command
+                    args.variables.ffmpegCommand.overallOuputArguments.push('-vf', "crop=".concat(cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.getFfmpegCropString()));
+                }
                 _c.label = 4;
             case 4:
                 // iterate streams, filter to video, and configure encoding options

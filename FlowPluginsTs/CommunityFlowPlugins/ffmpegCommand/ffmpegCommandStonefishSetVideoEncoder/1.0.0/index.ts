@@ -62,6 +62,7 @@ const details = (): IpluginDetails => ({
         type: 'dropdown',
         options: [
           '480p',
+          '576p',
           '720p',
           '1080p',
           '1440p',
@@ -499,8 +500,16 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const hardwareEncoding: boolean = Boolean(args.inputs.hardwareEncoding);
   const hardwareType: string = String(args.inputs.hardwareType);
   const titleMode: string = String(args.inputs.titleMode);
+  // letterbox detection & removal config
   const enableLetterboxRemoval = Boolean(args.inputs.enableLetterboxRemoval);
   const loadCropSettingsFromVar = Boolean(args.inputs.loadCropSettingsFromVar);
+  const cropMode: string = String(args.inputs.cropMode);
+  const secondsPerPreview: number = Number(args.inputs.secondsPerPreview);
+  const startOffsetPct: number = Number(args.inputs.startOffsetPct);
+  const endOffsetPct: number = Number(args.inputs.endOffsetPct);
+  const minCropPct: number = Number(args.inputs.minCropPct);
+  const enableHwDecoding: boolean = Boolean(args.inputs.hardwareDecoding);
+  const hwDecoder: string = String(args.inputs.hwDecoder);
   // load encoder configuration
   const encoderProperties = await getEncoder({
     targetCodec: outputCodec,
@@ -524,23 +533,29 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     let cropInfo: CropInfo | null = null;
     if (loadCropSettingsFromVar && args.variables?.user?.crop_object) {
       cropInfo = CropInfo.fromJsonString(String(args.variables.user.crop_object || ''));
+      args.jobLog(`parsed crop info from JSON: ${JSON.stringify(cropInfo)}`);
     }
     if (!cropInfo?.isRelevant(args.inputFileObj)) {
+      args.jobLog('crop info not loaded or no longer relevant - executing scan to calculate');
       cropInfo = await CropInfo.fromHandBrakeScan(
         args,
         args.inputFileObj,
         {
-          cropMode: String(args.inputs.cropMode),
-          secondsPerPreview: Number(args.inputs.secondsPerPreview),
-          startOffsetPct: Number(args.inputs.startOffsetPct),
-          endOffsetPct: Number(args.inputs.endOffsetPct),
-          enableHwDecoding: Boolean(args.inputs.hardwareDecoding),
-          hwDecoder: String(args.inputs.hwDecoder),
+          cropMode,
+          minCropPct,
+          secondsPerPreview,
+          startOffsetPct,
+          endOffsetPct,
+          enableHwDecoding,
+          hwDecoder,
         },
       );
+      args.jobLog(`crop info scan returned: ${JSON.stringify(cropInfo)}`);
     }
-    // add crop command
-    args.variables.ffmpegCommand.overallOuputArguments.push('-vf', `crop=${cropInfo?.getFfmpegCropString()}`);
+    if (cropInfo?.shouldCrop(minCropPct)) {
+      // add crop command
+      args.variables.ffmpegCommand.overallOuputArguments.push('-vf', `crop=${cropInfo?.getFfmpegCropString()}`);
+    }
   }
   // iterate streams, filter to video, and configure encoding options
   args.variables.ffmpegCommand.streams.filter(isVideo).forEach((stream: IffmpegCommandStream) => {

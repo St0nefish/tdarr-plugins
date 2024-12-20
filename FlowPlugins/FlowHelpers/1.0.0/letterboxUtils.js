@@ -140,27 +140,37 @@ var CropInfo = /** @class */ (function () {
     };
     // create a crop info object from a JSON string
     CropInfo.fromJsonString = function (json) {
-        // parse json
-        var parsedCropInfo = JSON.parse(json, function (key, value) {
-            var _a;
-            // cast any keys expected to contain numeric values to numbers
-            if (['inputWidth', 'inputHeight', 'outputWidth', 'outputHeight', 'outputX', 'outputY'].includes(key)
-                && typeof value === 'string') {
-                return Number((_a = value.trim()) !== null && _a !== void 0 ? _a : 0);
+        if (json.length > 2) {
+            // parse json
+            var parsedCropInfo = null;
+            try {
+                parsedCropInfo = JSON.parse(json, function (key, value) {
+                    var _a;
+                    // cast any keys expected to contain numeric values to numbers
+                    if (['inputWidth', 'inputHeight', 'outputWidth', 'outputHeight', 'outputX', 'outputY'].includes(key)
+                        && typeof value === 'string') {
+                        return Number((_a = value.trim()) !== null && _a !== void 0 ? _a : 0);
+                    }
+                    return value;
+                });
             }
-            return value;
-        });
-        // if any value is missing then this wasn't a proper CropInfo object so return null
-        if (parsedCropInfo.inputWidth === undefined
-            || parsedCropInfo.inputHeight === undefined
-            || parsedCropInfo.outputWidth === undefined
-            || parsedCropInfo.outputHeight === undefined
-            || parsedCropInfo.outputX === undefined
-            || parsedCropInfo.outputY === undefined) {
-            throw new Error('input JSON did not represent a valid CropInfo object');
+            catch (e) {
+                // nothing for now, just let it continue to be null/undefined
+            }
+            // if any value is missing then this wasn't a proper CropInfo object so return null
+            if (!parsedCropInfo
+                || parsedCropInfo.inputWidth === undefined
+                || parsedCropInfo.inputHeight === undefined
+                || parsedCropInfo.outputWidth === undefined
+                || parsedCropInfo.outputHeight === undefined
+                || parsedCropInfo.outputX === undefined
+                || parsedCropInfo.outputY === undefined) {
+                throw new Error('input JSON did not represent a valid CropInfo object');
+            }
+            // otherwise this is valid, return it
+            return new CropInfo(parsedCropInfo.inputWidth, parsedCropInfo.inputHeight, parsedCropInfo.outputWidth, parsedCropInfo.outputHeight, parsedCropInfo.outputX, parsedCropInfo.outputY);
         }
-        // otherwise this is valid, return it
-        return new CropInfo(parsedCropInfo.inputWidth, parsedCropInfo.inputHeight, parsedCropInfo.outputWidth, parsedCropInfo.outputHeight, parsedCropInfo.outputX, parsedCropInfo.outputY);
+        return null;
     };
     // function to get crop info from a video file via HandBrake scan
     // args: input plugin argument object

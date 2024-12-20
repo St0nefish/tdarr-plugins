@@ -477,8 +477,9 @@ var getVfScaleArgs = function (targetResolution) {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
     var lib, outputContainer, outputResolution, outputCodec, hardwareDecoding, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, enableLetterboxRemoval, loadCropSettingsFromVar, encoderProperties, container, cropInfo;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var _a, _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
             case 0:
                 lib = require('../../../../../methods/lib')();
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
@@ -506,7 +507,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         args: args,
                     })];
             case 1:
-                encoderProperties = _a.sent();
+                encoderProperties = _c.sent();
                 // first handle container if not already correct
                 if ((0, fileUtils_1.getContainer)(args.inputFileObj._id) !== outputContainer) {
                     args.variables.ffmpegCommand.shouldProcess = true;
@@ -517,8 +518,8 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     }
                 }
                 if (!enableLetterboxRemoval) return [3 /*break*/, 4];
-                cropInfo = void 0;
-                if (loadCropSettingsFromVar) {
+                cropInfo = null;
+                if (loadCropSettingsFromVar && ((_b = (_a = args.variables) === null || _a === void 0 ? void 0 : _a.user) === null || _b === void 0 ? void 0 : _b.crop_object)) {
                     cropInfo = letterboxUtils_1.CropInfo.fromJsonString(String(args.variables.user.crop_object || ''));
                 }
                 if (!!(cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.isRelevant(args.inputFileObj))) return [3 /*break*/, 3];
@@ -531,12 +532,12 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         hwDecoder: String(args.inputs.hwDecoder),
                     })];
             case 2:
-                cropInfo = _a.sent();
-                _a.label = 3;
+                cropInfo = _c.sent();
+                _c.label = 3;
             case 3:
                 // add crop command
                 args.variables.ffmpegCommand.overallOuputArguments.push('-vf', "crop=".concat(cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.getFfmpegCropString()));
-                _a.label = 4;
+                _c.label = 4;
             case 4:
                 // iterate streams, filter to video, and configure encoding options
                 args.variables.ffmpegCommand.streams.filter(metadataUtils_1.isVideo).forEach(function (stream) {

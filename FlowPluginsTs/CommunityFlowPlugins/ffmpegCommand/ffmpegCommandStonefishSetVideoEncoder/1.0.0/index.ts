@@ -9,10 +9,7 @@ import {
 } from '../../../../FlowHelpers/1.0.0/interfaces/interfaces';
 import { isVideo } from '../../../../FlowHelpers/1.0.0/metadataUtils';
 import { getContainer } from '../../../../FlowHelpers/1.0.0/fileUtils';
-import {
-  CropInfo,
-  HandBrakeCropScanConfig,
-} from '../../../../FlowHelpers/1.0.0/letterboxUtils';
+import { CropInfo } from '../../../../FlowHelpers/1.0.0/letterboxUtils';
 
 /* eslint-disable no-param-reassign */
 const details = (): IpluginDetails => ({
@@ -524,8 +521,8 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // handle cropping if required
   if (enableLetterboxRemoval) {
     // check if config should be loaded
-    let cropInfo: CropInfo | undefined;
-    if (loadCropSettingsFromVar) {
+    let cropInfo: CropInfo | null = null;
+    if (loadCropSettingsFromVar && args.variables?.user?.crop_object) {
       cropInfo = CropInfo.fromJsonString(String(args.variables.user.crop_object || ''));
     }
     if (!cropInfo?.isRelevant(args.inputFileObj)) {

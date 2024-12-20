@@ -177,7 +177,14 @@ export class CropInfo {
       throw new Error('input JSON did not represent a valid CropInfo object');
     }
     // otherwise this is valid, return it
-    return parsedCropInfo;
+    return new CropInfo(
+      parsedCropInfo.inputWidth,
+      parsedCropInfo.inputHeight,
+      parsedCropInfo.outputWidth,
+      parsedCropInfo.outputHeight,
+      parsedCropInfo.outputX,
+      parsedCropInfo.outputY,
+    );
   }
 
   // function to get crop info from a video file via HandBrake scan
@@ -266,28 +273,5 @@ export class CropInfo {
     }
     // return final state
     return cropInfo;
-  }
-
-  public static async fromJsonOrElseScan(
-    json: string,
-    args: IpluginInputArgs,
-    file: IFileObject,
-    scanConfig: HandBrakeCropScanConfig,
-  ): Promise<CropInfo> {
-    try {
-      const parseResult: CropInfo = CropInfo.fromJsonString(json);
-      args.jobLog(`parse result: ${JSON.stringify(parseResult)}`);
-      if (parseResult.isRelevant(file)) {
-        // result still relevant - return object
-        return parseResult;
-      }
-      // otherwise log
-      args.jobLog('parsed file is not relevant to current file - will execute scan');
-    } catch (e) {
-      args.jobLog(`error parsing input JSON: ${e}`);
-    }
-    // if we got here we need to scan
-    // eslint-disable-next-line no-return-await
-    return await CropInfo.fromHandBrakeScan(args, file, scanConfig);
   }
 }

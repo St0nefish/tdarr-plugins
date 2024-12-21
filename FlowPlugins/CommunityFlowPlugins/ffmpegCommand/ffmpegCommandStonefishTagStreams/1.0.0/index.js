@@ -165,13 +165,64 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     var codecType = (0, metadataUtils_1.getCodecType)(stream);
                     // copy all streams
                     stream.outputArgs.push('-c:{outputIndex}', 'copy');
+                    // handle disposition flags if enabled - before title so title can consume results
+                    if (setDisposition) {
+                        // array of flags to add or remove
+                        var flags = [];
+                        // ensure first video and audio streams have default flag set
+                        if (((0, metadataUtils_1.isVideo)(stream) || (0, metadataUtils_1.isAudio)(stream)) && stream.typeIndex === 0 && !stream.disposition.default) {
+                            args.jobLog("found [".concat(codecType, "] stream that is first but not set as default"));
+                            // add the default flag
+                            flags.push('+default');
+                            stream.disposition.default = 1;
+                        }
+                        // handle commentary streams
+                        if ((0, metadataUtils_1.hasCommentaryFlag)(stream) && !((_a = stream.disposition) === null || _a === void 0 ? void 0 : _a.comment)) {
+                            args.jobLog("found [".concat(codecType, "] stream that requires the comment disposition flag"));
+                            // add comment flag
+                            flags.push('+comment');
+                            stream.disposition.comment = 1;
+                        }
+                        // handle descriptive streams
+                        if ((0, metadataUtils_1.hasDescriptiveFlag)(stream) && !((_b = stream.disposition) === null || _b === void 0 ? void 0 : _b.descriptions)) {
+                            args.jobLog("found [".concat(codecType, "] stream that requires the descriptions disposition flag"));
+                            // add descriptions tag
+                            flags.push('+descriptions');
+                            stream.disposition.descriptions = 1;
+                        }
+                        // remove default flag from non-standard streams
+                        if (!(0, metadataUtils_1.isStandardStream)(stream) && stream.disposition.default) {
+                            flags.push('-default');
+                            stream.disposition.default = 0;
+                        }
+                        // handle default and forced flags for subtitles
+                        if ((0, metadataUtils_1.isSubtitle)(stream)) {
+                            // remove default flag from any non-forced streams
+                            if (!(0, metadataUtils_1.isForcedSubtitle)(stream)) {
+                                flags.push('-default');
+                                stream.disposition.default = 0;
+                            }
+                            // add forced and default flags if title contains 'forced' but flags are not set
+                            if (!((_d = (_c = stream.disposition) === null || _c === void 0 ? void 0 : _c.forced) !== null && _d !== void 0 ? _d : false) && (0, metadataUtils_1.isForcedSubtitle)(stream)) {
+                                flags.push('+forced');
+                                stream.disposition.forced = 1;
+                            }
+                        }
+                        // if any flag alterations are required construct the command
+                        if (flags.length > 0) {
+                            // set shouldProcess
+                            args.variables.ffmpegCommand.shouldProcess = true;
+                            // add ffmpeg args to set the flag(s)
+                            stream.outputArgs.push("-disposition:".concat((0, metadataUtils_1.getStreamTypeFlag)(stream), ":{outputTypeIndex}"), "".concat(flags.join('')));
+                        }
+                    }
                     // add tags for video, audio, subtitle streams
                     if ((0, metadataUtils_1.isVideo)(stream) || (0, metadataUtils_1.isAudio)(stream) || (0, metadataUtils_1.isSubtitle)(stream)) {
                         // check if language tag is missing
                         if (setTagLanguage && (0, metadataUtils_1.isLanguageUndefined)(stream)) {
                             args.jobLog("found [".concat(codecType, "] stream missing language tag - setting to [").concat(tagLanguage, "]"));
                             // ensure tags object exists and set language tag
-                            (_a = stream.tags) !== null && _a !== void 0 ? _a : (stream.tags = {});
+                            (_e = stream.tags) !== null && _e !== void 0 ? _e : (stream.tags = {});
                             stream.tags.language = tagLanguage;
                             // set shouldProcess
                             args.variables.ffmpegCommand.shouldProcess = true;
@@ -189,58 +240,12 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                             var title = (0, metadataUtils_1.generateTitleForStream)(stream, (0, metadataUtils_1.getMediaInfoTrack)(stream, mediaInfo));
                             args.jobLog("found [".concat(codecType, "] stream that requires a title - setting to [").concat(title, "]"));
                             // ensure tags object exists and set title tag
-                            (_b = stream.tags) !== null && _b !== void 0 ? _b : (stream.tags = {});
+                            (_f = stream.tags) !== null && _f !== void 0 ? _f : (stream.tags = {});
                             stream.tags.title = title;
                             // set shouldProcess
                             args.variables.ffmpegCommand.shouldProcess = true;
                             // add ffmpeg args to tag the file
                             stream.outputArgs.push("-metadata:s:".concat((0, metadataUtils_1.getStreamTypeFlag)(stream), ":{outputTypeIndex}"), "title=".concat(title));
-                        }
-                    }
-                    // handle disposition flags if enabled
-                    if (setDisposition) {
-                        // array of flags to add or remove
-                        var flags = [];
-                        // ensure first video and audio streams have default flag set
-                        if (((0, metadataUtils_1.isVideo)(stream) || (0, metadataUtils_1.isAudio)(stream)) && stream.typeIndex === 0 && !stream.disposition.default) {
-                            args.jobLog("found [".concat(codecType, "] stream that is first but not set as default"));
-                            // add the default flag
-                            flags.push('+default');
-                        }
-                        // handle commentary streams
-                        if ((0, metadataUtils_1.hasCommentaryFlag)(stream) && !((_c = stream.disposition) === null || _c === void 0 ? void 0 : _c.comment)) {
-                            args.jobLog("found [".concat(codecType, "] stream that requires the comment disposition flag"));
-                            // add comment flag
-                            flags.push('+comment');
-                        }
-                        // handle descriptive streams
-                        if ((0, metadataUtils_1.hasDescriptiveFlag)(stream) && !((_d = stream.disposition) === null || _d === void 0 ? void 0 : _d.descriptions)) {
-                            args.jobLog("found [".concat(codecType, "] stream that requires the descriptions disposition flag"));
-                            // add descriptions tag
-                            flags.push('+descriptions');
-                        }
-                        // remove default flag from non-standard streams
-                        if (!(0, metadataUtils_1.isStandardStream)(stream) && stream.disposition.default) {
-                            flags.push('-default');
-                        }
-                        // handle default and forced flags for subtitles
-                        if ((0, metadataUtils_1.isSubtitle)(stream)) {
-                            // remove default flag from any non-forced streams
-                            if ((0, metadataUtils_1.isForcedSubtitle)(stream)) {
-                                flags.push('-default');
-                            }
-                            // add forced and default flags if title contains 'forced' but flags are not set
-                            if (!((_f = (_e = stream.disposition) === null || _e === void 0 ? void 0 : _e.forced) !== null && _f !== void 0 ? _f : false) && (0, metadataUtils_1.isForcedSubtitle)(stream)) {
-                                flags.push('+forced');
-                            }
-                        }
-                        // add forced flag if title contains forced
-                        // if any flag alterations are required construct the command
-                        if (flags.length > 0) {
-                            // set shouldProcess
-                            args.variables.ffmpegCommand.shouldProcess = true;
-                            // add ffmpeg args to set the flag(s)
-                            stream.outputArgs.push("-disposition:".concat((0, metadataUtils_1.getStreamTypeFlag)(stream), ":{outputTypeIndex}"), "".concat(flags.join('')));
                         }
                     }
                 });

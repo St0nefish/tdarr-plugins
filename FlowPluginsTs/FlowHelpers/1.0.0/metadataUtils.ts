@@ -316,6 +316,10 @@ export const streamMatchesLanguages = (
   const allValidTags = [...languageTags, ...languageTags.flatMap((tag: string) => (languageTagAlternates[tag]))]
     .filter((item) => item)
     .filter((item: string, index: number, items: string[]) => items.indexOf(item) === index);
+  // video streams use 'zxx' to indicate 'no linguistic content' - keep these
+  if (isVideo(stream)) {
+    allValidTags.push('zxx');
+  }
   // if unable to determine stream language assume no match
   // if able to check for tag equivalents in our map, if none configured check for equality against input
   return Boolean(streamLanguage && allValidTags.includes(streamLanguage));

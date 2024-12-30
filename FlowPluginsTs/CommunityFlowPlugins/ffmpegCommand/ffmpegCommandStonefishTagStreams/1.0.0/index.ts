@@ -235,14 +235,16 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     if (isVideo(stream) || isAudio(stream) || isSubtitle(stream)) {
       // check if language tag is missing
       if (setTagLanguage && isLanguageUndefined(stream)) {
-        args.jobLog(`found [${codecType}] stream missing language tag - setting to [${tagLanguage}]`);
+        // for video streams set untagged to 'zxx' -> 'no linguistic content'
+        const newLanguage: string = isVideo(stream) ? 'zxx' : tagLanguage;
+        args.jobLog(`found [${codecType}] stream missing language tag - setting to [${newLanguage}]`);
         // ensure tags object exists and set language tag
         stream.tags ??= {};
-        stream.tags.language = tagLanguage;
+        stream.tags.language = newLanguage;
         // set shouldProcess
         args.variables.ffmpegCommand.shouldProcess = true;
         // add ffmpeg args to tag the file
-        stream.outputArgs.push(`-metadata:s:${getStreamTypeFlag(stream)}:{outputTypeIndex}`, `language=${tagLanguage}`);
+        stream.outputArgs.push(`-metadata:s:${getStreamTypeFlag(stream)}:{outputTypeIndex}`, `language=${newLanguage}`);
       }
       // check if we should set a stream title
       // true if title is missing or if one of the force new flags is on

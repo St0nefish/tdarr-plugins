@@ -220,14 +220,16 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     if ((0, metadataUtils_1.isVideo)(stream) || (0, metadataUtils_1.isAudio)(stream) || (0, metadataUtils_1.isSubtitle)(stream)) {
                         // check if language tag is missing
                         if (setTagLanguage && (0, metadataUtils_1.isLanguageUndefined)(stream)) {
-                            args.jobLog("found [".concat(codecType, "] stream missing language tag - setting to [").concat(tagLanguage, "]"));
+                            // for video streams set untagged to 'zxx' -> 'no linguistic content'
+                            var newLanguage = (0, metadataUtils_1.isVideo)(stream) ? 'zxx' : tagLanguage;
+                            args.jobLog("found [".concat(codecType, "] stream missing language tag - setting to [").concat(newLanguage, "]"));
                             // ensure tags object exists and set language tag
                             (_e = stream.tags) !== null && _e !== void 0 ? _e : (stream.tags = {});
-                            stream.tags.language = tagLanguage;
+                            stream.tags.language = newLanguage;
                             // set shouldProcess
                             args.variables.ffmpegCommand.shouldProcess = true;
                             // add ffmpeg args to tag the file
-                            stream.outputArgs.push("-metadata:s:".concat((0, metadataUtils_1.getStreamTypeFlag)(stream), ":{outputTypeIndex}"), "language=".concat(tagLanguage));
+                            stream.outputArgs.push("-metadata:s:".concat((0, metadataUtils_1.getStreamTypeFlag)(stream), ":{outputTypeIndex}"), "language=".concat(newLanguage));
                         }
                         // check if we should set a stream title
                         // true if title is missing or if one of the force new flags is on

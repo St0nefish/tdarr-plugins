@@ -361,6 +361,10 @@ var streamMatchesLanguages = function (stream, languageTags, defaultLanguage) {
     // create an array with all input tags and all configured alternates
     var allValidTags = __spreadArray(__spreadArray([], languageTags, true), languageTags.flatMap(function (tag) { return (languageTagAlternates[tag]); }), true).filter(function (item) { return item; })
         .filter(function (item, index, items) { return items.indexOf(item) === index; });
+    // video streams use 'zxx' to indicate 'no linguistic content' - keep these
+    if ((0, exports.isVideo)(stream)) {
+        allValidTags.push('zxx');
+    }
     // if unable to determine stream language assume no match
     // if able to check for tag equivalents in our map, if none configured check for equality against input
     return Boolean(streamLanguage && allValidTags.includes(streamLanguage));

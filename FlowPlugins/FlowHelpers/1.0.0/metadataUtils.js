@@ -354,6 +354,7 @@ exports.getLanguageName = getLanguageName;
 // function to check if a stream language matches one or more language tags
 var languageTagAlternates = {
     eng: ['eng', 'en', 'en-us', 'en-gb', 'en-ca', 'en-au'],
+    en: ['eng', 'en', 'en-us', 'en-gb', 'en-ca', 'en-au'],
 };
 var streamMatchesLanguages = function (stream, languageTags, defaultLanguage) {
     // grab the language value with support for optional default
@@ -367,7 +368,7 @@ var streamMatchesLanguages = function (stream, languageTags, defaultLanguage) {
     }
     // if unable to determine stream language assume no match
     // if able to check for tag equivalents in our map, if none configured check for equality against input
-    return Boolean(streamLanguage && allValidTags.includes(streamLanguage));
+    return Boolean(allValidTags.includes(streamLanguage));
 };
 exports.streamMatchesLanguages = streamMatchesLanguages;
 var streamMatchesLanguage = function (stream, languageTag, defaultLanguage) { return (0, exports.streamMatchesLanguages)(stream, [languageTag], defaultLanguage); };

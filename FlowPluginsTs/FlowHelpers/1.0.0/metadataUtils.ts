@@ -306,6 +306,7 @@ export const getLanguageName = (langTag: string): string => (
 // function to check if a stream language matches one or more language tags
 const languageTagAlternates: { [key: string]: string[] } = {
   eng: ['eng', 'en', 'en-us', 'en-gb', 'en-ca', 'en-au'],
+  en: ['eng', 'en', 'en-us', 'en-gb', 'en-ca', 'en-au'],
 };
 export const streamMatchesLanguages = (
   stream: IffmpegCommandStream, languageTags: string[], defaultLanguage?: string,
@@ -322,7 +323,7 @@ export const streamMatchesLanguages = (
   }
   // if unable to determine stream language assume no match
   // if able to check for tag equivalents in our map, if none configured check for equality against input
-  return Boolean(streamLanguage && allValidTags.includes(streamLanguage));
+  return Boolean(allValidTags.includes(streamLanguage));
 };
 export const streamMatchesLanguage = (
   stream: IffmpegCommandStream, languageTag: string, defaultLanguage?: string,

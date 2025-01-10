@@ -477,7 +477,7 @@ var getVfScaleArgs = function (targetResolution) {
 };
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, outputContainer, outputResolution, outputCodec, hardwareDecoding, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, enableLetterboxRemoval, loadCropSettingsFromVar, cropMode, secondsPerPreview, startOffsetPct, endOffsetPct, minCropPct, enableHwDecoding, hwDecoder, encoderProperties, container, cropInfo;
+    var lib, outputContainer, outputResolution, outputCodec, hardwareDecoding, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, enableLetterboxRemoval, loadCropSettingsFromVar, cropMode, secondsPerPreview, startOffsetPct, endOffsetPct, minCropPct, enableHwDecoding, hwDecoder, encoderProperties, container, letterbox, cropInfo;
     var _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
@@ -525,6 +525,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         args.variables.ffmpegCommand.overallOuputArguments.push('-fflags', '+genpts');
                     }
                 }
+                letterbox = false;
                 if (!enableLetterboxRemoval) return [3 /*break*/, 4];
                 cropInfo = null;
                 if (loadCropSettingsFromVar && ((_b = (_a = args.variables) === null || _a === void 0 ? void 0 : _a.user) === null || _b === void 0 ? void 0 : _b.crop_object)) {
@@ -550,6 +551,8 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 if (cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.shouldCrop(minCropPct)) {
                     // add crop command
                     args.variables.ffmpegCommand.overallOuputArguments.push('-vf', "crop=".concat(cropInfo === null || cropInfo === void 0 ? void 0 : cropInfo.getFfmpegCropString()));
+                    // set flag for subsequent check
+                    letterbox = true;
                 }
                 _c.label = 4;
             case 4:
@@ -598,6 +601,23 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         }
                         else if (titleMode === 'generate') {
                             stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', "title=".concat(outputCodec));
+                        }
+                    }
+                    else if (letterbox) {
+                        // stream only requires encoding to de-letterbox - attempt to do so losslessly
+                        // enable processing and set hardware decoding
+                        args.variables.ffmpegCommand.shouldProcess = true;
+                        args.variables.ffmpegCommand.hardwareDecoding = hardwareDecoding;
+                        // set this stream to be output
+                        stream.outputArgs.push('-c:{outputIndex}');
+                        // set encoder to use
+                        stream.outputArgs.push(encoderProperties.encoder);
+                        // go max quality
+                        if (encoderProperties.isGpu) {
+                            stream.outputArgs.push('-qp', '17');
+                        }
+                        else {
+                            stream.outputArgs.push('-crf', '17');
                         }
                     }
                 });

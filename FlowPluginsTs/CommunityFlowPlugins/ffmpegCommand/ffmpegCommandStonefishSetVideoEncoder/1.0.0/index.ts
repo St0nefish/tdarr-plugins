@@ -528,6 +528,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     }
   }
   // handle cropping if required
+  let letterbox: boolean = false;
   if (enableLetterboxRemoval) {
     // check if config should be loaded
     let cropInfo: CropInfo | null = null;
@@ -555,6 +556,8 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     if (cropInfo?.shouldCrop(minCropPct)) {
       // add crop command
       args.variables.ffmpegCommand.overallOuputArguments.push('-vf', `crop=${cropInfo?.getFfmpegCropString()}`);
+      // set flag for subsequent check
+      letterbox = true;
     }
   }
   // iterate streams, filter to video, and configure encoding options
@@ -599,6 +602,21 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
         stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', 'title=');
       } else if (titleMode === 'generate') {
         stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', `title=${outputCodec}`);
+      }
+    } else if (letterbox) {
+      // stream only requires encoding to de-letterbox - attempt to do so losslessly
+      // enable processing and set hardware decoding
+      args.variables.ffmpegCommand.shouldProcess = true;
+      args.variables.ffmpegCommand.hardwareDecoding = hardwareDecoding;
+      // set this stream to be output
+      stream.outputArgs.push('-c:{outputIndex}');
+      // set encoder to use
+      stream.outputArgs.push(encoderProperties.encoder);
+      // go max quality
+      if (encoderProperties.isGpu) {
+        stream.outputArgs.push('-qp', '17');
+      } else {
+        stream.outputArgs.push('-crf', '17');
       }
     }
   });

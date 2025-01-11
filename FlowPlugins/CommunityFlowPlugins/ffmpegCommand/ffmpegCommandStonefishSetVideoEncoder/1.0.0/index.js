@@ -475,6 +475,41 @@ var getVfScaleArgs = function (targetResolution) {
             return ['-vf', 'scale=1920:-2'];
     }
 };
+// function to set encode args for a stream
+var setEncodeArgs = function (stream, config) {
+    var _a, _b, _c;
+    // set this stream to be output
+    stream.outputArgs.push('-c:{outputIndex}');
+    // set encoder to use
+    stream.outputArgs.push(config.encoderProperties.encoder);
+    // handle resolution if necessary
+    if (config.outputResolution !== (0, metadataUtils_1.getResolutionName)(stream)) {
+        (_a = stream.outputArgs).push.apply(_a, getVfScaleArgs(config.outputResolution));
+    }
+    // handle configured quality settings
+    if (config.ffmpegQualityEnabled) {
+        if (config.encoderProperties.isGpu) {
+            stream.outputArgs.push('-qp', config.ffmpegQuality);
+        }
+        else {
+            stream.outputArgs.push('-crf', config.ffmpegQuality);
+        }
+    }
+    // handle configured preset
+    if (config.ffmpegPresetEnabled) {
+        if (config.outputCodec !== 'av1' && config.ffmpegPreset) {
+            stream.outputArgs.push('-preset', config.ffmpegPreset);
+        }
+    }
+    // handle hardware decoding options
+    if (config.hardwareDecoding) {
+        (_b = stream.inputArgs).push.apply(_b, config.encoderProperties.inputArgs);
+    }
+    // push remaining encoder output args
+    if (config.encoderProperties.outputArgs) {
+        (_c = stream.outputArgs).push.apply(_c, config.encoderProperties.outputArgs);
+    }
+};
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
     var lib, outputContainer, outputResolution, outputCodec, hardwareDecoding, ffmpegPresetEnabled, ffmpegQualityEnabled, ffmpegPreset, ffmpegQuality, forceEncoding, hardwareEncoding, hardwareType, titleMode, enableLetterboxRemoval, loadCropSettingsFromVar, cropMode, secondsPerPreview, startOffsetPct, endOffsetPct, minCropPct, enableHwDecoding, hwDecoder, encoderProperties, container, letterbox, cropInfo;
@@ -558,43 +593,23 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
             case 4:
                 // iterate streams, filter to video, and configure encoding options
                 args.variables.ffmpegCommand.streams.filter(metadataUtils_1.isVideo).forEach(function (stream) {
-                    var _a, _b, _c;
-                    // only encode if forced or codec isn't already correct
+                    // determine if this stream needs to be re-encoded
                     if (forceEncoding || stream.codec_name !== outputCodec) {
+                        // force encoding is enabled or codec isn't correct
                         // enable processing and set hardware decoding
                         args.variables.ffmpegCommand.shouldProcess = true;
                         args.variables.ffmpegCommand.hardwareDecoding = hardwareDecoding;
-                        // set this stream to be output
-                        stream.outputArgs.push('-c:{outputIndex}');
-                        // set encoder to use
-                        stream.outputArgs.push(encoderProperties.encoder);
-                        // handle resolution if necessary
-                        if (outputResolution !== args.inputFileObj.video_resolution) {
-                            (_a = stream.outputArgs).push.apply(_a, getVfScaleArgs(outputResolution));
-                        }
-                        // handle configured quality settings
-                        if (ffmpegQualityEnabled) {
-                            if (encoderProperties.isGpu) {
-                                stream.outputArgs.push('-qp', ffmpegQuality);
-                            }
-                            else {
-                                stream.outputArgs.push('-crf', ffmpegQuality);
-                            }
-                        }
-                        // handle configured preset
-                        if (ffmpegPresetEnabled) {
-                            if (outputCodec !== 'av1' && ffmpegPreset) {
-                                stream.outputArgs.push('-preset', ffmpegPreset);
-                            }
-                        }
-                        // handle hardware decoding options
-                        if (hardwareDecoding) {
-                            (_b = stream.inputArgs).push.apply(_b, encoderProperties.inputArgs);
-                        }
-                        // push remaining encoder output args
-                        if (encoderProperties.outputArgs) {
-                            (_c = stream.outputArgs).push.apply(_c, encoderProperties.outputArgs);
-                        }
+                        // configure encoder args
+                        setEncodeArgs(stream, {
+                            outputCodec: outputCodec,
+                            outputResolution: outputResolution,
+                            encoderProperties: encoderProperties,
+                            ffmpegPresetEnabled: ffmpegPresetEnabled,
+                            ffmpegQuality: ffmpegQuality,
+                            ffmpegQualityEnabled: ffmpegQualityEnabled,
+                            ffmpegPreset: ffmpegPreset,
+                            hardwareDecoding: hardwareDecoding,
+                        });
                         // handle title removal or generation
                         if (titleMode === 'clear') {
                             stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', 'title=');
@@ -604,21 +619,21 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         }
                     }
                     else if (letterbox) {
-                        // stream only requires encoding to de-letterbox - attempt to do so losslessly
+                        // letterboxing was detected but codec is already correct - re-encode aiming for near-lossless quality
                         // enable processing and set hardware decoding
                         args.variables.ffmpegCommand.shouldProcess = true;
                         args.variables.ffmpegCommand.hardwareDecoding = hardwareDecoding;
-                        // set this stream to be output
-                        stream.outputArgs.push('-c:{outputIndex}');
-                        // set encoder to use
-                        stream.outputArgs.push(encoderProperties.encoder);
-                        // go max quality
-                        if (encoderProperties.isGpu) {
-                            stream.outputArgs.push('-qp', '17');
-                        }
-                        else {
-                            stream.outputArgs.push('-crf', '17');
-                        }
+                        // configure encoder args with max quality
+                        setEncodeArgs(stream, {
+                            outputCodec: outputCodec,
+                            outputResolution: outputResolution,
+                            encoderProperties: encoderProperties,
+                            ffmpegQualityEnabled: true,
+                            ffmpegQuality: '17',
+                            ffmpegPresetEnabled: ffmpegPresetEnabled,
+                            ffmpegPreset: ffmpegPreset,
+                            hardwareDecoding: hardwareDecoding,
+                        });
                     }
                 });
                 return [2 /*return*/, {

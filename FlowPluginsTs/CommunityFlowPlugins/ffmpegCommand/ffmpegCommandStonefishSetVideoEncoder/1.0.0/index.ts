@@ -7,7 +7,10 @@ import {
   IpluginInputArgs,
   IpluginOutputArgs,
 } from '../../../../FlowHelpers/1.0.0/interfaces/interfaces';
-import { isVideo } from '../../../../FlowHelpers/1.0.0/metadataUtils';
+import {
+  getResolutionName,
+  isVideo,
+} from '../../../../FlowHelpers/1.0.0/metadataUtils';
 import { getContainer } from '../../../../FlowHelpers/1.0.0/fileUtils';
 import { CropInfo } from '../../../../FlowHelpers/1.0.0/letterboxUtils';
 
@@ -480,6 +483,53 @@ const getVfScaleArgs = (targetResolution: string): string[] => {
   }
 };
 
+// function to set encode args for a stream
+const setEncodeArgs = (
+  stream: IffmpegCommandStream,
+  config: {
+    outputCodec: string,
+    outputResolution: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    encoderProperties: any,
+    ffmpegQualityEnabled: boolean,
+    ffmpegQuality: string,
+    ffmpegPresetEnabled: boolean,
+    ffmpegPreset: string,
+    hardwareDecoding: boolean,
+  },
+): void => {
+  // set this stream to be output
+  stream.outputArgs.push('-c:{outputIndex}');
+  // set encoder to use
+  stream.outputArgs.push(config.encoderProperties.encoder);
+  // handle resolution if necessary
+  if (config.outputResolution !== getResolutionName(stream)) {
+    stream.outputArgs.push(...getVfScaleArgs(config.outputResolution));
+  }
+  // handle configured quality settings
+  if (config.ffmpegQualityEnabled) {
+    if (config.encoderProperties.isGpu) {
+      stream.outputArgs.push('-qp', config.ffmpegQuality);
+    } else {
+      stream.outputArgs.push('-crf', config.ffmpegQuality);
+    }
+  }
+  // handle configured preset
+  if (config.ffmpegPresetEnabled) {
+    if (config.outputCodec !== 'av1' && config.ffmpegPreset) {
+      stream.outputArgs.push('-preset', config.ffmpegPreset);
+    }
+  }
+  // handle hardware decoding options
+  if (config.hardwareDecoding) {
+    stream.inputArgs.push(...config.encoderProperties.inputArgs);
+  }
+  // push remaining encoder output args
+  if (config.encoderProperties.outputArgs) {
+    stream.outputArgs.push(...config.encoderProperties.outputArgs);
+  }
+};
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const lib = require('../../../../../methods/lib')();
@@ -562,41 +612,24 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   }
   // iterate streams, filter to video, and configure encoding options
   args.variables.ffmpegCommand.streams.filter(isVideo).forEach((stream: IffmpegCommandStream) => {
-    // only encode if forced or codec isn't already correct
+    // determine if this stream needs to be re-encoded
     if (forceEncoding || stream.codec_name !== outputCodec) {
+      // force encoding is enabled or codec isn't correct
       // enable processing and set hardware decoding
       args.variables.ffmpegCommand.shouldProcess = true;
       args.variables.ffmpegCommand.hardwareDecoding = hardwareDecoding;
-      // set this stream to be output
-      stream.outputArgs.push('-c:{outputIndex}');
-      // set encoder to use
-      stream.outputArgs.push(encoderProperties.encoder);
-      // handle resolution if necessary
-      if (outputResolution !== args.inputFileObj.video_resolution) {
-        stream.outputArgs.push(...getVfScaleArgs(outputResolution));
-      }
-      // handle configured quality settings
-      if (ffmpegQualityEnabled) {
-        if (encoderProperties.isGpu) {
-          stream.outputArgs.push('-qp', ffmpegQuality);
-        } else {
-          stream.outputArgs.push('-crf', ffmpegQuality);
-        }
-      }
-      // handle configured preset
-      if (ffmpegPresetEnabled) {
-        if (outputCodec !== 'av1' && ffmpegPreset) {
-          stream.outputArgs.push('-preset', ffmpegPreset);
-        }
-      }
-      // handle hardware decoding options
-      if (hardwareDecoding) {
-        stream.inputArgs.push(...encoderProperties.inputArgs);
-      }
-      // push remaining encoder output args
-      if (encoderProperties.outputArgs) {
-        stream.outputArgs.push(...encoderProperties.outputArgs);
-      }
+      // configure encoder args
+      setEncodeArgs(stream,
+        {
+          outputCodec,
+          outputResolution,
+          encoderProperties,
+          ffmpegPresetEnabled,
+          ffmpegQuality,
+          ffmpegQualityEnabled,
+          ffmpegPreset,
+          hardwareDecoding,
+        });
       // handle title removal or generation
       if (titleMode === 'clear') {
         stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', 'title=');
@@ -604,23 +637,24 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
         stream.outputArgs.push('-metadata:s:v:{outputTypeIndex}', `title=${outputCodec}`);
       }
     } else if (letterbox) {
-      // stream only requires encoding to de-letterbox - attempt to do so losslessly
+      // letterboxing was detected but codec is already correct - re-encode aiming for near-lossless quality
       // enable processing and set hardware decoding
       args.variables.ffmpegCommand.shouldProcess = true;
       args.variables.ffmpegCommand.hardwareDecoding = hardwareDecoding;
-      // set this stream to be output
-      stream.outputArgs.push('-c:{outputIndex}');
-      // set encoder to use
-      stream.outputArgs.push(encoderProperties.encoder);
-      // go max quality
-      if (encoderProperties.isGpu) {
-        stream.outputArgs.push('-qp', '17');
-      } else {
-        stream.outputArgs.push('-crf', '17');
-      }
+      // configure encoder args with max quality
+      setEncodeArgs(stream,
+        {
+          outputCodec,
+          outputResolution,
+          encoderProperties,
+          ffmpegQualityEnabled: true,
+          ffmpegQuality: '17',
+          ffmpegPresetEnabled,
+          ffmpegPreset,
+          hardwareDecoding,
+        });
     }
   });
-
   return {
     outputFileObj: args.inputFileObj,
     outputNumber: 1,
